@@ -137,7 +137,7 @@ data Token =
   | TEQ
   | TEQQ
   | TNEQ
-  | GEQ
+  | TGEQ
   | TLEQ
   | TANDOP
   | TOROP
@@ -162,6 +162,7 @@ data Token =
   | TLBRACK2
   | TRBRACK
   | TLBRACE
+  | TLBRACE_ARG
   | TSTAR
   | TSTAR2
   | TAMPER
