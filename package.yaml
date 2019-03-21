@@ -35,10 +35,20 @@ library:
 tests:
   language-ruby-test:
     main:                Spec.hs
-    source-dirs:         test
+    source-dirs:         spec
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -fno-warn-missing-signatures
+    - -fno-warn-unused-do-bind
+    - -fno-warn-orphans
+    - -fno-warn-name-shadowing
+    - -fno-warn-incomplete-patterns
+    - -fno-warn-missing-pattern-synonym-signatures
+    - -fwarn-tabs
+    - -funbox-strict-fields
     dependencies:
+    - hspec
     - language-ruby

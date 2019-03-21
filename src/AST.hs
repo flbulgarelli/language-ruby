@@ -8,4 +8,4 @@ module AST where
        | SSucc Term
        | SPred Term
        | SIfThen Term Term Term
-       deriving Show
+       deriving (Eq, Show)
