@@ -20,3 +20,6 @@ data Term =
        | Str String
        | Self
        deriving (Eq, Show)
+
+-- converts a list of expressions into a single expression
+mkExpression = undefined
