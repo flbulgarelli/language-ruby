@@ -12,27 +12,161 @@ import Control.Monad.Error
 %error {parseError}
 
 %token
-  true  	{L.TTrue}
-  false 	{L.TFalse}
-  zero   	{L.TZero}
-  iszero        {L.TIsZero}
-  succ		{L.TSucc}
-  pred		{L.TPred}
-  if		{L.TIf}
-  then		{L.TThen}
-  else		{L.TElse}
+--  kCLASS {L.KCLASS}
+--  kMODULE {L.KMODULE}
+--  kDEF {L.KDEF}
+--  kUNDEF {L.KUNDEF}
+--  kBEGIN {L.KBEGIN}
+--  kRESCUE {L.KRESCUE}
+--  kENSURE {L.KENSURE}
+--  kEND {L.KEND}
+--  kIF {L.KIF}
+--  kUNLESS {L.KUNLESS}
+--  kTHEN {L.KTHEN}
+--  kELSIF {L.KELSIF}
+--  kELSE {L.KELSE}
+--  kCASE {L.KCASE}
+--  kWHEN {L.KWHEN}
+--  kWHILE {L.KWHILE}
+--  kUNTIL {L.KUNTIL}
+--  kFOR {L.KFOR}
+--  kBREAK {L.KBREAK}
+--  kNEXT {L.KNEXT}
+--  kREDO {L.KREDO }
+--  kRETRY {L.KRETRY}
+--  kIN {L.KIN}
+--  kDO {L.KDO}
+--  kDO_COND {L.KDO_COND}
+--  kDO_BLOCK {L.KDO_BLOCK}
+--  kDO_LAMBDA {L.KDO_LAMBDA}
+--  kRETURN {L.KRETURN}
+--  kYIELD {L.KYIELD}
+--  kSUPER {L.KSUPER}
+    kSELF {L.KSELF}
+    kNIL {L.KNIL}
+    kTRUE {L.KTRUE}
+    kFALSE {L.KFALSE}
+--  kAND {L.KAND}
+--  kOR {L.KOR}
+--  kNOT {L.KNOT}
+--  kIF_MOD {L.KIF_MOD}
+--  kUNLESS_MOD {L.KUNLESS_MOD}
+--  kWHILE_MOD {L.KWHILE_MOD}
+--  kUNTIL_MOD {l.KUNTIL_MOD}
+--  kRESCUE_MOD {L.KRESCUE_MOD}
+--  kALIAS {L.KALIAS}
+--  kDEFINED {L.KDEFINED}
+--  klBEGIN {L.KlBEGIN}
+--  klEND {L.KlEND}
+--  k__LINE__ {L.K__LINE__}
+--  k__FILE__ {L.K__FILE__}
+--  k__ENCODING__ {L.K__ENCODING__}
+--  tIDENTIFIER {L.TIDENTIFIER}
+--  tFID {L.TFID}
+--  tGVAR {L.TGVAR}
+--  tIVAR {L.TIVAR}
+--  tCONSTANT {L.TCONSTANT}
+--  tLABEL {L.TLABEL}
+--  tCVAR {L.TCVAR}
+--  tNTH_REF {L.TNTH_REF}
+--  tBACK_REF {L.TBACK_REF}
+--  tSTRING_CONTENT {L.TSTRING_CONTENT}
+--  tINTEGER {L.TINTEGER}
+--  tFLOAT {L.TFLOAT}
+--  tUPLUS {L.TUPLUS}
+--  tUMINUS {L.TUMINUS}
+--  tUNARY_NUM {L.TUNARY_NUM}
+--  tPOW {L.TPOW}
+--  tCMP {L.TCMP}
+--  tEQ {L.TEQ}
+--  tEQQ {L.TEQQ}
+--  tNEQ {L.TNEQ}
+--  tGEQ {t.GEQ}
+--  tLEQ {L.TLEQ}
+--  tANDOP {L.TANDOP}
+--  tOROP {L.TOROP}
+--  tMATCH {L.TMATCH}
+--  tNMATCH {L.TNMATCH}
+--  tDOT {L.TDOT}
+--  tDOT2 {L.TDOT2}
+--  tDOT3 {L.TDOT3}
+--  tAREF {L.TAREF}
+--  tASET {L.TASET}
+--  tLSHFT {L.TLSHFT}
+--  tRSHFT {L.TRSHFT}
+--  tCOLON2 {L.TCOLON2}
+--  tCOLON3 {L.TCOLON3}
+--  tOP_ASGN {L.TOP_ASGN}
+--  tASSOC {L.TASSOC}
+--  tLPAREN {L.TLPAREN}
+--  tLPAREN2 {L.TLPAREN2}
+--  tRPAREN {L.TRPAREN}
+--  tLPAREN_ARG {L.TLPAREN_ARG}
+--  tLBRACK {L.TLBRACK}
+--  tLBRACK2 {L.TLBRACK2}
+--  tRBRACK {L.TRBRACK}
+--  tLBRACE {L.TLBRACE}
+--  tLBRACE_ARG
+--  tSTAR {L.TSTAR}
+--  tSTAR2 {L.TSTAR2}
+--  tAMPER {L.TAMPER}
+--  tAMPER2 {L.TAMPER2}
+--  tTILDE {L.TTILDE}
+--  tPERCENT {L.TPERCENT}
+--  tDIVIDE {L.TDIVIDE}
+--  tDSTAR {L.TDSTAR}
+--  tPLUS {L.TPLUS}
+--  tMINUS {L.TMINUS}
+--  tLT {L.TLT}
+--  tGT {L.TGT}
+--  tPIPE {L.TPIPE}
+--  tBANG {L.TBANG}
+--  tCARET {L.TCARET}
+--  tLCURLY {L.TLCURLY}
+--  tRCURLY {L.TRCURLY}
+--  tBACK_REF2 {L.TBACK_REF2}
+--  tSYMBEG {L.TSYMBEG}
+--  tSTRING_BEG {L.TSTRING_BEG}
+--  tXSTRING_BEG {L.TXSTRING_BEG}
+--  tREGEXP_BEG {L.TREGEXP_BEG}
+--  tREGEXP_OPT {L.TREGEXP_OPT}
+--  tWORDS_BEG {L.TWORDS_BEG }
+--  tQWORDS_BEG {L.TQWORDS_BEG}
+--  tSYMBOLS_BEG {L.TSYMBOLS_BEG}
+--  tQSYMBOLS_BEG {L.TQSYMBOLS_BEG}
+--  tSTRING_DBEG {L.TSTRING_DBEG}
+--  tSTRING_DVAR {L.TSTRING_DVAR}
+--  tSTRING_END {L.TSTRING_END}
+--  tSTRING_DEND {L.TSTRING_DEND}
+--  tSTRING {L.TSTRING}
+--  tSYMBOL {L.TSYMBOL}
+--  tNL {L.TNL}
+--  tEH {L.TEH}
+--  tCOLON {L.TCOLON}
+--  tCOMMA {L.TCOMMA}
+--  tSPACE {L.TSPACE}
+--  tSEMI {L.TSEMI}
+--  tLAMBDA {L.TLAMBDA}
+--  tLAMBEG {L.TLAMBEG}
+--  tCHARACTER {L.TCHARACTER}
+--  tRATIONAL {L.TRATIONAL}
+--  tIMAGINARY {L.TIMAGINARY}
+--  tLABEL_END {L.TLABEL_END}
+--  tANDDOT {L.TANDDOT}
+--  tMETHREF {L.TMETHREF}
 
 %%
 
-Term	:  true				{STrue}
-	|  false			{SFalse}
-	|  zero				{SZero}
-	|  iszero Term			{SIsZero $2}
-	|  succ Term			{SSucc $2}
-	|  pred Term			{SPred $2}
-	|  if Term then Term else Term	{SIfThen $2 $4 $6}
+Term : KeywordVariable { $1 }
+
+KeywordVariable : kNIL {Nil}
+   | kSELF {Self}
+   | kTRUE {RTrue}
+   | kFALSE {RFalse}
+-- | k__FILE__ {__FILE__}
+-- | k__LINE__ {__LINE__}
+-- | k__ENCODING__ {__ENCODING__}
 
 {
 parseError _ = throwError "!Parse Error"
-
 }

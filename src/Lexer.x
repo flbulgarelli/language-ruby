@@ -6,28 +6,17 @@ import Data.Word
 }
 
 tokens :-
-       $white+			;
-       true			{TTrue}
-       false			{TFalse}
-       0			{TZero}
-       succ			{TSucc}
-       pred			{TPred}
-       if			{TIf}
-       then			{TThen}
-       else			{TElse}
-       iszero			{TIsZero}
+      $white+			;
+      true			  {KTRUE}
+      false		  	{KFALSE}
+      nil 		  	{KNIL}
 
 {
 data Token =
-     TTrue
-     | TFalse
-     | TZero
-     | TSucc
-     | TPred
-     | TIf
-     | TThen
-     | TElse
-     | TIsZero
+     KSELF
+     | KNIL
+     | KTRUE
+     | KFALSE
      | TEOF
      deriving (Eq,Show)
 

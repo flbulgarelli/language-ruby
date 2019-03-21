@@ -18,11 +18,5 @@ data Term =
        -- | RComplex (forall a. Num a => Complex (a))
        | RComplex (Complex Double)
        | Str String
-       | STrue
-       | SFalse
-       | SZero
-       | SIsZero Term
-       | SSucc Term
-       | SPred Term
-       | SIfThen Term Term Term
+       | Self
        deriving (Eq, Show)
