@@ -4,6 +4,7 @@ module AST where
 
 import Data.Ratio (Rational)
 import Data.Complex
+import Lexer (Token)
 
 data Term =
        Empty
@@ -44,3 +45,22 @@ mk_not_op = undefined
 mk_binary_op = undefined
 mk_match_op = undefined
 mk_kwarg = undefined
+mk_block_pass = undefined
+mk_call_method = undefined
+
+
+mk_ident :: Token -> t1
+mk_ident = undefined
+
+mk_ivar :: Token -> t1
+mk_ivar = undefined
+
+mk_gvar :: Token -> t1
+mk_gvar = undefined
+
+mk_const :: Token -> t1
+mk_const = undefined
+
+mk_cvar :: Token -> t1
+mk_cvar = undefined
+

@@ -177,11 +177,12 @@ TopStmt: Stmt { $1 } | klBEGIN BeginBlock { mk_preexe $1 $2 }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
+Bodystmt: { undefined }
 {-
-bodystmt: Compstmt opt_rescue OptElse opt_ensure {
-            rescue_bodies     = $2
-            else_t,   else_   = $3
-            ensure_t, ensure_ = $4
+Bodystmt: Compstmt opt_rescue OptElse opt_ensure {
+            rescue_bodies     = $2;
+            else_t,   else_   = $3;
+            ensure_t, ensure_ = $4;
 
             if rescue_bodies.empty? && !else_.Nil?
               error ":useless_else, Nil, else_t"
@@ -251,21 +252,17 @@ Expr: CommandCall { $1 }
     | tBANG CommandCall{ mk_not_op $1 Nil $2 Nil }
     -- | Arg
 
-{-
 ExprValueDo: --  { @lexer.cond.push(true) }
-  Expr do { @lexer.cond.pop; [ $2, $3 ] }
-
--}
+  Expr Do { undefined } -- { @lexer.cond.pop; [ $2, $3 ] }
 
 CommandCall: Command { $1 }
   -- | BlockCommand { $1 }
 
-{-
 BlockCommand: BlockCall { $1 }
   | BlockCall DotOrColon Operation2 CommandArgs { mk_call_method $1 $2 $3 Nil $4 Nil }
 
-CmdBraceBlock: tLBRACE_ARG { @context.push(:block) } BraceBody tRCURLY { [ $1, *$3, $4 ] @context.pop }
--}
+CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
+-- tLBRACE_ARG { @context.push(:block) } BraceBody tRCURLY { [ $1, *$3, $4 ] @context.pop }
 
 Command: KeywordVariable { $1 }
 {-
@@ -275,18 +272,18 @@ Command: -- Operation CommandArgs =tLOWEST { mk_call_method Nil Nil $1 Nil $2 Ni
   --              MethodCall = mk_call_method Nil Nil $1,
   --                                Nil $2 Nil)
   --
-  --              begin_t args body end_t = $3
+  --              begin_t Args body end_t = $3
   --              result      = mk_block(MethodCall,
-  --                              begin_t args body end_t)
+  --                              begin_t Args body end_t)
   --  }
   -- Primary CallOp Operation2 CommandArgs =tLOWEST { mk_call_method $1 $2 $3 Nil $4 Nil) }
   Primary CallOp Operation2 CommandArgs CmdBraceBlock {
             MethodCall = mk_call_method $1 $2 $3,
                               Nil $4 Nil)
 
-            begin_t args body end_t = $5
+            begin_t Args body end_t = $5
             result      = mk_block(MethodCall,
-                            begin_t args body end_t) }
+                            begin_t Args body end_t) }
       | Primary tCOLON2 Operation2 CommandArgs =tLOWEST {
             mk_call_method $1 $2 $3,
                         Nil $4 Nil) }
@@ -294,14 +291,14 @@ Command: -- Operation CommandArgs =tLOWEST { mk_call_method Nil Nil $1 Nil $2 Ni
             MethodCall = mk_call_method $1 $2 $3,
                               Nil $4 Nil)
 
-            begin_t args body end_t = $5
+            begin_t Args body end_t = $5
             result      = mk_block(MethodCall,
-                            begin_t args body end_t) }
+                            begin_t Args body end_t) }
       | kSUPER CommandArgs { mk_keyword_cmd Super $1 Nil $2 Nil }
       | kYIELD CommandArgs { mk_keyword_cmd Yield $1 Nil $2 Nil }
-      | KReturn call_args { mk_keyword_cmd Return $1 Nil $2 Nil }
-      | kBREAK call_args { mk_keyword_cmd Break $1 Nil $2 Nil }
-      | kNEXT call_args { mk_keyword_cmd Next $1 Nil $2 Nil }
+      | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
+      | kBREAK CallArgs { mk_keyword_cmd Break $1 Nil $2 Nil }
+      | kNEXT CallArgs { mk_keyword_cmd Next $1 Nil $2 Nil }
 
 Mlhs: MlhsBasic { mk_multi_lhs Nil $1 Nil }
     | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
@@ -364,7 +361,7 @@ fname: tIDENTIFIER | tCONSTANT | tFID
 
 fsym: fname {
           mk_symbol($1) }
-    | symbol
+    | Symbol
 
 Fitem: fsym
     | dsym
@@ -414,7 +411,7 @@ Arg: -- Lhs tEQL ArgRhs { (mk_assign $1 $2 $3) }
  --  | Arg tDIVIDE Arg { ($1 $2 $3 $4) }
  --  | Arg tPERCENT Arg { (mk_binary_op $1 $2 $3) }
  --  | Arg tPOW Arg { (mk_binary_op $1 $2 $3) }
- --  | tUNARY_NUM simple_numeric tPOW Arg { mk_unary_op($1, mk_binary_op( $2, $3, $4)) }
+ --  | tUNARY_NUM SimpleNumeric tPOW Arg { mk_unary_op($1, mk_binary_op( $2, $3, $4)) }
      tUPLUS Arg { (mk_unary_op $1 $2) }
      | tUMINUS Arg { (mk_unary_op $1 $2) }
      | Arg tPIPE Arg { (mk_binary_op $1 $2 $3) }
@@ -450,8 +447,8 @@ rel_expr: Arg Relop Arg =tGT {
             (mk_binary_op $1 $2 $3) }
 
 aref_args: None
-      | args Trailer
-      | args tCOMMA Assocs Trailer {
+      | Args Trailer
+      | Args tCOMMA Assocs Trailer {
             $1 << (mk_associate Nil $3 Nil) }
       | Assocs Trailer {
             [ (mk_associate Nil $1 Nil) ] }
@@ -471,29 +468,25 @@ opt_paren_args:
   -- | paren_args
 
 opt_call_args: # nothing { [] }
-      | call_args
-      | args tCOMMA
-      | args tCOMMA Assocs tCOMMA {
+      | CallArgs
+      | Args tCOMMA
+      | Args tCOMMA Assocs tCOMMA {
             $1 << (mk_associate Nil $3 Nil) }
       | Assocs tCOMMA {
             [ (mk_associate Nil $1 Nil) ] }
+-}
+CallArgs: Command { [ $1 ] }
+--  | Args OptBlockArg { $1.concat($2) }
+--  | Assocs OptBlockArg { [ (mk_associate Nil $1 Nil) ] result.concat($2) }
+--  | Args tCOMMA Assocs OptBlockArg { Assocs = (mk_associate Nil $3 Nil); $1 << Assocs; result.concat($4) }
+  | BlockArg { [ $1 ] }
 
-call_args: Command { [ $1 ] }
-      | args opt_block_arg {
-            $1.concat($2) }
-      | Assocs opt_block_arg {
-            [ (mk_associate Nil $1 Nil) ]
-            result.concat($2) }
-      | args tCOMMA Assocs opt_block_arg {
-            Assocs = (mk_associate Nil $3 Nil)
-            $1 << Assocs
-            result.concat($4) }
-      | block_arg {
- [ $1 ] }
+CommandArgs: CallArgs { $1 }
 
+{-
 CommandArgs:   {
             # When branch gets invoked by RACC's lookahead
-            # and Command args start with '[' or '('
+            # and Command Args start with '[' or '('
             # we need to put `true` to the cmdarg stack
             # **before** `false` pushed by lexer
             #   m [], n
@@ -514,8 +507,8 @@ CommandArgs:   {
             else
               @lexer.cmdarg.push(true)
             end }
-        call_args {
-            # call_args can be followed by tLBRACE_ARG (that does cmdarg.push(0) in the lexer)
+        CallArgs {
+            # CallArgs can be followed by tLBRACE_ARG (that does cmdarg.push(0) in the lexer)
             # but the push must be done after cmdarg.pop() in the parser.
             # So this code does cmdarg.pop() to pop 0 pushed by tLBRACE_ARG,
             # cmdarg.pop() to pop 1 pushed by CommandArgs,
@@ -531,27 +524,29 @@ CommandArgs:   {
             end
  $2 }
 
-block_arg: tAMPER Arg {
-            (mk_block_pass $1 $2) }
+ -}
+BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
+OptBlockArg: tCOMMA BlockArg { [ $2 ] }
+  -- | # nothing { [] }
 
-opt_block_arg: tCOMMA block_arg { [ $2 ] }
-      | # nothing { [] }
+      {-
 
-  args: Arg { [ $1 ] }
+
+  Args: Arg { [ $1 ] }
       | tSTAR Arg {
             [ (mk_splat $1 $2) ] }
-      | args tCOMMA Arg {
+      | Args tCOMMA Arg {
             $1 ++ [$3] }
-      | args tCOMMA tSTAR Arg {
+      | Args tCOMMA tSTAR Arg {
             $1 << (mk_splat $3 $4) }
 
 mrhs_arg: mrhs {
             (mk_array Nil $1 Nil) }
       | Arg
 
-  mrhs: args tCOMMA Arg {
+  mrhs: Args tCOMMA Arg {
             $1 ++ [$3] }
-      | args tCOMMA tSTAR Arg {
+      | Args tCOMMA tSTAR Arg {
             $1 << (mk_splat $3 $4) }
       | tSTAR Arg {
             [ (mk_splat $1 $2) ] }
@@ -570,7 +565,7 @@ Primary: literal
             mk_call_method Nil, Nil, $1) }
       | kBEGIN {
             @lexer.cmdarg.push(false) }
-          bodystmt kEND {
+          Bodystmt kEND {
             @lexer.cmdarg.pop
 
             (mk_begin_keyword $1 $3 $4) }
@@ -592,7 +587,7 @@ Primary: literal
             (mk_array $1 $2 $3) }
       | tLBRACE AssocList tRCURLY -- { mk_associate $1 $2 $3 }
       KReturn { mkeyword_cmd Return $1 }
-      | kYIELD tLPAREN2 call_args Rparen { mk_keyword_cmd Yield $1, $2, $3, $4) }
+      | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $1, $2, $3, $4) }
       | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1, $2, [], $3) }
       | kYIELD { mk_keyword_cmd Yield $1 }
       | kDEFINED OptNl tLPAREN2 Expr Rparen { (mk_keyword_cmd :defined?, $1, $3 [ $4 ] $5) }
@@ -601,25 +596,25 @@ Primary: literal
       | Operation BraceBlock {
             MethodCall = mk_call_method Nil, Nil, $1)
 
-            begin_t, args, body, end_t = $2
-            result      = mk_block MethodCall begin_t args body end_t }
+            begin_t, Args, body, end_t = $2
+            result      = mk_block MethodCall begin_t Args body end_t }
       | MethodCall
       | MethodCall BraceBlock {
-            begin_t, args, body, end_t = $2
+            begin_t, Args, body, end_t = $2
             result      = mk_block($1,
-                            begin_t, args, body, end_t) }
+                            begin_t, Args, body, end_t) }
       | tLAMBDA lambda {
             lambda_call = mk_call_lambda($1)
 
-            args, (begin_t, body, end_t) = $2
+            Args, (begin_t, body, end_t) = $2
             result      = mk_block(lambda_call,
-                            begin_t, args, body, end_t) }
-      | kIF Expr then Compstmt IfTail kEND {
+                            begin_t, Args, body, end_t) }
+      | kIF Expr Then Compstmt IfTail kEND {
             else_t, else_ = $5
             mk_condition($1, $2, $3,
                                         $4, else_t,
                                         else_,  $6) }
-      | kUNLESS Expr then Compstmt OptElse kEND {
+      | kUNLESS Expr Then Compstmt OptElse kEND {
             else_t, else_ = $5
             mk_condition($1, $2, $3,
                                         else_,  else_t,
@@ -649,7 +644,7 @@ Primary: literal
       @lexer.cmdarg.push(false)
       @lexer.cond.push(false)
             @context.push(:class) }
-          bodystmt kEND {
+          Bodystmt kEND {
             unless @context.class_definition_allowed?
               error ":class_in_def, Nil, $1"
             end
@@ -668,7 +663,7 @@ Primary: literal
             @lexer.cmdarg.push(false)
             @lexer.cond.push(false)
             @context.push(:sclass) }
-          bodystmt kEND {
+          Bodystmt kEND {
             mk_def_sclass $1 $2 $3 $6 $7
 
             @lexer.cmdarg.pop
@@ -678,7 +673,7 @@ Primary: literal
       | kMODULE cpath {
             @static_env.extend_static
             @lexer.cmdarg.push(false) }
-          bodystmt kEND {
+          Bodystmt kEND {
             unless @context.module_definition_allowed?
               error ":module_in_def, Nil, $1"
             end
@@ -693,7 +688,7 @@ Primary: literal
             @lexer.cmdarg.push(false)
             @lexer.cond.push(false)
             @context.push(:def) }
-          f_arglist bodystmt kEND {
+          f_arglist Bodystmt kEND {
             mk_def_method($1, $2,
                         $4, $5, $6)
 
@@ -708,7 +703,7 @@ Primary: literal
             @lexer.cmdarg.push(false)
             @lexer.cond.push(false)
             @context.push(:defs) }
-          f_arglist bodystmt kEND {
+          f_arglist Bodystmt kEND {
             mk_def_singleton $1 $2 $3 $5 $7 $8 $9
 
             @lexer.cmdarg.pop
@@ -725,15 +720,18 @@ Primary: literal
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1" if @context.in_class?  }
 
-then: Term { $1 }
-  | kTHEN { $1 }
-  | Term kTHEN { $1 } { $2 }
+-}
+Then: Term { $1 }
+  | kTHEN { undefined }
+  | Term kTHEN { $1 }
 
-do: Term
-  | kDO_COND
+Do: Term { undefined }
+  | kDO_COND { undefined }
+
+{-
 
 IfTail: OptElse
-      | kELSIF Expr then Compstmt IfTail {
+      | kELSIF Expr Then Compstmt IfTail {
             else_t, else_ = $5
             [ $1,
                         mk_condition($1, $2, $3,
@@ -848,12 +846,12 @@ block_param: f_arg tCOMMA f_block_optarg tCOMMA f_rest_arg              opt_bloc
             $1.
                         concat($3).
                         concat($4) }
-      |                                                                block_args_tail
-
-opt_block_param: # nothing {
-            (mk_args Nil [] Nil) }
-      | block_param_def {
-            @lexer.state = :Expr }
+                        |                                                                block_args_tail
+-}
+OptBlockParam: { undefined }
+{-
+OptBlockParam: -- # nothing { (mk_args Nil [] Nil) }
+      | block_param_def { @lexer.state = :Expr }
 
 block_param_def: tPIPE opt_bv_decl tPIPE {
             (mk_args $1 $2 $3) }
@@ -898,66 +896,63 @@ lambda_body: tLAMBEG {
             @context.pop }
       | kDO_LAMBDA {
             @context.push(:lambda) }
-        bodystmt kEND {
+        Bodystmt kEND {
             [ $1, $3, $4 ]
             @context.pop }
 
-do_block: kDO_BLOCK {
-            @context.push(:block) }
-        do_body kEND {
-            [ $1, *$3, $4 ]
-            @context.pop }
-
-BlockCall: Command do_block {
+            -}
+DoBlock: kDO_BLOCK  DoBody kEND { undefined } -- { @context.push(:block) } { [ $1, *$3, $4 ] @context.pop }
+BlockCall: Command DoBlock { undefined }
+{-
+BlockCall: Command DoBlock {
             begin_t, block_args, body, end_t = $2
-            result      = mk_block($1,
-                            begin_t, block_args, body, end_t) }
+            result      = mk_block($1, begin_t, block_args, body, end_t) }
       | BlockCall DotOrColon Operation2 opt_paren_args {
-            lparen_t, args, rparen_t = $4
+            lparen_t, Args, rparen_t = $4
             mk_call_method $1, $2, $3,
-                        lparen_t, args, rparen_t) }
+                        lparen_t, Args, rparen_t) }
       | BlockCall DotOrColon Operation2 opt_paren_args BraceBlock {
-            lparen_t, args, rparen_t = $4
+            lparen_t, Args, rparen_t = $4
             MethodCall = mk_call_method $1, $2, $3,
-                            lparen_t, args, rparen_t)
+                            lparen_t, Args, rparen_t)
 
-            begin_t, args, body, end_t = $5
+            begin_t, Args, body, end_t = $5
             result      = mk_block(MethodCall,
-                            begin_t, args, body, end_t) }
-      | BlockCall DotOrColon Operation2 CommandArgs do_block {
+                            begin_t, Args, body, end_t) }
+      | BlockCall DotOrColon Operation2 CommandArgs DoBlock {
             MethodCall = mk_call_method $1, $2, $3,
                             Nil, $4, Nil)
 
-            begin_t, args, body, end_t = $5
+            begin_t, Args, body, end_t = $5
             result      = mk_block(MethodCall,
-                            begin_t, args, body, end_t) }
+                            begin_t, Args, body, end_t) }
 
 MethodCall: Operation paren_args {
-            lparen_t, args, rparen_t = $2
+            lparen_t, Args, rparen_t = $2
             mk_call_method Nil, Nil, $1,
-                        lparen_t, args, rparen_t) }
+                        lparen_t, Args, rparen_t) }
       | Primary CallOp Operation2 opt_paren_args {
-            lparen_t, args, rparen_t = $4
+            lparen_t, Args, rparen_t = $4
             mk_call_method $1, $2, $3,
-                        lparen_t, args, rparen_t) }
+                        lparen_t, Args, rparen_t) }
       | Primary tCOLON2 Operation2 paren_args {
-            lparen_t, args, rparen_t = $4
+            lparen_t, Args, rparen_t = $4
             mk_call_method $1, $2, $3,
-                        lparen_t, args, rparen_t) }
+                        lparen_t, Args, rparen_t) }
       | Primary tCOLON2 operation3 {
             mk_call_method $1, $2, $3) }
       | Primary CallOp paren_args {
-            lparen_t, args, rparen_t = $3
+            lparen_t, Args, rparen_t = $3
             mk_call_method $1, $2, Nil,
-                        lparen_t, args, rparen_t) }
+                        lparen_t, Args, rparen_t) }
       | Primary tCOLON2 paren_args {
-            lparen_t, args, rparen_t = $3
+            lparen_t, Args, rparen_t = $3
             mk_call_method $1, $2, Nil,
-                        lparen_t, args, rparen_t) }
+                        lparen_t, Args, rparen_t) }
       | kSUPER paren_args {
-            lparen_t, args, rparen_t = $2
+            lparen_t, Args, rparen_t = $2
             mk_keyword_cmd(:super, $1,
-                        lparen_t, args, rparen_t) }
+                        lparen_t, Args, rparen_t) }
       | kSUPER {
             (mk_keyword_cmd :zsuper $1) }
       | Primary tLBRACK2 opt_call_args RBracket {
@@ -968,36 +963,25 @@ BraceBlock: tLCURLY {
         BraceBody tRCURLY {
             [ $1, *$3, $4 ]
             @context.pop }
-      | kDO {
-            @context.push(:block) }
-        do_body kEND {
-            [ $1, *$3, $4 ]
-            @context.pop }
+            | kDO {
+              @context. {        DoBody kEND { }            [ $1, *$3, $4 ]
+              @context.pop }
+              -}
 
-BraceBody:   {
-            @static_env.extend_dynamic }
-          opt_block_param Compstmt {
-            [ $2, $3 ]
+DoBody: OptBlockParam Bodystmt { undefined }-- { @static_env.extend_dynamic } { @lexer.cmdarg.push(false) } { result = [ val[2], val[3] ] @static_env.unextend @lexer.cmdarg.pop  }
 
-            @static_env.unextend }
+BraceBody: OptBlockParam Compstmt OptBlockParam Bodystmt { undefined } -- OptBlockParam Bodystmt { undefined } { [ $2, $3 ] @static_env.unextend  { @static_env.extend_dynamic }  @lexer.cmdarg.push(false) }
+     -- [ $3, $4 ] @static_env.unextend @lexer.cmdarg.pop }
 
-do_body:   {
-            @static_env.extend_dynamic } {
-            @lexer.cmdarg.push(false) }
-          opt_block_param bodystmt {
-            [ $3, $4 ]
-
-            @static_env.unextend
-            @lexer.cmdarg.pop }
-
-case_body: kWHEN args then Compstmt cases {
+{-
+case_body: kWHEN Args Then Compstmt cases {
             [ (mk_when $1, $2 $3 $4),
                         *$5 ] }
 
   cases: OptElse { [ $1 ] }
       | case_body
 
-opt_rescue: kRESCUE exc_list exc_var then Compstmt opt_rescue {
+opt_rescue: kRESCUE exc_list exc_var Then Compstmt opt_rescue {
             assoc_t, exc_var = $3
 
             if $2
@@ -1023,7 +1007,7 @@ opt_ensure: kENSURE Compstmt {
       | None
 
 literal: numeric
-      | symbol
+      | Symbol
       | dsym
 
 strings: string {
@@ -1115,17 +1099,15 @@ string_dvar: tGVAR {
       | backref
 
 
-symbol: tSYMBOL {
-            @lexer.state = :expr_end
-            mk_symbol($1) }
+Symbol: tSYMBOL { @lexer.state = :expr_end;  mk_symbol($1) }
 
   dsym: tSYMBEG xstring_contents tSTRING_END {
             @lexer.state = :expr_end
             (mk_symbol_compose $1 $2 $3) }
 
-numeric: simple_numeric {
+numeric: SimpleNumeric {
             $1 }
-      | tUNARY_NUM simple_numeric =tLOWEST {
+      | tUNARY_NUM SimpleNumeric =tLOWEST {
             if mk_respond_to? :negate
               # AST builder interface compatibility
               (mk_negate $1 $2)
@@ -1133,29 +1115,17 @@ numeric: simple_numeric {
               (mk_unary_num $1 $2)
             end }
 
-simple_numeric: tINTEGER {
-            @lexer.state = :expr_end
-            mk_integer($1) }
-      | tFLOAT {
-            @lexer.state = :expr_end
-            mk_float($1) }
-      | tRATIONAL {
-            @lexer.state = :expr_end
-            mk_rational($1) }
-      | tIMAGINARY {
-            @lexer.state = :expr_end
-            mk_complex($1) }
-
-user_variable: tIDENTIFIER {
-            mk_ident($1) }
-      | tIVAR {
-            mk_ivar($1) }
-      | tGVAR {
-            mk_gvar($1) }
-      | tCONSTANT {
-            mk_const($1) }
-      | tCVAR {
-            mk_cvar($1) }
+SimpleNumeric: tINTEGER { @lexer.state = :expr_end mk_integer($1) }
+  | tFLOAT { @lexer.state = :expr_end mk_float($1) }
+  | tRATIONAL { @lexer.state = :expr_end mk_rational($1) }
+  | tIMAGINARY { @lexer.state = :expr_end mk_complex($1) }
+-}
+UserVariable: tIDENTIFIER { mk_ident($1) }
+  | tIVAR { mk_ivar($1) }
+  | tGVAR { mk_gvar($1) }
+  | tCONSTANT { mk_const($1) }
+  | tCVAR { mk_cvar($1) }
+{-
 
 keyword_variable: kNIL {
             mk_Nil($1) }
@@ -1395,8 +1365,8 @@ operation3: tIDENTIFIER { $1 }
 DotOrColon: CallOp { $1 }
   | tCOLON2 { $1 }
 
-CallOp: tDOT { [Dot, undefined] } -- ($1 !! 2)
-  | tANDDOT { [Anddot, undefined] } -- ($1 !! 2)
+CallOp: tDOT { undefined } -- [Dot, ($1 !! 2)]
+  | tANDDOT { undefined } -- [Anddot, ($1 !! 2)]
 
 OptTerms: -- |
   -- | Terms OptNl
