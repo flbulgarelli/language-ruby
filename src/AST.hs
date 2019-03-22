@@ -23,11 +23,15 @@ data Term =
        | Or
        | Until
        | While
+       | Anddot
+       | Dot
        deriving (Eq, Show)
 
--- converts a list of expressions into a single expression
 
+mk_unary_op = undefined
+mk_kwoptarg = undefined
 mk_def_singleton = undefined
+-- converts a list of expressions into a single expression
 mkExpression = undefined
 mk_def_sclass = undefined
 mk_preexe = undefined
@@ -37,3 +41,6 @@ mk_loop_mod = undefined
 mkLogicalOp = undefined
 mk_rescue_body = undefined
 mk_not_op = undefined
+mk_binary_op = undefined
+mk_match_op = undefined
+mk_kwarg = undefined
