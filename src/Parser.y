@@ -451,9 +451,9 @@ rel_expr: Arg Relop Arg =tGT {
 
 aref_args: None
       | args Trailer
-      | args tCOMMA assocs Trailer {
+      | args tCOMMA Assocs Trailer {
             $1 << (mk_associate Nil $3 Nil) }
-      | assocs Trailer {
+      | Assocs Trailer {
             [ (mk_associate Nil $1 Nil) ] }
 
 ArgRhs: Arg =tOP_ASGN
@@ -473,20 +473,20 @@ opt_paren_args:
 opt_call_args: # nothing { [] }
       | call_args
       | args tCOMMA
-      | args tCOMMA assocs tCOMMA {
+      | args tCOMMA Assocs tCOMMA {
             $1 << (mk_associate Nil $3 Nil) }
-      | assocs tCOMMA {
+      | Assocs tCOMMA {
             [ (mk_associate Nil $1 Nil) ] }
 
 call_args: Command { [ $1 ] }
       | args opt_block_arg {
             $1.concat($2) }
-      | assocs opt_block_arg {
+      | Assocs opt_block_arg {
             [ (mk_associate Nil $1 Nil) ]
             result.concat($2) }
-      | args tCOMMA assocs opt_block_arg {
-            assocs = (mk_associate Nil $3 Nil)
-            $1 << assocs
+      | args tCOMMA Assocs opt_block_arg {
+            Assocs = (mk_associate Nil $3 Nil)
+            $1 << Assocs
             result.concat($4) }
       | block_arg {
  [ $1 ] }
@@ -590,8 +590,8 @@ Primary: literal
             (mk_const_global $1 $2) }
       | tLBRACK aref_args tRBRACK {
             (mk_array $1 $2 $3) }
-      | tLBRACE assoc_list tRCURLY { mk_associate $1 $2 $3 }
-      | KReturn { mk_keyword_cmd Return $1 }
+      | tLBRACE AssocList tRCURLY -- { mk_associate $1 $2 $3 }
+      KReturn { mkeyword_cmd Return $1 }
       | kYIELD tLPAREN2 call_args Rparen { mk_keyword_cmd Yield $1, $2, $3, $4) }
       | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1, $2, [], $3) }
       | kYIELD { mk_keyword_cmd Yield $1 }
@@ -701,7 +701,7 @@ Primary: literal
             @lexer.cond.pop
             @static_env.unextend
             @context.pop }
-      | kDEF singleton DotOrColon {
+      | kDEF Singleton DotOrColon {
             @lexer.state = :expr_fname }
           fname {
             @static_env.extend_static
@@ -777,11 +777,11 @@ FMargs: FMargList
             [ mk_restarg($1),
                         *$3 ] }
 
-block_args_tail: f_block_kwarg tCOMMA FKwrest opt_f_block_arg {
+block_args_tail: f_block_kwarg tCOMMA FKwrest OptFBlockArg {
             $1.concat($3).concat($4) }
-      | f_block_kwarg opt_f_block_arg {
+      | f_block_kwarg OptFBlockArg {
             $1.concat($2) }
-      | FKwrest opt_f_block_arg {
+      | FKwrest OptFBlockArg {
             $1.concat($2) }
       | FBlockArg { [ $1 ] }
 
@@ -1205,11 +1205,11 @@ f_arglist: tLPAREN2 f_args Rparen {
             @lexer.in_kwarg = $1
             (mk_args Nil $2 Nil) }
 
-args_tail: FKwarg tCOMMA FKwrest opt_f_block_arg {
+args_tail: FKwarg tCOMMA FKwrest OptFBlockArg {
             $1.concat($3).concat($4) }
-      | FKwarg opt_f_block_arg {
+      | FKwarg OptFBlockArg {
             $1.concat($2) }
-      | FKwrest opt_f_block_arg {
+      | FKwrest OptFBlockArg {
             $1.concat($2) }
       | FBlockArg { [ $1 ] }
 
@@ -1361,20 +1361,18 @@ FBlockArg: blkarg_mark tIDENTIFIER {
 
             (mk_blockarg $1 $2) }
 
-opt_f_block_arg: tCOMMA FBlockArg { [ $2 ] }
-      | { [] }
+OptFBlockArg: tCOMMA FBlockArg { [ $2 ] } | { [] }
 
-singleton: VarRef
-      | tLPAREN2 Expr Rparen { $2 }
+Singleton: VarRef
+  | tLPAREN2 Expr Rparen { $2 }
 
-assoc_list: # nothing { [] }
-      | assocs Trailer
+AssocList: -- # nothing { [] }
+  Assocs Trailer
 
-assocs: assoc { [ $1 ] }
-      | assocs tCOMMA assoc {
-            $1 ++ [$3] }
+Assocs: Assoc { [ $1 ] }
+  | Assocs tCOMMA Assoc { $1 ++ [$3] }
 
-assoc: Arg tASSOC Arg { mk_pair $1 $2 $3 }
+Assoc: Arg tASSOC Arg { mk_pair $1 $2 $3 }
     | tLABEL Arg { mk_pair_keyword $1 $2 }
     | tSTRING_BEG string_contents tLABEL_END Arg { mk_pair_quoted $1, $2 $3 $4 }
     | tDSTAR Arg { mk_kwsplat $1 $2 }
