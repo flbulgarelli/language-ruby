@@ -208,8 +208,8 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
   --  | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
   --  | kALIAS tGVAR tBACK_REF { (mk_alias $1 mk_gvar($2) mk_back_ref($3)) }
   --  | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
-  --  | kUNDEF UndefList { (mk_undef_method $1 $2) }
-    Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
+    kUNDEF UndefList { (mk_undef_method $1 $2) }
+    | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
     | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $2 $3 }
     | Stmt kWHILE_MOD Expr { mk_loop_mod While $1 $2 $3 }
     | Stmt kUNTIL_MOD Expr { mk_loop_mod Until $1 $2 $3 }
@@ -352,21 +352,22 @@ cpath: tCOLON3 cname { (mk_const_global $1 $2) }
     | cname { mk_const($1) }
     | Primary tCOLON2 cname { (mk_const_fetch $1 $2 $3) }
 
+-}
 Fname: tIDENTIFIER { undefined }
   | tCONSTANT { undefined }
   | tFID { undefined }
   | Op { undefined }
   | reswords { undefined }
 
-fsym: Fname { mk_symbol $1 }
+Fsym: Fname { mk_symbol $1 }
   | Symbol { $1 }
 
-Fitem: fsym { $1 }
+Fitem: Fsym { $1 }
   | Dsym { $1 }
 
 UndefList: Fitem { [ $1 ] }
-  | UndefList tCOMMA Fitem { $1 << $4 }
--}
+  | UndefList tCOMMA Fitem { $1 ++ [$3] }
+
 
 Op:   tPIPE   {$1} | tCARET {$1} | tAMPER2 {$1} | tCMP {$1} | tEQ    {$1} | tEQQ         {$1}
   |   tMATCH  {$1} | tNMATCH{$1} | tGT     {$1} | tGEQ {$1} | tLT    {$1} | tLEQ         {$1}

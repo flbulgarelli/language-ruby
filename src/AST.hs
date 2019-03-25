@@ -145,3 +145,5 @@ mk_nth_ref = undefined
 
 mk_assignable = undefined
 mk_accessible = undefined
+
+mk_undef_method = undefined
