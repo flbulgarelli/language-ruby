@@ -237,8 +237,7 @@ CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
                         mk_call_method
                           $1, $2, $3),
                         $4, $5) }
-      | backref tOP_ASGN CommandRhs {
-            (mk_op_assign $1 $2 $3) }
+      | Backref tOP_ASGN CommandRhs { mk_op_assign $1 $2 $3 }
 
 CommandRhs: CommandCall =tOP_ASGN
       | CommandCall kRESCUE_MOD Stmt { mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
@@ -336,7 +335,7 @@ MlhsNode: user_variable { mk_assignable $1  }
       | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
       | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $2 $3) }
       | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
-      | backref { mk_assignable $1 }
+      | Backref { mk_assignable $1 }
 
 Lhs: user_variable { mk_assignable $1 }
   | keyword_variable { mk_assignable $1 }
@@ -346,7 +345,7 @@ Lhs: user_variable { mk_assignable $1 }
   | Primary CallOp tCONSTANT { (mk_attr_asgn $1 $2 $3) }
   | Primary tCOLON2 tCONSTANT { mk_assignable((mk_const_fetch $1 $2 $3)) }
   | tCOLON3 tCONSTANT { mk_assignable((mk_const_global $1 $2)) }
-  | backref { mk_assignable $1 }
+  | Backref { mk_assignable $1 }
 
 cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
     | tCONSTANT
@@ -355,23 +354,22 @@ cpath: tCOLON3 cname { (mk_const_global $1 $2) }
     | cname { mk_const($1) }
     | Primary tCOLON2 cname { (mk_const_fetch $1 $2 $3) }
 
-fname: tIDENTIFIER | tCONSTANT | tFID
-    | Op
-    | reswords
+Fname: tIDENTIFIER { undefined }
+  | tCONSTANT { undefined }
+  | tFID { undefined }
+  | Op { undefined }
+  | reswords { undefined }
 
-fsym: fname {
-          mk_symbol($1) }
-    | Symbol
+fsym: Fname { mk_symbol $1 }
+  | Symbol { $1 }
 
-Fitem: fsym
-    | dsym
+Fitem: fsym { $1 }
+  | Dsym { $1 }
 
 UndefList: Fitem { [ $1 ] }
-      | UndefList tCOMMA {
-            @lexer.state = :expr_fname }
-          Fitem {
-            $1 << $4 }
+  | UndefList tCOMMA Fitem { $1 << $4 }
 -}
+
 Op:   tPIPE   {$1} | tCARET {$1} | tAMPER2 {$1} | tCMP {$1} | tEQ    {$1} | tEQQ         {$1}
   |   tMATCH  {$1} | tNMATCH{$1} | tGT     {$1} | tGEQ {$1} | tLT    {$1} | tLEQ         {$1}
   |   tNEQ    {$1} | tLSHFT {$1} | tRSHFT  {$1} | tPLUS{$1} | tMINUS {$1} | tSTAR2       {$1}
@@ -400,7 +398,7 @@ Arg: -- Lhs tEQL ArgRhs { (mk_assign $1 $2 $3) }
  --  | tCOLON3 tCONSTANT tOP_ASGN ArgRhs {
  --       const  = mk_const_op_assignable((mk_const_global $1 $2))
  --       (mk_op_assign const $3 $4) }
- --  | backref tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
+ --  | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $2 $3) }
  --  | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
  --  | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
  --  | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
@@ -529,7 +527,7 @@ BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
 OptBlockArg: tCOMMA BlockArg { [ $2 ] }
   -- | # nothing { [] }
 
-      {-
+{-
 
 
   Args: Arg { [ $1 ] }
@@ -683,7 +681,7 @@ Primary: literal
 
             @lexer.cmdarg.pop
             @static_env.unextend }
-      | kDEF fname {
+      | kDEF Fname {
             @static_env.extend_static
             @lexer.cmdarg.push(false)
             @lexer.cond.push(false)
@@ -698,7 +696,7 @@ Primary: literal
             @context.pop }
       | kDEF Singleton DotOrColon {
             @lexer.state = :expr_fname }
-          fname {
+          Fname {
             @static_env.extend_static
             @lexer.cmdarg.push(false)
             @lexer.cond.push(false)
@@ -1006,51 +1004,44 @@ opt_ensure: kENSURE Compstmt {
             [ $1, $2 ] }
       | None
 
-literal: numeric
-      | Symbol
-      | dsym
+-}
+literal: Numeric { $1 }
+  | Symbol { $1 }
+  | Dsym { $1 }
 
-strings: string {
-            (mk_string_compose Nil $1 Nil) }
+Strings: String { mk_string_compose $1 }
 
-string: string1 { [ $1 ] }
-      | string string1 {
-            $1 << $2 }
+String: String1 { [ $1 ] }
+  | String String1 { $1 ++ [$2] }
 
-string1: tSTRING_BEG string_contents tSTRING_END {
-            string = (mk_string_compose $1 $2 $3)
-            (mk_dedent_string string @lexer.dedent_level) }
-      | tSTRING {
-            string = mk_string($1)
-            (mk_dedent_string string @lexer.dedent_level) }
-      | tCHARACTER {
-            mk_character($1) }
+String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
+  | tSTRING { mk_string $1 }
+  | tCHARACTER { mk_character $1 }
 
-xstring: tXSTRING_BEG xstring_contents tSTRING_END {
-            string = (mk_xstring_compose $1 $2 $3)
-            (mk_dedent_string string @lexer.dedent_level) }
+Words: tWORDS_BEG WordList tSTRING_END { mk_words_compose $1 $2 $3 }
+
+WordList: -- # nothing { [] }
+  WordList Word tSPACE { $1 ++ [mk_word $2] }
+
+Word: StringContent { [ $1 ] }
+  | Word StringContent { $1 ++ [$2] }
+
+Symbols: tSYMBOLS_BEG SymbolList tSTRING_END { mk_symbols_compose $1 $2 $3 }
+
+SymbolList: -- # nothing { [] }
+  SymbolList Word tSPACE { $1 ++ [mk_word $2] }
+
+Xstring: tXSTRING_BEG XStringContents tSTRING_END { mk_xstring_compose $2 }
+
+XStringContents: -- # nothing { [] }
+  XStringContents StringContent { $1 ++ [$2] }
+
+{-
 
 regexp: tREGEXP_BEG regexp_contents tSTRING_END tREGEXP_OPT {
             opts   = mk_regexp_options($4)
             (mk_regexp_compose $1, $2 $3 opts) }
 
-  words: tWORDS_BEG WordList tSTRING_END {
-            (mk_words_compose $1 $2 $3) }
-
-WordList: # nothing { [] }
-      | WordList word tSPACE {
-            $1 << mk_word($2) }
-
-word: StringContent { [ $1 ] }
-      | word StringContent {
-            $1 << $2 }
-
-symbols: tSYMBOLS_BEG symbol_list tSTRING_END {
-            (mk_symbols_compose $1 $2 $3) }
-
-symbol_list: # nothing { [] }
-      | symbol_list word tSPACE {
-            $1 << mk_word($2) }
 
 qwords: tQWORDS_BEG qword_list tSTRING_END {
             (mk_words_compose $1 $2 $3) }
@@ -1066,65 +1057,41 @@ qsym_list: # nothing { [] }
       | qsym_list tSTRING_CONTENT tSPACE {
             $1 << mk_symbol_internal($2) }
 
-string_contents: # nothing { [] }
-      | string_contents StringContent {
-            $1 << $2 }
-
-xstring_contents: # nothing { [] }
-      | xstring_contents StringContent {
-            $1 << $2 }
 
 regexp_contents: # nothing { [] }
       | regexp_contents StringContent {
             $1 << $2 }
-
-StringContent: tSTRING_CONTENT {
-            mk_string_internal($1) }
-      | tSTRING_DVAR string_dvar { $2 }
-      | tSTRING_DBEG {
-            @lexer.cmdarg.push(false)
-            @lexer.cond.push(false) }
-          Compstmt tSTRING_DEND {
-            @lexer.cmdarg.pop
-            @lexer.cond.pop
-
-            (mk_begin $1 $3 $4) }
-
-string_dvar: tGVAR {
-            mk_gvar($1) }
-      | tIVAR {
-            mk_ivar($1) }
-      | tCVAR {
-            mk_cvar($1) }
-      | backref
-
-
-Symbol: tSYMBOL { @lexer.state = :expr_end;  mk_symbol($1) }
-
-  dsym: tSYMBEG xstring_contents tSTRING_END {
-            @lexer.state = :expr_end
-            (mk_symbol_compose $1 $2 $3) }
-
-numeric: SimpleNumeric {
-            $1 }
-      | tUNARY_NUM SimpleNumeric =tLOWEST {
-            if mk_respond_to? :negate
-              # AST builder interface compatibility
-              (mk_negate $1 $2)
-            else
-              (mk_unary_num $1 $2)
-            end }
-
-SimpleNumeric: tINTEGER { @lexer.state = :expr_end mk_integer($1) }
-  | tFLOAT { @lexer.state = :expr_end mk_float($1) }
-  | tRATIONAL { @lexer.state = :expr_end mk_rational($1) }
-  | tIMAGINARY { @lexer.state = :expr_end mk_complex($1) }
 -}
-UserVariable: tIDENTIFIER { mk_ident($1) }
-  | tIVAR { mk_ivar($1) }
-  | tGVAR { mk_gvar($1) }
-  | tCONSTANT { mk_const($1) }
-  | tCVAR { mk_cvar($1) }
+
+StringContents: -- # nothing { [] }
+  StringContents StringContent { $1 ++ [$2] }
+
+StringContent: tSTRING_CONTENT { mk_string_internal $1 }
+  | tSTRING_DVAR StringDvar { $2 }
+  | tSTRING_DBEG Compstmt tSTRING_DEND { mk_begin $1 $2 $3 } -- { @lexer.cmdarg.push(false); @lexer.cond.push(false); @lexer.cmdarg.pop @lexer.cond.pop
+
+StringDvar: tGVAR { mk_gvar $1 }
+  | tIVAR { mk_ivar $1 }
+  | tCVAR { mk_cvar $1 }
+  | Backref { undefined }
+
+Symbol: tSYMBOL { mk_symbol($1) }
+
+Dsym: tSYMBEG XStringContents tSTRING_END { mk_symbol_compose $1 $2 $3 }
+
+Numeric: SimpleNumeric { $1 }
+  | tUNARY_NUM SimpleNumeric { mk_unary_num $1 $2 }
+
+SimpleNumeric: tINTEGER { mk_integer $1 }
+  | tFLOAT { mk_float $1 }
+-- | tRATIONAL { mk_rational($1) }
+  | tIMAGINARY { mk_complex $1 }
+
+UserVariable: tIDENTIFIER { mk_ident $1 }
+  | tIVAR { mk_ivar $1 }
+  | tGVAR { mk_gvar $1 }
+  | tCONSTANT { mk_const $1 }
+  | tCVAR { mk_cvar $1 }
 {-
 
 keyword_variable: kNIL {
@@ -1151,12 +1118,10 @@ var_lhs: user_variable {
             mk_assignable $1 }
       | keyword_variable {
             mk_assignable $1 }
-
-backref: tNTH_REF {
-            mk_nth_ref($1) }
-      | tBACK_REF {
-            mk_back_ref($1) }
-
+-}
+Backref: tNTH_REF { mk_nth_ref $1 }
+  | tBACK_REF { mk_back_ref $1 }
+{-
 superclass: tLT {
             @lexer.state = :Expr }
           Expr Term {
@@ -1344,7 +1309,7 @@ Assocs: Assoc { [ $1 ] }
 
 Assoc: Arg tASSOC Arg { mk_pair $1 $2 $3 }
     | tLABEL Arg { mk_pair_keyword $1 $2 }
-    | tSTRING_BEG string_contents tLABEL_END Arg { mk_pair_quoted $1, $2 $3 $4 }
+    | tSTRING_BEG StringContents tLABEL_END Arg { mk_pair_quoted $1, $2 $3 $4 }
     | tDSTAR Arg { mk_kwsplat $1 $2 }
 
 -}

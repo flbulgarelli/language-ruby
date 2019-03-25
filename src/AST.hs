@@ -107,3 +107,39 @@ mk_complex :: Token -> t1
 mk_complex = undefined
 
 mk_unary_num = undefined
+
+mk_back_ref = undefined
+
+mk_symbols_compose = undefined
+
+mk_string_compose :: Term -> t1
+mk_string_compose = undefined
+
+mk_string :: Token -> t1
+mk_string = undefined
+
+mk_character :: Token -> t1
+mk_character = undefined
+
+mk_words_compose :: Token -> t -> Token -> t196
+mk_words_compose = undefined
+
+mk_word :: t194 -> a
+mk_word = undefined
+
+mk_xstring_compose = undefined
+
+mk_string_internal :: Token -> t1
+mk_string_internal = undefined
+
+mk_begin :: Token -> t -> Token -> t196
+mk_begin = undefined
+
+mk_symbol :: Token -> t1
+mk_symbol = undefined
+
+mk_symbol_compose :: Token -> t -> Token -> t196
+mk_symbol_compose = undefined
+
+mk_nth_ref :: Token -> t1
+mk_nth_ref = undefined
