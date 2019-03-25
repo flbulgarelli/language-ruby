@@ -27,6 +27,7 @@ data Term =
        | Anddot
        | Dot
        | Cbase
+       | Alias Term Term
        | RArray [Term]
        | Masgn Mlhs Term
        | Send Term String Term
