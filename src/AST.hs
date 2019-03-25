@@ -112,7 +112,6 @@ mk_back_ref = undefined
 
 mk_symbols_compose = undefined
 
-mk_string_compose :: Term -> t1
 mk_string_compose = undefined
 
 mk_string :: Token -> t1
@@ -121,7 +120,6 @@ mk_string = undefined
 mk_character :: Token -> t1
 mk_character = undefined
 
-mk_words_compose :: Token -> t -> Token -> t196
 mk_words_compose = undefined
 
 mk_word :: t194 -> a
@@ -143,3 +141,7 @@ mk_symbol_compose = undefined
 
 mk_nth_ref :: Token -> t1
 mk_nth_ref = undefined
+
+
+mk_assignable = undefined
+mk_accessible = undefined
