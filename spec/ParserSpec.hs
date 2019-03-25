@@ -67,17 +67,17 @@ spec = do
     test "defined?" "defined?(foo)" (Defined (Lvar "foo"))
     test "defined?" "defined? @foo" (Defined (Ivar "@foo"))
 
-    test "lvasgn" "var = 10; var" (Begin [Lvasgn "var" (Just (RInt 10)), Lvar "var"])
-    test "ivasgn" "@var = 10"  (Ivasgn "@var" (Just (RInt 10)))
-    test "cvasgn" "@@var = 10"  (Cvasgn "@@var" (Just (RInt 10)))
-    test "gvasgn" "$var = 10"  (Gvasgn "$var" (Just (RInt 10)))
+    test "lvasgn" "var = 10; var" (Begin [lvasgn "var" (RInt 10), Lvar "var"])
+    test "ivasgn" "@var = 10"  (ivasgn "@var" (RInt 10))
+    test "cvasgn" "@@var = 10"  (cvasgn "@@var" (RInt 10))
+    test "gvasgn" "$var = 10"  (gvasgn "$var" (RInt 10))
 
-    test "asgn_cmd" "foo = m foo"  (Lvasgn "foo" (Just (Send Nil "m" (Lvar "foo"))))
-    test "asgn_cmd" "foo = bar = m foo"  (Lvasgn "foo" (Just (Lvasgn "bar" (Just (Send Nil "m" (Lvar "foo"))))))
+    test "asgn_cmd" "foo = m foo"  (lvasgn "foo" (Send Nil "m" (Lvar "foo")))
+    test "asgn_cmd" "foo = bar = m foo"  (lvasgn "foo" (lvasgn "bar" (Send Nil "m" (Lvar "foo"))))
 
-    test "casgn_toplevel" "::Foo = 10" (Casgn Cbase "Foo" (Just (RInt 10)))
-    test "casgn_scoped" "Bar::Foo = 10" (Casgn (Const Nil "Bar") "Foo" (Just (RInt 10)))
-    test "casgn_unscoped" "Foo = 10" (Casgn Nil "Foo" (Just (RInt 10)))
+    test "casgn_toplevel" "::Foo = 10" (casgn Cbase "Foo"  (RInt 10))
+    test "casgn_scoped" "Bar::Foo = 10" (casgn (Const Nil "Bar") "Foo"  (RInt 10))
+    test "casgn_unscoped" "Foo = 10" (casgn Nil "Foo" (RInt 10))
 
     test "masgn" "foo, bar = 1, 2"   (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
     test "masgn" "(foo, bar) = 1, 2" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
@@ -157,3 +157,19 @@ spec = do
     test "asgn_mrhs" "foo = bar, 1" (Lvasgn "foo" (Just (RArray [Lvar "bar", RInt 1])))
     test "asgn_mrhs" "foo = *bar" (Lvasgn "foo" (Just (RArray [Splat (Just(Lvar "bar"))])))
     test "asgn_mrhs" "foo = baz, *bar" (Lvasgn "foo" (Just (RArray [Lvar "baz", Splat (Just (Lvar "bar"))])))
+
+
+    test "def" "def foo; end" (Def "foo" (Args []) Nil)
+    test "def" "def String; end" (Def "String" (Args []) Nil)
+    test "def" "def String=; end" (Def "String=" (Args []) Nil)
+    test "def" "def until; end" (Def "until" (Args []) Nil)
+    test "def" "def BEGIN; end" (Def "BEGIN" (Args []) Nil)
+    test "def" "def END; end" (Def "END" (Args []) Nil)
+
+    test "defs" "def self.foo; end" (Defs Self "foo" (Args []) Nil)
+    test "defs" "def self::foo; end" (Defs Self "foo" (Args []) Nil)
+    test "defs" "def (foo).foo; end" (Defs (Lvar "foo") "foo" (Args []) Nil)
+    test "defs" "def String.foo; end" (Defs (Const Nil "String") "foo" (Args []) Nil)
+    test "defs" "def String::foo; end" (Defs (Const Nil "String") "foo" (Args []) Nil)
+
+    test "undef" "undef foo, :bar, :\"foo#{1}\"" (Undef (Sym "foo") (Sym "bar") (Dsym (Str "foo") (Begin [RInt 1])))

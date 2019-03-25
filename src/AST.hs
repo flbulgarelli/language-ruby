@@ -28,8 +28,7 @@ data Term =
        | Dot
        | Cbase
        | RArray [Term]
-       | Mlhs [Term]
-       | Masgn Term Term
+       | Masgn Mlhs Term
        | Send Term String Term
        | Splat (Maybe Term)
        | Lvasgn String (Maybe Term) -- variables
@@ -46,8 +45,21 @@ data Term =
        | Encoding
        | NthRef Integer
        | BackRef String
+       | Defs Term String Args Term
+       | Def String Args Term
+       | Sym String
+       | Dsym Term Term
+       | Undef Term Term Term
        deriving (Eq, Show)
 
+data Mlhs = Mlhs [Term] deriving (Eq, Show)
+data Args = Args [Term] deriving (Eq, Show)
+
+lvasgn name = Lvasgn name . Just
+ivasgn name = Ivasgn name . Just
+cvasgn name = Cvasgn name . Just
+gvasgn name = Gvasgn name . Just
+casgn name parent = Casgn name parent . Just
 
 mk_unary_op = undefined
 mk_kwoptarg = undefined
