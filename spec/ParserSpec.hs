@@ -20,7 +20,7 @@ spec = do
 
     test "nil" "nil" Nil
 
-    test "nil_expression" "()" Begin
+    test "nil_expression" "()" (Begin [])
     test "nil_expression" "begin end" KWBegin
 
     test "true" "true" RTrue
@@ -48,3 +48,112 @@ spec = do
 
     test "string_plain" "'foobar'" (Str "foobar")
     test "string_plain" "%q(foobar)" (Str "foobar")
+
+    test "self" "self" Self
+
+    test "lvar" "foo" (Lvar "foo")
+    test "ivar" "@foo" (Ivar "@foo")
+    test "cvar" "@@foo" (Cvar "@@foo")
+    test "gvar" "$foo" (Gvar "$foo")
+
+    test "back_ref" "$+" (BackRef "$+")
+    test "nth_ref" "$10" (NthRef 10)
+    test "const_toplevel" "::Foo" (Const Cbase "Foo")
+    test "const_scoped" "Bar::Foo" (Const (Const Nil "Bar") "Foo")
+    test "const_unscoped" "Foo" (Const Nil "Foo")
+    test "const__ENCODING__" "__ENCODING__" Encoding
+
+    test "defined?" "defined? foo" (Defined (Lvar "foo"))
+    test "defined?" "defined?(foo)" (Defined (Lvar "foo"))
+    test "defined?" "defined? @foo" (Defined (Ivar "@foo"))
+
+    test "lvasgn" "var = 10; var" (Begin [Lvasgn "var" (Just (RInt 10)), Lvar "var"])
+    test "ivasgn" "@var = 10"  (Ivasgn "@var" (Just (RInt 10)))
+    test "cvasgn" "@@var = 10"  (Cvasgn "@@var" (Just (RInt 10)))
+    test "gvasgn" "$var = 10"  (Gvasgn "$var" (Just (RInt 10)))
+
+    test "asgn_cmd" "foo = m foo"  (Lvasgn "foo" (Just (Send Nil "m" (Lvar "foo"))))
+    test "asgn_cmd" "foo = bar = m foo"  (Lvasgn "foo" (Just (Lvasgn "bar" (Just (Send Nil "m" (Lvar "foo"))))))
+
+    test "casgn_toplevel" "::Foo = 10" (Casgn Cbase "Foo" (Just (RInt 10)))
+    test "casgn_scoped" "Bar::Foo = 10" (Casgn (Const Nil "Bar") "Foo" (Just (RInt 10)))
+    test "casgn_unscoped" "Foo = 10" (Casgn Nil "Foo" (Just (RInt 10)))
+
+    test "masgn" "foo, bar = 1, 2"   (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
+    test "masgn" "(foo, bar) = 1, 2" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
+    test "masgn" "foo, bar, baz = 1, 2" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing, Lvasgn "baz" Nothing]) (RArray [RInt 1, RInt 2]))
+
+    test "masgn_splat" "@foo, @@bar = *foo" (Masgn (Mlhs [Ivasgn "@foo" Nothing, Cvasgn "@@bar" Nothing]) (RArray [Splat (Just (Lvar "foo"))]))
+    test "masgn_splat" "a, b = *foo, bar"   (Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (RArray [Splat (Just (Lvar "foo")), Lvar "bar"]))
+    test "masgn_splat" "a, *b = bar"        (Masgn (Mlhs [Lvasgn "a" Nothing, Splat (Just (Lvasgn "b" Nothing))]) (Lvar "bar"))
+    test "masgn_splat" "a, *b, c = bar"     (Masgn (Mlhs [Lvasgn "a" Nothing, Splat (Just (Lvasgn "b" Nothing)), Lvasgn "c" Nothing]) (Lvar "bar"))
+
+    test "masgn_splat" "a, * = bar"         (Masgn (Mlhs [Lvasgn "a" Nothing, Splat Nothing]) (Lvar "bar"))
+    test "masgn_splat" "a, *, c = bar"      (Masgn (Mlhs [Lvasgn "a" Nothing, Splat Nothing, Lvasgn "c" Nothing]) (Lvar "bar"))
+    test "masgn_splat" "*b = bar"           (Masgn (Mlhs [Splat (Just (Lvasgn "b" Nothing))]) (Lvar "bar"))
+    test "masgn_splat" "*b, c = bar"        (Masgn (Mlhs [Splat (Just (Lvasgn "b" Nothing)), Lvasgn "c" Nothing]) (Lvar "bar"))
+    test "masgn_splat" "* = bar"            (Masgn (Mlhs [Splat Nothing]) (Lvar "bar"))
+    test "masgn_splat" "*, c, d = bar"      (Masgn (Mlhs [Splat Nothing, Lvasgn "c" Nothing, Lvasgn "d" Nothing]) (Lvar "bar"))
+
+  --  test "masgn_nested" (
+  --     s(:masgn,
+  --       s(:mlhs,
+  --         s(:lvasgn, :a),
+  --         s(:mlhs,
+  --           s(:lvasgn, :b),
+  --           s(:lvasgn, :c))),
+  --       s(:lvar, :foo)),
+  --     %q{a, (b, c) = foo},
+
+  -- test "masgn_nested" "((b, )) = foo" (
+  --     s(:masgn,
+  --       s(:mlhs,
+  --         s(:lvasgn, :b)),
+  --       s(:lvar, :foo)),
+
+  -- test "masgn_attr" (
+  --     s(:masgn,
+  --       s(:mlhs,
+  --         s(:send, s(:self), :a=),
+  --         s(:indexasgn, s(:self), s(:int, 1), s(:int, 2))),
+  --       s(:lvar, :foo)),
+  --     %q{self.a, self[1, 2] = foo},
+  --     %q{~~~~~~ expression (mlhs.send)
+  --       |     ~ selector (mlhs.send)
+  --       |            ^ begin (mlhs.indexasgn)
+  --       |                 ^ end (mlhs.indexasgn)
+  --       |        ~~~~~~~~~~ expression (mlhs.indexasgn)})
+
+  -- test "masgn_attr" "self::a, foo = foo" (
+  --     s(:masgn,
+  --       s(:mlhs,
+  --         s(:send, s(:self), :a=),
+  --         s(:lvasgn, :foo)),
+  --       s(:lvar, :foo)),
+
+  -- test "masgn_attr" "self.A, foo = foo" (
+  --     s(:masgn,
+  --       s(:mlhs,
+  --         s(:send, s(:self), :A=),
+  --         s(:lvasgn, :foo)),
+  --       s(:lvar, :foo)),
+
+  -- test "masgn_const" "self::A, foo = foo" (
+  --     s(:masgn,
+  --       s(:mlhs,
+  --         s(:casgn, s(:self), :A),
+  --         s(:lvasgn, :foo)),
+  --       s(:lvar, :foo)),
+
+  -- test "masgn_const" "::A, foo = foo" (
+  --     s(:masgn,
+  --       s(:mlhs,
+  --         s(:casgn, s(:cbase), :A),
+  --         s(:lvasgn, :foo)),
+  --       s(:lvar, :foo)),
+
+    test "masgn_cmd" "foo, bar = m foo" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (Send Nil "m" (Lvar "foo")))
+
+    test "asgn_mrhs" "foo = bar, 1" (Lvasgn "foo" (Just (RArray [Lvar "bar", RInt 1])))
+    test "asgn_mrhs" "foo = *bar" (Lvasgn "foo" (Just (RArray [Splat (Just(Lvar "bar"))])))
+    test "asgn_mrhs" "foo = baz, *bar" (Lvasgn "foo" (Just (RArray [Lvar "baz", Splat (Just (Lvar "bar"))])))

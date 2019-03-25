@@ -8,7 +8,7 @@ import Lexer (Token)
 
 data Term =
        Empty
-       | Begin
+       | Begin [Term]
        | KWBegin
        | Nil
        | RTrue
@@ -26,6 +26,26 @@ data Term =
        | While
        | Anddot
        | Dot
+       | Cbase
+       | RArray [Term]
+       | Mlhs [Term]
+       | Masgn Term Term
+       | Send Term String Term
+       | Splat (Maybe Term)
+       | Lvasgn String (Maybe Term) -- variables
+       | Lvar String
+       | Ivasgn String (Maybe Term) -- instance variables
+       | Ivar String
+       | Cvasgn String (Maybe Term) -- class variable
+       | Cvar String
+       | Gvasgn String (Maybe Term) -- global variables
+       | Gvar String
+       | Casgn Term String (Maybe Term) -- constants
+       | Const Term String
+       | Defined Term
+       | Encoding
+       | NthRef Integer
+       | BackRef String
        deriving (Eq, Show)
 
 
