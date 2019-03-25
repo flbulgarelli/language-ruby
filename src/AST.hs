@@ -97,3 +97,13 @@ mk_const = undefined
 mk_cvar :: Token -> t1
 mk_cvar = undefined
 
+mk_integer :: Token -> t1
+mk_integer = undefined
+
+mk_float :: Token -> t1
+mk_float = undefined
+
+mk_complex :: Token -> t1
+mk_complex = undefined
+
+mk_unary_num = undefined

@@ -3,6 +3,7 @@ module Lexer (Token(..),P,evalP,lexer) where
 import Control.Monad.State
 import Control.Monad.Error
 import Data.Word
+import Codec.Binary.UTF8.String as UTF8 (decode)
 }
 
 
@@ -57,14 +58,22 @@ $not_double_quote = [. \n] # \"
 
 tokens :-
 $white+			;
-true			  {KTRUE}
-false		  	{KFALSE}
-nil 		  	{KNIL}
+true			  {symbolToken KTRUE}
+false		  	{symbolToken KFALSE}
+nil 		  	{symbolToken KNIL}
 <0> {
-   ' @short_str_item_single* ' {TSTRING ""}
-   \" @short_str_item_double* \" {TSTRING ""}
+   ' @short_str_item_single* ' { token TSTRING read }
+   \" @short_str_item_double* \" { token TSTRING read }
 }
 
+<0> {
+   @float_number { token TFLOAT readFloat }
+   $non_zero_digit $digit* { token TINTEGER read }
+   (@float_number | @int_part) (j | J) { token TIMAGINARY (readFloat . init) }
+   0+ { token TINTEGER read }
+   0 (o | O) $oct_digit+ { token TINTEGER read }
+   0 (x | X) $hex_digit+ { token TINTEGER read }
+}
 
 {
 data Token =
@@ -127,8 +136,8 @@ data Token =
   | TNTH_REF
   | TBACK_REF
   | TSTRING_CONTENT
-  | TINTEGER
-  | TFLOAT
+  | TINTEGER Int
+  | TFLOAT Double
   | TUPLUS
   | TUMINUS
   | TUNARY_NUM
@@ -206,7 +215,7 @@ data Token =
   | TLAMBEG
   | TCHARACTER
   | TRATIONAL
-  | TIMAGINARY
+  | TIMAGINARY Double
   | TLABEL_END
   | TANDDOT
   | TMETHREF
@@ -239,12 +248,30 @@ readToken = do
 	   	AlexSkip inp' _ -> do
 			  put inp'
 			  readToken
-	   	AlexToken inp' _ tk -> do
+	   	AlexToken inp' _ action -> do
 			  put inp'
-			  return tk
+			  (action (decode s))
 
 -- The lexer function to be passed to Happy
 lexer::(Token -> P a)->P a
 lexer cont = readToken >>= cont
+
+----------
+
+type Action = String -> P Token
+
+readFloat :: String -> Double
+readFloat str@('.':cs) = read ('0':readFloatRest str)
+readFloat str = read (readFloatRest str)
+readFloatRest :: String -> String
+readFloatRest [] = []
+readFloatRest ['.'] = ".0"
+readFloatRest (c:cs) = c : readFloatRest cs
+
+token :: (a -> Token) -> (String -> a) -> Action
+token mkToken read str = return $ mkToken (read str)
+
+symbolToken :: Token -> Action
+symbolToken t _ = return t
 
 }
