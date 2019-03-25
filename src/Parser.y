@@ -223,7 +223,7 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
 
 {-
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
-      | var_lhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
+      | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
       | Primary tLBRACK2 opt_call_args RBracket tOP_ASGN CommandRhs {
             mk_op_assign(
                         mk_index(
@@ -306,29 +306,27 @@ MlhsInner: MlhsBasic { mk_multi_lhs Nil $1 Nil }
       | tLPAREN MlhsInner Rparen { mk_multi_lhs $1 $2 $3 }
 
 MlhsBasic: MlhsHead
-      | MlhsHead mlhs_item { $1. push($2) }
+      | MlhsHead MlhsItem { $1. push($2) }
       | MlhsHead tSTAR MlhsNode { $1. push((mk_splat $2 $3)) }
-      | MlhsHead tSTAR MlhsNode tCOMMA mlhs_post { $1. push((mk_splat $2 $3)). concat($5) }
+      | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { $1. push((mk_splat $2 $3)). concat($5) }
       | MlhsHead tSTAR { $1. push(mk_splat($2)) }
-      | MlhsHead tSTAR tCOMMA mlhs_post { $1. push(mk_splat($2)). concat($4) }
+      | MlhsHead tSTAR tCOMMA MlhsPost { $1. push(mk_splat($2)). concat($4) }
       | tSTAR MlhsNode { [ mk_splat $1 $2 ] }
-      | tSTAR MlhsNode tCOMMA mlhs_post { [ (mk_splat $1 $2), *$4 ] }
+      | tSTAR MlhsNode tCOMMA MlhsPost { [ (mk_splat $1 $2), *$4 ] }
       | tSTAR { [ mk_splat $1 ] }
-      | tSTAR tCOMMA mlhs_post { [ mk_splat $1 *$3 ] }
+      | tSTAR tCOMMA MlhsPost { [ mk_splat $1 *$3 ] }
 
-mlhs_item: MlhsNode
+MlhsItem: MlhsNode
       | tLPAREN MlhsInner Rparen { (mk_begin $1 $2 $3) }
 
-MlhsHead: mlhs_item tCOMMA { [ $1 ] }
-      | MlhsHead mlhs_item tCOMMA {
-            $1 << $2 }
+MlhsHead: MlhsItem tCOMMA { [ $1 ] }
+  | MlhsHead MlhsItem tCOMMA { $1 << $2 }
 
-mlhs_post: mlhs_item { [ $1 ] }
-      | mlhs_post tCOMMA mlhs_item {
-            $1 ++ [$3] }
+MlhsPost: MlhsItem { [ $1 ] }
+  | MlhsPost tCOMMA MlhsItem { $1 ++ [$3] }
 
-MlhsNode: user_variable { mk_assignable $1  }
-      | keyword_variable { mk_assignable $1 }
+MlhsNode: UserVariable { mk_assignable $1  }
+      | KeywordVariable { mk_assignable $1 }
       | Primary tLBRACK2 opt_call_args RBracket { mk_index_asgn $1 $2 $3 $4 }
       | Primary CallOp tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
       | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
@@ -337,8 +335,8 @@ MlhsNode: user_variable { mk_assignable $1  }
       | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
       | Backref { mk_assignable $1 }
 
-Lhs: user_variable { mk_assignable $1 }
-  | keyword_variable { mk_assignable $1 }
+Lhs: UserVariable { mk_assignable $1 }
+  | KeywordVariable { mk_assignable $1 }
   | Primary tLBRACK2 opt_call_args RBracket { (mk_index_asgn $1, $2 $3 $4) }
   | Primary CallOp tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary tCOLON2 tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
@@ -1094,7 +1092,7 @@ UserVariable: tIDENTIFIER { mk_ident $1 }
   | tCVAR { mk_cvar $1 }
 {-
 
-keyword_variable: kNIL {
+KeywordVariable: kNIL {
             mk_Nil($1) }
       | kSELF {
             mk_self($1) }
@@ -1108,17 +1106,14 @@ keyword_variable: kNIL {
             mk___LINE__($1) }
       | k__ENCODING__ {
             mk___ENCODING__($1) }
-
-VarRef: user_variable {
-            mk_accessible($1) }
-      | keyword_variable {
-            mk_accessible($1) }
-
-var_lhs: user_variable {
-            mk_assignable $1 }
-      | keyword_variable {
-            mk_assignable $1 }
 -}
+
+VarRef: UserVariable { mk_accessible($1) }
+  | KeywordVariable { mk_accessible($1) }
+
+VarLhs: UserVariable { mk_assignable $1 }
+  | KeywordVariable { mk_assignable $1 }
+
 Backref: tNTH_REF { mk_nth_ref $1 }
   | tBACK_REF { mk_back_ref $1 }
 {-
