@@ -241,16 +241,16 @@ evalP = evalStateT
 -- Action to read a token
 readToken::P Token
 readToken = do
-	  s <- get
-	  case alexScan s 0 of
-      	        AlexEOF -> return TEOF
-		AlexError _ -> throwError "!Lexical error"
-	   	AlexSkip inp' _ -> do
-			  put inp'
-			  readToken
-	   	AlexToken inp' _ action -> do
-			  put inp'
-			  (action (decode s))
+    s <- get
+    case alexScan s 0 of
+      AlexEOF -> return TEOF
+      AlexError _ -> throwError "!Lexical error"
+      AlexSkip inp' _ -> do
+        put inp'
+        readToken
+      AlexToken inp' _ action -> do
+        put inp'
+        (action (decode s))
 
 -- The lexer function to be passed to Happy
 lexer::(Token -> P a)->P a
