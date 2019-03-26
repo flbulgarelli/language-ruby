@@ -144,6 +144,7 @@ data Token =
   | TPOW
   | TCMP
   | TEQ
+  | TEQL -- ????
   | TEQQ
   | TNEQ
   | TGEQ
