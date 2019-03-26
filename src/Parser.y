@@ -61,7 +61,7 @@ import Control.Monad.Error
     k__LINE__ {L.K__LINE__}
     k__FILE__ {L.K__FILE__}
     k__ENCODING__ {L.K__ENCODING__}
-    tIDENTIFIER {L.TIDENTIFIER}
+    tIDENTIFIER {L.TIDENTIFIER {}}
     tFID {L.TFID}
     tGVAR {L.TGVAR}
     tIVAR {L.TIVAR}

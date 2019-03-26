@@ -4,6 +4,12 @@ import Control.Monad.State
 import Control.Monad.Error
 import Data.Word
 import Codec.Binary.UTF8.String as UTF8 (decode)
+
+import qualified Data.Map as Map
+import Control.Monad (liftM)
+import Data.List (foldl')
+import Numeric (readHex, readOct)
+
 }
 
 
@@ -57,10 +63,7 @@ $not_double_quote = [. \n] # \"
 @long_byte_str_item_double = $long_byte_str_char|@backslash_pair_bs|@one_double_quote|@two_double_quotes|'
 
 tokens :-
-$white+			;
-true			  {symbolToken KTRUE}
-false		  	{symbolToken KFALSE}
-nil 		  	{symbolToken KNIL}
+
 <0> {
    ' @short_str_item_single* ' { token TSTRING read }
    \" @short_str_item_double* \" { token TSTRING read }
@@ -74,6 +77,57 @@ nil 		  	{symbolToken KNIL}
    0 (o | O) $oct_digit+ { token TINTEGER read }
    0 (x | X) $hex_digit+ { token TINTEGER read }
 }
+
+<0> {
+--    "("   { openParen TLPAREN }
+--    ")"   { closeParen TRPAREN }
+--    "["   { openParen TLBRACK }
+--    "]"   { closeParen TRBRACK }
+--    "{"   { openParen TLCURLY }
+--    "}"   { closeParen TRCURLY }
+--  "->"  { symbolToken RightArrowToken }
+    "."   { symbolToken TDOT }
+    ".."   { symbolToken TDOT2 }
+    "..." { symbolToken TDOT3 }
+    "~"   { symbolToken TTILDE }
+    "+"   { symbolToken TPLUS }
+    "-"   { symbolToken TMINUS }
+    "*"   { symbolToken TSTAR }
+    "**"  { symbolToken TSTAR2 }
+    "/"   { symbolToken TDIVIDE }
+    "%"   { symbolToken TPERCENT }
+    "<<"  { symbolToken TLSHFT }
+    ">>"  { symbolToken TRSHFT }
+  -- "<"   { symbolToken TLE }
+    "<="  { symbolToken TLEQ }
+    ">"   { symbolToken TGT }
+    ">="  { symbolToken TGEQ }
+    "=="  { symbolToken TEQQ }
+    "!="  { symbolToken TNEQ }
+  -- "^"   { symbolToken XorToken }
+  -- "|"   { symbolToken BinaryOrToken }
+  -- "&&"  { symbolToken AndToken }
+  -- "&"   { symbolToken BinaryAndToken }
+  -- "||"  { symbolToken OrToken }
+  -- ":"   { symbolToken ColonToken }
+  -- "="   { symbolToken AssignToken }
+  -- "+="  { symbolToken PlusAssignToken }
+  -- "-="  { symbolToken MinusAssignToken }
+  -- "*="  { symbolToken MultAssignToken }
+  -- "/="  { symbolToken DivAssignToken }
+  -- "%="  { symbolToken ModAssignToken }
+  -- "**=" { symbolToken PowAssignToken }
+  -- "&="  { symbolToken BinAndAssignToken }
+  -- "|="  { symbolToken BinOrAssignToken }
+  -- "^="  { symbolToken BinXorAssignToken }
+  -- "<<=" { symbolToken LeftShiftAssignToken }
+  -- ">>=" { symbolToken RightShiftAssignToken }
+    ","   { symbolToken TCOMMA }
+    \;    { symbolToken TSEMI }
+}
+
+<0> $ident_letter($ident_letter|$digit)*  { \str -> keywordOrIdent str }
+
 
 {
 data Token =
@@ -126,7 +180,7 @@ data Token =
   | K__LINE__
   | K__FILE__
   | K__ENCODING__
-  | TIDENTIFIER
+  | TIDENTIFIER String
   | TFID
   | TGVAR
   | TIVAR
@@ -274,5 +328,71 @@ token mkToken read str = return $ mkToken (read str)
 
 symbolToken :: Token -> Action
 symbolToken t _ = return t
+
+
+-------------
+
+
+-- a keyword or an identifier (the syntax overlaps)
+keywordOrIdent :: String -> P Token
+keywordOrIdent str
+   = return $ case Map.lookup str keywords of
+         Just symbol -> symbol
+         Nothing -> TIDENTIFIER str
+
+-- mapping from strings to keywords
+keywords :: Map.Map String Token
+keywords = Map.fromList keywordNames
+
+keywordNames :: [(String, Token)]
+keywordNames =
+   [
+    ("module", KMODULE),
+    ("def", KDEF),
+    ("undef", KUNDEF),
+    ("begin", KBEGIN),
+    ("rescue", KRESCUE),
+    ("ensure", KENSURE),
+    ("end", KEND),
+    ("if", KIF),
+    ("unless", KUNLESS),
+    ("then", KTHEN),
+    ("elsif", KELSIF),
+    ("else", KELSE),
+    ("case", KCASE),
+    ("when", KWHEN),
+    ("while", KWHILE),
+    ("until", KUNTIL),
+    ("for", KFOR),
+    ("break", KBREAK),
+    ("next", KNEXT),
+    ("redo", KREDO),
+    ("retry", KRETRY),
+    ("in", KIN),
+    ("do", KDO),
+    ("do_cond", KDO_COND),
+    ("do_block", KDO_BLOCK),
+    ("do_lambda", KDO_LAMBDA),
+    ("return", KRETURN),
+    ("yield", KYIELD),
+    ("super", KSUPER),
+    ("self", KSELF),
+    ("nil", KNIL),
+    ("true", KTRUE),
+    ("false", KFALSE),
+    ("and", KAND),
+    ("or", KOR),
+    ("not", KNOT),
+    ("if_mod", KIF_MOD),
+    ("unless_mod", KUNLESS_MOD),
+    ("while_mod", KWHILE_MOD),
+    ("until_mod", KUNTIL_MOD),
+    ("rescue_mod", KRESCUE_MOD),
+    ("alias", KALIAS),
+    ("defined", KDEFINED),
+    ("__LINE__", K__LINE__),
+    ("__FILE__", K__FILE__),
+    ("__ENCODING__", K__ENCODING__)
+   ]
 
 }
