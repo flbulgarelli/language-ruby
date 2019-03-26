@@ -162,8 +162,8 @@ KeywordVariable : kNIL {Nil}
    | kTRUE {RTrue}
    | kFALSE {RFalse}
 -- | k__FILE__ {__FILE__}
--- | k__LINE__ {__LINE__}
--- | k__ENCODING__ {__ENCODING__}
+   | k__LINE__ {Line}
+   | k__ENCODING__ {Encoding}
 
 
 Program: TopCompstmt { $1 }
@@ -217,9 +217,8 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
   --  | klEND tLCURLY Compstmt tRCURLY { Postexe $ $2 $3 $4 }
   --  | CommandAsgn
   --  | Mlhs tEQL CommandCall { MultiAssign $1 $2 $3 }
-  --  | Lhs tEQL mrhs { ((mk_assign $1 $2 mk_array Nil $3 Nil)) }
-  --  | Mlhs tEQL mrhs_arg { MultiAssign $1 $2 $3 }
-  --  | Expr { $1 }
+  --  | Lhs tEQL Mrhs { ((mk_assign $1 $2 mk_array Nil $3 Nil)) }
+  --  | Mlhs tEQL MrhsArg { MultiAssign $1 $2 $3 }  --  | Expr {$1 }
 
 {-
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
@@ -473,9 +472,9 @@ opt_call_args: # nothing { [] }
             [ (mk_associate Nil $1 Nil) ] }
 -}
 CallArgs: Command { [ $1 ] }
---  | Args OptBlockArg { $1.concat($2) }
+  | Args OptBlockArg { $1 ++ $2 }
 --  | Assocs OptBlockArg { [ (mk_associate Nil $1 Nil) ] result.concat($2) }
---  | Args tCOMMA Assocs OptBlockArg { Assocs = (mk_associate Nil $3 Nil); $1 << Assocs; result.concat($4) }
+--  | Args tCOMMA Assocs OptBlockArg { $1 ++ [mk_associate Nil $3 Nil] ++ $4 }
   | BlockArg { [ $1 ] }
 
 CommandArgs: CallArgs { $1 }
@@ -526,64 +525,39 @@ BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
 OptBlockArg: tCOMMA BlockArg { [ $2 ] }
   -- | # nothing { [] }
 
+Args: Arg { [ $1 ] }
+  | tSTAR Arg { [mk_splat $1 $2] }
+  | Args tCOMMA Arg { $1 ++ [$3] }
+  | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
+
 {-
 
+MrhsArg: Mrhs { mk_array Nil $1 Nil }
+  | Arg
 
-  Args: Arg { [ $1 ] }
-      | tSTAR Arg {
-            [ (mk_splat $1 $2) ] }
-      | Args tCOMMA Arg {
-            $1 ++ [$3] }
-      | Args tCOMMA tSTAR Arg {
-            $1 << (mk_splat $3 $4) }
+Mrhs: Args tCOMMA Arg { $1 ++ [$3] }
+  | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
+  | tSTAR Arg { [ (mk_splat $1 $2) ] }
 
-mrhs_arg: mrhs {
-            (mk_array Nil $1 Nil) }
-      | Arg
-
-  mrhs: Args tCOMMA Arg {
-            $1 ++ [$3] }
-      | Args tCOMMA tSTAR Arg {
-            $1 << (mk_splat $3 $4) }
-      | tSTAR Arg {
-            [ (mk_splat $1 $2) ] }
-
-Primary: literal
-      | strings
-      | xstring
-      | regexp
-      | words
-      | qwords
-      | symbols
-      | qsymbols
+Primary: Literal
+      | Strings
+      | Xstring
+      | Regexp
+      | Words
+      | Qwords
+      | Symbols
+      | Qsymbols
       | VarRef
-      | backref
-      | tFID {
-            mk_call_method Nil, Nil, $1) }
-      | kBEGIN {
-            @lexer.cmdarg.push(false) }
-          Bodystmt kEND {
-            @lexer.cmdarg.pop
-
-            (mk_begin_keyword $1 $3 $4) }
-      | tLPAREN_ARG Stmt {
-            @lexer.state = :expr_endarg }
-          Rparen {
-            (mk_begin $1 $2 $4) }
-      | tLPAREN_ARG {
-            @lexer.state = :expr_endarg }
-          OptNl tRPAREN {
-            (mk_begin $1 Nil $4) }
-      | tLPAREN Compstmt tRPAREN {
-            (mk_begin $1 $2 $3) }
-      | Primary tCOLON2 tCONSTANT {
-            (mk_const_fetch $1 $2 $3) }
-      | tCOLON3 tCONSTANT {
-            (mk_const_global $1 $2) }
-      | tLBRACK aref_args tRBRACK {
-            (mk_array $1 $2 $3) }
-      | tLBRACE AssocList tRCURLY -- { mk_associate $1 $2 $3 }
-      KReturn { mkeyword_cmd Return $1 }
+      | Backref
+      | tFID { mk_call_method Nil, Nil, $1) }
+      | kBEGIN Bodystmt kEND { mk_begin_keyword $1 $3 $4 }
+      | tLPAREN_ARG Stmt { @lexer.state = :expr_endarg } Rparen { (mk_begin $1 $2 $4) }
+      | tLPAREN_ARG { @lexer.state = :expr_endarg } OptNl tRPAREN { (mk_begin $1 Nil $4) }
+      | tLPAREN Compstmt tRPAREN { (mk_begin $1 $2 $3) }
+      | Primary tCOLON2 tCONSTANT { (mk_const_fetch $1 $2 $3) }
+      | tCOLON3 tCONSTANT { (mk_const_global $1 $2) }
+      | tLBRACK aref_args tRBRACK { mk_array $1 $2 $3 }
+      | tLBRACE AssocList tRCURLY -- { mk_associate $1 $2 $3 } KReturn { mkeyword_cmd Return $1 }
       | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $1, $2, $3, $4) }
       | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1, $2, [], $3) }
       | kYIELD { mk_keyword_cmd Yield $1 }
@@ -606,114 +580,101 @@ Primary: literal
             Args, (begin_t, body, end_t) = $2
             result      = mk_block(lambda_call,
                             begin_t, Args, body, end_t) }
-      | kIF Expr Then Compstmt IfTail kEND {
-            else_t, else_ = $5
-            mk_condition($1, $2, $3,
-                                        $4, else_t,
-                                        else_,  $6) }
-      | kUNLESS Expr Then Compstmt OptElse kEND {
-            else_t, else_ = $5
-            mk_condition($1, $2, $3,
-                                        else_,  else_t,
-                                        $4, $6) }
-    --  | kWHILE ExprValueDo Compstmt kEND  { (mk_loop :while, $1, *$2 $3 $4)
-    }
---  | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop :until, $1, *$2 $3 $4)
-    }
-| kCASE Expr OptTerms case_body kEND
-    {
-      *when_bodies, (else_t, else_body) = *$4
+      | kIF Expr Then Compstmt IfTail kEND { else_t, else_ = $5 ; mk_condition($1, $2, $3, $4, else_t, else_,  $6) }
+      | kUNLESS Expr Then Compstmt OptElse kEND { else_t, else_ = $5; mk_condition($1, $2, $3, else_,  else_t, $4, $6) }
+      | kWHILE ExprValueDo Compstmt kEND  { (mk_loop :while, $1, *$2 $3 $4)  }
+      | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop :until, $1, *$2 $3 $4) }
+      | kCASE Expr OptTerms case_body kEND
+          {
+            *when_bodies, (else_t, else_body) = *$4
 
-      mk_case($1, $2,
-                                    when_bodies, else_t, else_body,
-                                    $5) }
-      | kCASE            OptTerms case_body kEND {
-            *when_bodies, (else_t, else_body) = *$3
+            mk_case($1, $2,
+                                          when_bodies, else_t, else_body,
+                                          $5) }
+            | kCASE            OptTerms case_body kEND {
+                  *when_bodies, (else_t, else_body) = *$3
 
-            mk_case($1, Nil,
-                                    when_bodies, else_t, else_body,
-                                    $4) }
-      | kFOR for_--var kIN ExprValueDo Compstmt kEND  { (mk_for $1, $2, $3, *$4 $5 $6)
-    }
-| kCLASS cpath superclass
-    {
-      @static_env.extend_static
-      @lexer.cmdarg.push(false)
-      @lexer.cond.push(false)
-            @context.push(:class) }
-          Bodystmt kEND {
-            unless @context.class_definition_allowed?
-              error ":class_in_def, Nil, $1"
-            end
+                  mk_case($1, Nil,
+                                          when_bodies, else_t, else_body,
+                                          $4) }
+            | kFOR for_--var kIN ExprValueDo Compstmt kEND  { (mk_for $1, $2, $3, *$4 $5 $6)
+          }
+      | kCLASS cpath superclass
+          {
+            @static_env.extend_static
+            @lexer.cmdarg.push(false)
+            @lexer.cond.push(false)
+                  @context.push(:class) }
+                Bodystmt kEND {
+                  unless @context.class_definition_allowed?
+                    error ":class_in_def, Nil, $1"
+                  end
 
-            lt_t, superclass = $3
-            mk_def_class($1, $2,
-                                        lt_t, superclass,
-                                        $5, $6)
+                  lt_t, superclass = $3
+                  mk_def_class($1, $2,
+                                              lt_t, superclass,
+                                              $5, $6)
 
-            @lexer.cmdarg.pop
-            @lexer.cond.pop
-            @static_env.unextend
-            @context.pop }
+                  @lexer.cmdarg.pop
+                  @lexer.cond.pop
+                  @static_env.unextend
+                  @context.pop }
       | kCLASS tLSHFT Expr Term {
-            @static_env.extend_static
-            @lexer.cmdarg.push(false)
-            @lexer.cond.push(false)
-            @context.push(:sclass) }
-          Bodystmt kEND {
-            mk_def_sclass $1 $2 $3 $6 $7
+                  @static_env.extend_static
+                  @lexer.cmdarg.push(false)
+                  @lexer.cond.push(false)
+                  @context.push(:sclass) }
+                Bodystmt kEND {
+                  mk_def_sclass $1 $2 $3 $6 $7
 
-            @lexer.cmdarg.pop
-            @lexer.cond.pop
-            @static_env.unextend
-            @context.pop }
-      | kMODULE cpath {
-            @static_env.extend_static
-            @lexer.cmdarg.push(false) }
-          Bodystmt kEND {
-            unless @context.module_definition_allowed?
-              error ":module_in_def, Nil, $1"
-            end
+                  @lexer.cmdarg.pop
+                  @lexer.cond.pop
+                  @static_env.unextend
+                  @context.pop }
+            | kMODULE cpath {
+                  @static_env.extend_static
+                  @lexer.cmdarg.push(false) }
+                Bodystmt kEND {
+                  unless @context.module_definition_allowed?
+                    error ":module_in_def, Nil, $1"
+                  end
 
-            mk_def_module($1, $2,
-                                          $4, $5)
+                  mk_def_module($1, $2,
+                                                $4, $5)
 
-            @lexer.cmdarg.pop
-            @static_env.unextend }
-      | kDEF Fname {
-            @static_env.extend_static
-            @lexer.cmdarg.push(false)
-            @lexer.cond.push(false)
-            @context.push(:def) }
-          f_arglist Bodystmt kEND {
-            mk_def_method($1, $2,
-                        $4, $5, $6)
+                  @lexer.cmdarg.pop
+                  @static_env.unextend }
+            | kDEF Fname {
+                  @static_env.extend_static
+                  @lexer.cmdarg.push(false)
+                  @lexer.cond.push(false)
+                  @context.push(:def) }
+                f_arglist Bodystmt kEND {
+                  mk_def_method($1, $2,
+                              $4, $5, $6)
 
-            @lexer.cmdarg.pop
-            @lexer.cond.pop
-            @static_env.unextend
-            @context.pop }
-      | kDEF Singleton DotOrColon {
-            @lexer.state = :expr_fname }
-          Fname {
-            @static_env.extend_static
-            @lexer.cmdarg.push(false)
-            @lexer.cond.push(false)
-            @context.push(:defs) }
-          f_arglist Bodystmt kEND {
-            mk_def_singleton $1 $2 $3 $5 $7 $8 $9
+                  @lexer.cmdarg.pop
+                  @lexer.cond.pop
+                  @static_env.unextend
+                  @context.pop }
+            | kDEF Singleton DotOrColon {
+                  @lexer.state = :expr_fname }
+                Fname {
+                  @static_env.extend_static
+                  @lexer.cmdarg.push(false)
+                  @lexer.cond.push(false)
+                  @context.push(:defs) }
+                f_arglist Bodystmt kEND {
+                  mk_def_singleton $1 $2 $3 $5 $7 $8 $9
 
-            @lexer.cmdarg.pop
-            @lexer.cond.pop
-            @static_env.unextend
-            @context.pop }
-      | kBREAK { mk_keyword_cmd Break, $1) }
-      | kNEXT {
-            mk_keyword_cmd Next, $1) }
-      | kREDO {
-            (mk_keyword_cmd :redo $1) }
-      | kRETRY {
-            (mk_keyword_cmd :retry $1) }
+                  @lexer.cmdarg.pop
+                  @lexer.cond.pop
+                  @static_env.unextend
+                  @context.pop }
+            | kBREAK { mk_keyword_cmd Break, $1 }
+            | kNEXT { mk_keyword_cmd Next, $1 }
+            | kREDO { mk_keyword_cmd Redo $1 }
+            | kRETRY { mk_keyword_cmd Retry $1 }
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1" if @context.in_class?  }
 
@@ -955,15 +916,9 @@ MethodCall: Operation paren_args {
       | Primary tLBRACK2 opt_call_args RBracket {
             (mk_index $1, $2 $3 $4) }
 
-BraceBlock: tLCURLY {
-            @context.push(:block) }
-        BraceBody tRCURLY {
-            [ $1, *$3, $4 ]
-            @context.pop }
-            | kDO {
-              @context. {        DoBody kEND { }            [ $1, *$3, $4 ]
-              @context.pop }
-              -}
+-}
+BraceBlock: tLCURLY BraceBody tRCURLY { undefined }
+  | kDO { undefined }
 
 DoBody: OptBlockParam Bodystmt { undefined }-- { @static_env.extend_dynamic } { @lexer.cmdarg.push(false) } { result = [ val[2], val[3] ] @static_env.unextend @lexer.cmdarg.pop  }
 
@@ -992,7 +947,7 @@ opt_rescue: kRESCUE exc_list exc_var Then Compstmt opt_rescue {
       | { [] }
 
 exc_list: Arg { [ $1 ] }
-      | mrhs
+      | Mrhs
       | None
 
 exc_var: tASSOC Lhs {
@@ -1037,18 +992,16 @@ XStringContents: -- # nothing { [] }
 
 {-
 
-regexp: tREGEXP_BEG regexp_contents tSTRING_END tREGEXP_OPT {
+RLgexp: tREGEXP_BEG regexp_contents tSTRING_END tREGEXP_OPT {
             opts   = mk_regexp_options($4)
             (mk_regexp_compose $1, $2 $3 opts) }
 
 
-qwords: tQWORDS_BEG qword_list tSTRING_END {
-            (mk_words_compose $1 $2 $3) }
-
-qsymbols: tQSYMBOLS_BEG qsym_list tSTRING_END {
+Qwords: tQWORDS_BEG qword_list tSTRING_END {
+S           (mk_words_compose $1 $2 $3) }
+Qqsymbols: tQSYMBOLS_BEG qsym_list tSTRING_END {
             (mk_symbols_compose $1 $2 $3) }
-
-qword_list: # nothing { [] }
+Bqword_list: # nothing { [] }
       | qword_list tSTRING_CONTENT tSPACE {
             $1 << mk_string_internal($2) }
 

@@ -44,6 +44,7 @@ data Term =
        | Const Term String
        | Defined Term
        | Encoding
+       | Line
        | NthRef Integer
        | BackRef String
        | Defs Term String Args Term
@@ -147,3 +148,5 @@ mk_assignable = undefined
 mk_accessible = undefined
 
 mk_undef_method = undefined
+
+mk_splat = undefined
