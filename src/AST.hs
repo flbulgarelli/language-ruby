@@ -63,90 +63,97 @@ cvasgn name = Cvasgn name . Just
 gvasgn name = Gvasgn name . Just
 casgn name parent = Casgn name parent . Just
 
-mk_unary_op = undefined
-mk_kwoptarg = undefined
-mk_def_singleton = undefined
--- converts a list of expressions into a single expression
-mkExpression = undefined
-mk_def_sclass = undefined
-mk_preexe = undefined
-mk_condition_mod = undefined
-mk_begin_body = undefined
-mk_loop_mod = undefined
 mkLogicalOp = undefined
-mk_rescue_body = undefined
-mk_not_op = undefined
-mk_binary_op = undefined
-mk_match_op = undefined
-mk_kwarg = undefined
-mk_block_pass = undefined
-mk_call_method = undefined
+mkExpression = undefined
 
-
-mk_ident :: Token -> t1
-mk_ident = undefined
-
-mk_ivar :: Token -> t1
-mk_ivar = undefined
-
-mk_gvar :: Token -> t1
-mk_gvar = undefined
-
-mk_const :: Token -> t1
-mk_const = undefined
-
-mk_cvar :: Token -> t1
-mk_cvar = undefined
-
-mk_integer :: Token -> t1
-mk_integer = undefined
-
-mk_float :: Token -> t1
-mk_float = undefined
-
-mk_complex :: Token -> t1
-mk_complex = undefined
-
-mk_unary_num = undefined
-
-mk_back_ref = undefined
-
-mk_symbols_compose = undefined
-
-mk_string_compose = undefined
-
-mk_string :: Token -> t1
-mk_string = undefined
-
-mk_character :: Token -> t1
-mk_character = undefined
-
-mk_words_compose = undefined
-
-mk_word :: t194 -> a
-mk_word = undefined
-
-mk_xstring_compose = undefined
-
-mk_string_internal :: Token -> t1
-mk_string_internal = undefined
-
-mk_begin :: Token -> t -> Token -> t196
-mk_begin = undefined
-
-mk_symbol :: Token -> t1
-mk_symbol = undefined
-
-mk_symbol_compose :: Token -> t -> Token -> t196
-mk_symbol_compose = undefined
-
-mk_nth_ref :: Token -> t1
-mk_nth_ref = undefined
-
-
-mk_assignable = undefined
+mk___ENCODING__ = undefined
+mk___FILE__ = undefined
+mk___LINE__ = undefined
 mk_accessible = undefined
-
-mk_undef_method = undefined
-
+mk_alias = undefined
+mk_Arg = undefined
+mk_args = undefined
+mk_array = undefined
+mk_assign = undefined
+mk_assignable = undefined
+mk_associate = undefined
+mk_attr_asgn = undefined
+mk_back_ref = undefined
+mk_begin = undefined
+mk_begin_body = undefined
+mk_begin_keyword = undefined
+mk_binary_op = undefined
+mk_block = undefined
+mk_block_pass = undefined
+mk_blockarg = undefined
+mk_call_lambda = undefined
+mk_call_method = undefined
+mk_case = undefined
+mk_character = undefined
+mk_complex = undefined
+mk_condition = undefined
+mk_condition_mod = undefined
+mk_const = undefined
+mk_const_fetch = undefined
+mk_const_global = undefined
+mk_const_op_assignable = undefined
+mk_cvar = undefined
+mk_def_class = undefined
+mk_def_method = undefined
+mk_def_module = undefined
+mk_def_sclass = undefined
+mk_def_singleton = undefined
+mk_false = undefined
+mk_float = undefined
+mk_for = undefined
+mk_gvar = undefined
+mk_ident = undefined
+mk_index = undefined
+mk_index_asgn = undefined
+mk_integer = undefined
+mk_ivar = undefined
+mk_keyword_cmd = undefined
+mk_kwarg = undefined
+mk_kwoptarg = undefined
+mk_kwrestarg = undefined
+mk_kwsplat = undefined
+mk_loop = undefined
+mk_loop_mod = undefined
+mk_match_op = undefined
+mk_multi_lhs = undefined
+mk_Nil = undefined
+mk_not_op = undefined
+mk_nth_ref = undefined
+mk_op_assign = undefined
+mk_optarg = undefined
+mk_pair = undefined
+mk_pair_keyword = undefined
+mk_pair_quoted = undefined
+mk_preexe = undefined
+mk_procarg0 = undefined
+mk_range_exclusive = undefined
+mk_range_inclusive = undefined
+mk_rational = undefined
+mk_regexp_compose = undefined
+mk_regexp_options = undefined
+mk_rescue_body = undefined
+mk_restarg = undefined
+mk_self = undefined
+mk_shadowarg = undefined
 mk_splat = undefined
+mk_string = undefined
+mk_string_compose = undefined
+mk_string_internal = undefined
+mk_symbol = undefined
+mk_symbol_compose = undefined
+mk_symbol_internal = undefined
+mk_symbols_compose = undefined
+mk_ternary = undefined
+mk_true = undefined
+mk_unary_num = undefined
+mk_unary_op = undefined
+mk_undef_method = undefined
+mk_when = undefined
+mk_word = undefined
+mk_words_compose = undefined
+mk_xstring_compose = undefined
