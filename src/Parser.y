@@ -162,7 +162,7 @@ KeywordVariable : kNIL {Nil}
    | kSELF {Self}
    | kTRUE {RTrue}
    | kFALSE {RFalse}
--- | k__FILE__ {__FILE__}
+   | k__FILE__ {File}
    | k__LINE__ {Line}
    | k__ENCODING__ {Encoding}
 
@@ -688,50 +688,29 @@ Do: Term { undefined }
 {-
 
 IfTail: OptElse
-      | kELSIF Expr Then Compstmt IfTail {
-            else_t, else_ = $5
-            [ $1,
-                        mk_condition($1, $2, $3,
-                                          $4, else_t,
-                                          else_,  Nil),
-                      ] }
+  | kELSIF Expr Then Compstmt IfTail { else_t, else_ = $5 [ $1, mk_condition($1, $2, $3, $4, else_t, else_,  Nil) ] }
 
 OptElse: None
   | kELSE Compstmt { $1 }
+
+-}
 
 FMarg: FNormArg { mk_arg $1 }
   | tLPAREN FMargs Rparen { mk_multi_lhs $1 $2 $3 }
 
 FMargList: FMarg { [ $1 ] }
-      | FMargList tCOMMA FMarg {
-            $1 ++ [$3] }
+  | FMargList tCOMMA FMarg { $1 ++ [$3] }
 
-FMargs: FMargList
-      | FMargList tCOMMA tSTAR FNormArg {
-            $1.
-                        push(mk_restarg $3 $4) }
-      | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList {
-            $1.
-                        push(mk_restarg $3 $4).
-                        concat($6) }
-      | FMargList tCOMMA tSTAR {
-            $1.
-                        push(mk_restarg($3)) }
-      | FMargList tCOMMA tSTAR            tCOMMA FMargList {
-            $1.
-                        push(mk_restarg($3)).
-                        concat($5) }
-      |                    tSTAR FNormArg {
-            [ (mk_restarg $1 $2) ] }
-      |                    tSTAR FNormArg tCOMMA FMargList {
-            [ (mk_restarg $1 $2),
-                        *$4 ] }
-      |                    tSTAR {
-            [ mk_restarg($1) ] }
-      |                    tSTAR tCOMMA FMargList {
-            [ mk_restarg($1),
-                        *$3 ] }
-
+FMargs: FMargList { $1 }
+  -- | FMargList tCOMMA tSTAR FNormArg { $1. push(mk_restarg $3 $4) }
+  -- | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { $1. push(mk_restarg $3 $4). concat($6) }
+  -- | FMargList tCOMMA tSTAR { $1. push(mk_restarg($3)) }
+  -- | FMargList tCOMMA tSTAR tCOMMA FMargList { $1. push(mk_restarg($3)). concat($5) }
+  -- | tSTAR FNormArg { [ (mk_restarg $1 $2) ] }
+  -- | tSTAR FNormArg tCOMMA FMargList { [ (mk_restarg $1 $2), *$4 ] }
+  | tSTAR { [ mk_restarg $1 ] }
+  -- | tSTAR tCOMMA FMargList { [ mk_restarg($1), *$3 ] }
+{-
 block_args_tail: FBlockKwarg tCOMMA FKwrest OptFBlockArg {
             $1.concat($3).concat($4) }
       | FBlockKwarg OptFBlockArg {
@@ -1243,9 +1222,11 @@ OptTerms: -- |
   -- | Terms OptNl
   tNL { $1 }
 
-{-
+OptNl: -- |
+  tNL { $1 }
+
+Rparen: OptNl tRPAREN { $2 }
 RBracket: OptNl tRBRACK { $2 }
--}
 
 Trailer: -- |
   tNL { $1 }
