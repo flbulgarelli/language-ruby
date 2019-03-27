@@ -178,9 +178,8 @@ TopStmt: Stmt { $1 } | klBEGIN BeginBlock { mk_preexe $1 $2 }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
-Bodystmt: { undefined }
-{-
-Bodystmt: Compstmt opt_rescue OptElse opt_ensure {
+Bodystmt: Compstmt OptRescue OptElse OptEnsure { undefined }
+{-  {
             rescue_bodies     = $2;
             else_t,   else_   = $3;
             ensure_t, ensure_ = $4;
@@ -209,16 +208,16 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
   --  | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
   --  | kALIAS tGVAR tBACK_REF { (mk_alias $1 mk_gvar($2) mk_back_ref($3)) }
   --  | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
-    kUNDEF UndefList { (mk_undef_method $1 $2) }
-    | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
-    | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $2 $3 }
-    | Stmt kWHILE_MOD Expr { mk_loop_mod While $1 $2 $3 }
-    | Stmt kUNTIL_MOD Expr { mk_loop_mod Until $1 $2 $3 }
-    | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
+  kUNDEF UndefList { (mk_undef_method $1 $2) }
+  | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
+  | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $2 $3 }
+  | Stmt kWHILE_MOD Expr { mk_loop_mod While $1 $2 $3 }
+  | Stmt kUNTIL_MOD Expr { mk_loop_mod Until $1 $2 $3 }
+  | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
   --  | klEND tLCURLY Compstmt tRCURLY { Postexe $ $2 $3 $4 }
   --  | CommandAsgn
   --  | Mlhs tEQL CommandCall { MultiAssign $1 $2 $3 }
-  --  | Lhs tEQL Mrhs { ((mk_assign $1 $2 mk_array Nil $3 Nil)) }
+  | Lhs tEQL Mrhs { undefined } -- { mk_assign $1 $2 mk_array Nil $3 Nil }
   --  | Mlhs tEQL MrhsArg { MultiAssign $1 $2 $3 }  --  | Expr {$1 }
 
 {-
@@ -310,10 +309,10 @@ MlhsNode: UserVariable { mk_assignable $1  }
       | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $2 $3) }
       | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
       | Backref { mk_assignable $1 }
-{-
+
 Lhs: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
-  | Primary tLBRACK2 OptCallArgs RBracket { (mk_index_asgn $1, $2 $3 $4) }
+  | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
   | Primary CallOp tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary tCOLON2 tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary CallOp tCONSTANT { (mk_attr_asgn $1 $2 $3) }
@@ -321,6 +320,7 @@ Lhs: UserVariable { mk_assignable $1 }
   | tCOLON3 tCONSTANT { mk_assignable((mk_const_global $1 $2)) }
   | Backref { mk_assignable $1 }
 
+{-
 cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
     | tCONSTANT
 
@@ -437,13 +437,13 @@ ArgRhs: Arg =tOP_ASGN
 opt_paren_args:
   # nothing { [ Nil, [], Nil ] }
   -- | paren_args
-
-OptCallArgs: # nothing { [] }
-      | CallArgs
-      | Args tCOMMA
-      | Args tCOMMA Assocs tCOMMA { $1 ++ [mk_associate Nil $3 Nil] }
-      | Assocs tCOMMA { [ (mk_associate Nil $1 Nil) ] }
 -}
+OptCallArgs: -- # nothing { [] }
+  CallArgs { undefined } -- { $1 }
+  | Args tCOMMA { undefined } -- { $1 }
+  | Args tCOMMA Assocs tCOMMA { undefined } -- { $1 ++ [mk_associate Nil $3 Nil] }
+  | Assocs tCOMMA { undefined } -- { [ mk_associate Nil $1 Nil ] }
+
 CallArgs: Command { [ $1 ] }
   | Args OptBlockArg { $1 ++ $2 }
 --  | Assocs OptBlockArg { [ (mk_associate Nil $1 Nil) ] result.concat($2) }
@@ -464,7 +464,7 @@ CommandArgs:   {
             # lexer pushed it on '['
             # We need to modify cmdarg stack to [...10]
             #
-            # For all other cases (like `m n` or `m n, []`) we simply put 1 to the stack
+            # For all other Cases (like `m n` or `m n, []`) we simply put 1 to the stack
             # and later lexer pushes corresponding bits on top of it.
             last_token = @last_token[0]
             lookahead = last_token == :tLBRACK || last_token == :tLPAREN_ARG
@@ -503,16 +503,13 @@ Args: Arg { [ $1 ] }
   | Args tCOMMA Arg { $1 ++ [$3] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
 
-{-
-
 MrhsArg: Mrhs { mk_array Nil $1 Nil }
-  | Arg
+  | Arg { undefined }
 
 Mrhs: Args tCOMMA Arg { $1 ++ [$3] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
-  | tSTAR Arg { [ (mk_splat $1 $2) ] }
+  | tSTAR Arg { undefined } -- { [ mk_splat $1 $2 ] }
 
--}
 Primary: Literal { $1 }
 --      | Strings
 --      | Xstring
@@ -558,14 +555,14 @@ Primary: Literal { $1 }
       -- | kUNLESS Expr Then Compstmt OptElse kEND { else_t, else_ = $5; mk_condition($1, $2, $3, else_,  else_t, $4, $6) }
       -- | kWHILE ExprValueDo Compstmt kEND  { (mk_loop :while, $1, *$2 $3 $4)  }
       -- | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop :until, $1, *$2 $3 $4) }
-      -- | kCASE Expr OptTerms case_body kEND
+      -- | kCASE Expr OptTerms CaseBody kEND
       --     {
       --       *when_bodies, (else_t, else_body) = *$4
 
       --       mk_case($1, $2,
       --                                     when_bodies, else_t, else_body,
       --                                     $5) }
-      --       | kCASE            OptTerms case_body kEND {
+      --       | kCASE            OptTerms CaseBody kEND {
       --             *when_bodies, (else_t, else_body) = *$3
 
       --             mk_case($1, Nil,
@@ -664,10 +661,10 @@ Do: Term { undefined }
 IfTail: OptElse
   | kELSIF Expr Then Compstmt IfTail { else_t, else_ = $5 [ $1, mk_condition($1, $2, $3, $4, else_t, else_,  Nil) ] }
 
-OptElse: None
-  | kELSE Compstmt { $1 }
-
 -}
+
+OptElse: None { undefined } -- { $1 }
+  | kELSE Compstmt { undefined } --{ $2 }
 
 FMarg: FNormArg { mk_arg $1 }
   | tLPAREN FMargs Rparen { mk_multi_lhs $1 $2 $3 }
@@ -877,40 +874,29 @@ DoBody: OptBlockParam Bodystmt { undefined }-- { @static_env.extend_dynamic } { 
 BraceBody: OptBlockParam Compstmt OptBlockParam Bodystmt { undefined } -- OptBlockParam Bodystmt { undefined } { [ $2, $3 ] @static_env.unextend  { @static_env.extend_dynamic }  @lexer.cmdarg.push(false) }
      -- [ $3, $4 ] @static_env.unextend @lexer.cmdarg.pop }
 
-{-
-case_body: kWHEN Args Then Compstmt cases {
-            [ (mk_when $1, $2 $3 $4),
-                        *$5 ] }
+CaseBody: kWHEN Args Then Compstmt Cases { undefined } -- { [mk_when $1 $2 $3 $4] ++ $5 }
 
-  cases: OptElse { [ $1 ] }
-      | case_body
+Cases: OptElse { undefined } -- { [ $1 ] }
+ | CaseBody { undefined } -- { $1 }
 
-opt_rescue: kRESCUE exc_list exc_var Then Compstmt opt_rescue {
-            assoc_t, exc_var = $3
-
+OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { undefined } {-
+            assoc_t, ExcVar = $3
             if $2
-              exc_list = (mk_array Nil $2 Nil)
+              ExcList = (mk_array Nil $2 Nil)
             end
+            [ mk_rescue_body $1, ExcList, assoc_t, ExcVar, $4, $5), *$6 ] -}
+  -- | { [] }
 
-            [ mk_rescue_body $1,
-                            exc_list, assoc_t, exc_var,
-                            $4, $5),
-                        *$6 ] }
-      | { [] }
+ExcList: Arg { undefined } -- { [ $1 ] }
+  | Mrhs { undefined } -- { $1 }
+  | None { undefined } -- { $1 }
 
-exc_list: Arg { [ $1 ] }
-      | Mrhs
-      | None
+ExcVar: tASSOC Lhs { undefined } --{ [ $1, $2 ] }
+  | None { undefined } -- { $1 }
 
-exc_var: tASSOC Lhs {
-            [ $1, $2 ] }
-      | None
+OptEnsure: kENSURE Compstmt { undefined } -- { undefined }
+  | None { undefined } -- { $1 }
 
-opt_ensure: kENSURE Compstmt {
-            [ $1, $2 ] }
-      | None
-
--}
 Literal: Numeric { $1 }
   | Symbol { $1 }
   | Dsym { $1 }
@@ -1211,6 +1197,8 @@ Term: -- tSEMI { yyerrok }
 
 Terms: Term { $1 }
 -- |  $1 { Nil }
+
+None: { undefined } -- { Nil }
 
 {
 parseError _ = throwError "!Parse Error"
