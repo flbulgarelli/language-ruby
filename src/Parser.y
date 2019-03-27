@@ -357,7 +357,7 @@ Fname: tIDENTIFIER { undefined }
   | tCONSTANT { undefined }
   | tFID { undefined }
   | Op { undefined }
-  | reswords { undefined }
+  | Reswords { undefined }
 
 Fsym: Fname { mk_symbol $1 }
   | Symbol { $1 }
@@ -375,7 +375,7 @@ Op:   tPIPE   {$1} | tCARET {$1} | tAMPER2 {$1} | tCMP {$1} | tEQ    {$1} | tEQQ
   |   tSTAR   {$1} | tDIVIDE{$1} | tPERCENT{$1} | tPOW {$1} | tBANG  {$1} | tTILDE       {$1}
   |   tUPLUS  {$1} | tUMINUS{$1} | tAREF   {$1} | tASET{$1} | tDSTAR {$1} | tBACK_REF2   {$1}
 
-reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | klEND {$1}
+Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | klEND {$1}
     | kALIAS    {$1} | kAND      {$1} | kBEGIN        {$1} | kBREAK  {$1} | kCASE     {$1}
     | kCLASS    {$1} | kDEF      {$1} | kDEFINED      {$1} | kDO     {$1} | kELSE     {$1}
     | kELSIF    {$1} | kEND      {$1} | kENSURE       {$1} | kFALSE  {$1} | kFOR      {$1}
@@ -699,7 +699,7 @@ IfTail: OptElse
 OptElse: None
   | kELSE Compstmt { $1 }
 
-FMarg: FNormArg { mk_Arg $1 }
+FMarg: FNormArg { mk_arg $1 }
   | tLPAREN FMargs Rparen { mk_multi_lhs $1 $2 $3 }
 
 FMargList: FMarg { [ $1 ] }
@@ -732,9 +732,9 @@ FMargs: FMargList
             [ mk_restarg($1),
                         *$3 ] }
 
-block_args_tail: f_block_kwarg tCOMMA FKwrest OptFBlockArg {
+block_args_tail: FBlockKwarg tCOMMA FKwrest OptFBlockArg {
             $1.concat($3).concat($4) }
-      | f_block_kwarg OptFBlockArg {
+      | FBlockKwarg OptFBlockArg {
             $1.concat($2) }
       | FKwrest OptFBlockArg {
             $1.concat($2) }
@@ -744,37 +744,37 @@ opt_block_args_tail:
         tCOMMA block_args_tail { $2 }
       | # nothing { [] }
 
-block_param: f_arg tCOMMA FBlockOptarg tCOMMA FRestArg              opt_block_args_tail {
+block_param: FArg tCOMMA FBlockOptarg tCOMMA FRestArg              opt_block_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($6) }
-      | f_arg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA f_arg opt_block_args_tail {
+      | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg opt_block_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($7).
                         concat($8) }
-      | f_arg tCOMMA FBlockOptarg                                opt_block_args_tail {
+      | FArg tCOMMA FBlockOptarg                                opt_block_args_tail {
             $1.
                         concat($3).
                         concat($4) }
-      | f_arg tCOMMA FBlockOptarg tCOMMA                   f_arg opt_block_args_tail {
+      | FArg tCOMMA FBlockOptarg tCOMMA                   FArg opt_block_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($6) }
-      | f_arg tCOMMA                       FRestArg              opt_block_args_tail {
+      | FArg tCOMMA                       FRestArg              opt_block_args_tail {
             $1.
                         concat($3).
                         concat($4) }
-      | f_arg tCOMMA
-      | f_arg tCOMMA                       FRestArg tCOMMA f_arg opt_block_args_tail {
+      | FArg tCOMMA
+      | FArg tCOMMA                       FRestArg tCOMMA FArg opt_block_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($6) }
-      | f_arg                                                      opt_block_args_tail {
+      | FArg                                                      opt_block_args_tail {
             if $2.empty? && $1.size == 1
               [mk_procarg0($1[0])]
             else
@@ -784,7 +784,7 @@ block_param: f_arg tCOMMA FBlockOptarg tCOMMA FRestArg              opt_block_ar
             $1.
                         concat($3).
                         concat($4) }
-      | FBlockOptarg tCOMMA              FRestArg tCOMMA f_arg opt_block_args_tail {
+      | FBlockOptarg tCOMMA              FRestArg tCOMMA FArg opt_block_args_tail {
             $1.
                         concat($3).
                         concat($5).
@@ -792,14 +792,14 @@ block_param: f_arg tCOMMA FBlockOptarg tCOMMA FRestArg              opt_block_ar
       | FBlockOptarg                                             opt_block_args_tail {
             $1.
                         concat($2) }
-      | FBlockOptarg tCOMMA                                f_arg opt_block_args_tail {
+      | FBlockOptarg tCOMMA                                FArg opt_block_args_tail {
             $1.
                         concat($3).
                         concat($4) }
       |                                    FRestArg              opt_block_args_tail {
             $1.
                         concat($2) }
-      |                                    FRestArg tCOMMA f_arg opt_block_args_tail {
+      |                                    FRestArg tCOMMA FArg opt_block_args_tail {
             $1.
                         concat($3).
                         concat($4) }
@@ -1043,23 +1043,6 @@ UserVariable: tIDENTIFIER { mk_ident $1 }
   | tGVAR { mk_gvar $1 }
   | tCONSTANT { mk_const $1 }
   | tCVAR { mk_cvar $1 }
-{-
-
-KeywordVariable: kNIL {
-            mk_Nil($1) }
-      | kSELF {
-            mk_self($1) }
-      | kTRUE {
-            mk_true($1) }
-      | kFALSE {
-            mk_false($1) }
-      | k__FILE__ {
-            mk___FILE__($1) }
-      | k__LINE__ {
-            mk___LINE__($1) }
-      | k__ENCODING__ {
-            mk___ENCODING__($1) }
--}
 
 VarRef: UserVariable { mk_accessible($1) }
   | KeywordVariable { mk_accessible($1) }
@@ -1099,43 +1082,43 @@ args_tail: FKwarg tCOMMA FKwrest OptFBlockArg {
 opt_args_tail: tCOMMA args_tail { $2 }
       | # nothing { [] }
 
-f_args: f_arg tCOMMA FOptarg tCOMMA FRestArg              opt_args_tail {
+f_args: FArg tCOMMA FOptarg tCOMMA FRestArg              opt_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($6) }
-      | f_arg tCOMMA FOptarg tCOMMA FRestArg tCOMMA f_arg opt_args_tail {
+      | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg opt_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($7).
                         concat($8) }
-      | f_arg tCOMMA FOptarg                                opt_args_tail {
+      | FArg tCOMMA FOptarg                                opt_args_tail {
             $1.
                         concat($3).
                         concat($4) }
-      | f_arg tCOMMA FOptarg tCOMMA                   f_arg opt_args_tail {
+      | FArg tCOMMA FOptarg tCOMMA                   FArg opt_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($6) }
-      | f_arg tCOMMA                 FRestArg              opt_args_tail {
+      | FArg tCOMMA                 FRestArg              opt_args_tail {
             $1.
                         concat($3).
                         concat($4) }
-      | f_arg tCOMMA                 FRestArg tCOMMA f_arg opt_args_tail {
+      | FArg tCOMMA                 FRestArg tCOMMA FArg opt_args_tail {
             $1.
                         concat($3).
                         concat($5).
                         concat($6) }
-      | f_arg                                                opt_args_tail {
+      | FArg                                                opt_args_tail {
             $1.
                         concat($2) }
       |              FOptarg tCOMMA FRestArg              opt_args_tail {
             $1.
                         concat($3).
                         concat($4) }
-      |              FOptarg tCOMMA FRestArg tCOMMA f_arg opt_args_tail {
+      |              FOptarg tCOMMA FRestArg tCOMMA FArg opt_args_tail {
             $1.
                         concat($3).
                         concat($5).
@@ -1143,14 +1126,14 @@ f_args: f_arg tCOMMA FOptarg tCOMMA FRestArg              opt_args_tail {
       |              FOptarg                                opt_args_tail {
             $1.
                         concat($2) }
-      |              FOptarg tCOMMA                   f_arg opt_args_tail {
+      |              FOptarg tCOMMA                   FArg opt_args_tail {
             $1.
                         concat($3).
                         concat($4) }
       |                              FRestArg              opt_args_tail {
             $1.
                         concat($2) }
-      |                              FRestArg tCOMMA f_arg opt_args_tail {
+      |                              FRestArg tCOMMA FArg opt_args_tail {
             $1.
                         concat($3).
                         concat($4) }
@@ -1169,29 +1152,23 @@ FNormArg: FBadArg { $1 }
   | tIDENTIFIER { $1 }
 
 FArgAsgn: FNormArg { $1 }
-{-
-FArgItem: FArgAsgn {
-            mk_Arg($1) }
-      | tLPAREN FMargs Rparen {
-            (mk_multi_lhs $1 $2 $3) }
 
-  f_arg: FArgItem { [ $1 ] }
-      | f_arg tCOMMA FArgItem { $1 ++ [$3] }
+FArgItem: FArgAsgn { mk_arg $1 }
+  | tLPAREN FMargs Rparen { mk_multi_lhs $1 $2 $3 }
 
--}
+FArg: FArgItem { [ $1 ] }
+  | FArg tCOMMA FArgItem { $1 ++ [$3] }
 
 FLabel: tLABEL { undefined } -- { check_kwarg_name($1) @static_env.declare $1[0] $1 }
 
 FKw: FLabel Arg { mk_kwoptarg $1 $2 }
   | FLabel { mk_kwarg $1 }
 
-{-
-f_block_kw: FLabel Primary { (mk_kwoptarg $1 $2) }
-      | FLabel { mk_kwarg $1 }
+FBlockKw: FLabel Primary { mk_kwoptarg $1 $2 }
+  | FLabel { mk_kwarg $1 }
 
-f_block_kwarg: f_block_kw { [ $1 ] }
-      | f_block_kwarg tCOMMA f_block_kw { $1 ++ [$3] }
--}
+FBlockKwarg: FBlockKw { [ $1 ] }
+  | FBlockKwarg tCOMMA FBlockKw { $1 ++ [$3] }
 
 FKwarg: FKw { [ $1 ] }
   | FKwarg tCOMMA FKw { $1 ++ [$3] }
