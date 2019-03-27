@@ -166,3 +166,6 @@ mk_when = undefined
 mk_word = undefined
 mk_words_compose = undefined
 mk_xstring_compose = undefined
+
+-- mk_block' (begin_t, args, body, end_t) = mk_block (mk_call_method $1 $2 $3 $4) begin_t Args body end_t
+mk_block' = undefined

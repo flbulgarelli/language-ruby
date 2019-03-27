@@ -263,36 +263,12 @@ BlockCommand: BlockCall { $1 }
 CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
 -- tLBRACE_ARG { @context.push(:block) } BraceBody tRCURLY { [ $1, *$3, $4 ] @context.pop }
 
-Command: KeywordVariable { $1 }
-{-
-Command: -- Operation CommandArgs =tLOWEST { mk_call_method Nil Nil $1 Nil $2 Nil) }
-  --    | Operation CommandArgs CmdBraceBlock
-  --  {
-  --              MethodCall = mk_call_method Nil Nil $1,
-  --                                Nil $2 Nil)
-  --
-  --              begin_t Args body end_t = $3
-  --              result      = mk_block(MethodCall,
-  --                              begin_t Args body end_t)
-  --  }
-  -- Primary CallOp Operation2 CommandArgs =tLOWEST { mk_call_method $1 $2 $3 Nil $4 Nil) }
-  Primary CallOp Operation2 CommandArgs CmdBraceBlock {
-            MethodCall = mk_call_method $1 $2 $3,
-                              Nil $4 Nil)
-
-            begin_t Args body end_t = $5
-            result      = mk_block(MethodCall,
-                            begin_t Args body end_t) }
-      | Primary tCOLON2 Operation2 CommandArgs =tLOWEST {
-            mk_call_method $1 $2 $3,
-                        Nil $4 Nil) }
-      | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock {
-            MethodCall = mk_call_method $1 $2 $3,
-                              Nil $4 Nil)
-
-            begin_t Args body end_t = $5
-            result      = mk_block(MethodCall,
-                            begin_t Args body end_t) } -}
+Command: Operation CommandArgs {-=tLOWEST-} { mk_call_method Nil Nil $1 Nil $2 Nil }
+  | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
+  | Primary CallOp Operation2 CommandArgs {-=tLOWEST-} { mk_call_method $1 $2 $3 $4 }
+  | Primary CallOp Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $2 $3 $4 $5 }
+  | Primary tCOLON2 Operation2 CommandArgs {-=tLOWEST-} { mk_call_method $1 $3 $4 }
+  | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $3 $4 $5 }
   | kSUPER CommandArgs { mk_keyword_cmd Super $1 Nil $2 Nil }
   | kYIELD CommandArgs { mk_keyword_cmd Yield $1 Nil $2 Nil }
   | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
@@ -1197,7 +1173,7 @@ Assoc: Arg tASSOC Arg { mk_pair $1 $2 $3 }
 --    | tSTRING_BEG StringContents tLABEL_END Arg { mk_pair_quoted $1, $2 $3 $4 }
 --    | tDSTAR Arg { mk_kwsplat $1 $2 }
 
-operation: tIDENTIFIER { $1 }
+Operation: tIDENTIFIER { $1 }
   | tCONSTANT { $1 }
   | tFID { $1 }
 
