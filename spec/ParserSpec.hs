@@ -31,7 +31,8 @@ spec = do
     test "int" "+42" (RInt 42)
     test "int" "-42" (RInt $ -42)
 
-    test "int___LINE__" "__LINE__" (RInt 1)
+    -- test "int___LINE__" "__LINE__" (RInt 1)
+    test "int___LINE__" "__LINE__" Line
 
     test "float" "1.33" (RFloat 1.33)
     test "float" "-1.33" (RFloat $ -1.33)

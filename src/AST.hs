@@ -52,6 +52,10 @@ data Term =
        | Sym String
        | Dsym Term Term
        | Undef Term Term Term
+       | Break
+       | Next
+       | Redo
+       | Retry
        deriving (Eq, Show)
 
 data Mlhs = Mlhs [Term] deriving (Eq, Show)
