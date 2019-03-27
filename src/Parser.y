@@ -222,25 +222,21 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
 
 {-
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
-      | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
-      | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs {
-            mk_op_assign(
-                        mk_index(
-                          $1, $2, $3, $4),
-                        $5, $6) }
-      | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $4, $5 }
-      | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { (mk_op_assign  mk_call_method  $1 $2 $3) $4 $5 }
-      | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { (mk_op_assign (mk_const_op_assignable  mk_const_fetch $1 $2 $3)) $4 $5 }
-      | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs {
-            mk_op_assign(
-                        mk_call_method
-                          $1, $2, $3),
-                        $4, $5) }
-      | Backref tOP_ASGN CommandRhs { mk_op_assign $1 $2 $3 }
+  | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
+  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs {
+        mk_op_assign(
+                    mk_index(
+                      $1, $2, $3, $4),
+                    $5, $6) }
+  | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $4, $5 }
+  | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { (mk_op_assign  mk_call_method  $1 $2 $3) $4 $5 }
+  | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { (mk_op_assign (mk_const_op_assignable  mk_const_fetch $1 $2 $3)) $4 $5 }
+  | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $4 $5 }
+  | Backref tOP_ASGN CommandRhs { mk_op_assign $1 $2 $3 }
 
 CommandRhs: CommandCall =tOP_ASGN
-      | CommandCall kRESCUE_MOD Stmt { mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
-      | CommandAsgn { $1 }
+  | CommandCall kRESCUE_MOD Stmt { mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
+  | CommandAsgn { $1 }
 -}
 
 Expr: CommandCall { $1 }
@@ -321,12 +317,12 @@ Lhs: UserVariable { mk_assignable $1 }
   | Backref { mk_assignable $1 }
 
 {-
-cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
+Cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
     | tCONSTANT
 
-cpath: tCOLON3 cname { (mk_const_global $1 $2) }
-    | cname { mk_const($1) }
-    | Primary tCOLON2 cname { (mk_const_fetch $1 $2 $3) }
+Cpath: tCOLON3 Cname { (mk_const_global $1 $2) }
+    | Cname { mk_const($1) }
+    | Primary tCOLON2 Cname { (mk_const_fetch $1 $2 $3) }
 
 -}
 Fname: tIDENTIFIER { undefined }
@@ -391,7 +387,7 @@ Arg: -- Lhs tEQL ArgRhs { (mk_assign $1 $2 $3) }
      | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
      | Arg tAMPER2 Arg { (mk_binary_op $1 $2 $3) }
      | Arg tCMP Arg { (mk_binary_op $1 $2 $3) }
- --  | rel_expr =tCMP
+ --  | RelExpr =tCMP
      | Arg tEQ Arg { (mk_binary_op $1 $2 $3) }
      | Arg tEQQ Arg { (mk_binary_op $1 $2 $3) }
      | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
@@ -414,29 +410,21 @@ Relop: tGT { $1 }
 
 {-
 
-rel_expr: Arg Relop Arg =tGT {
-            (mk_binary_op $1 $2 $3) }
-      | rel_expr Relop Arg =tGT {
-            (mk_binary_op $1 $2 $3) }
+RelExpr: Arg Relop Arg =tGT { mk_binary_op $1 $2 $3 }
+  | RelExpr Relop Arg =tGT { mk_binary_op $1 $2 $3 }
 
-ArefArgs: None
-      | Args Trailer
-      | Args tCOMMA Assocs Trailer { $1 ++ [mk_associate Nil $3 Nil] }
-      | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
+ArefArgs: None { undefined }
+  | Args Trailer { undefined }
+  | Args tCOMMA Assocs Trailer { $1 ++ [mk_associate Nil $3 Nil] }
+  | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
 
 ArgRhs: Arg =tOP_ASGN
-      | Arg kRESCUE_MOD Arg {
-            rescue_body = mk_rescue_body $2,
-                              Nil, Nil, Nil,
-                              Nil, $3)
+  | Arg kRESCUE_MOD Arg { (mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ]) }
 
-            (mk_begin_body $1 [ rescue_body ]) }
+ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 
--- paren_args: tLPAREN2 OptCallArgs Rparen { $1 }
-
-opt_paren_args:
-  # nothing { [ Nil, [], Nil ] }
-  -- | paren_args
+OptParenArgs: -- # nothing { [ Nil, [], Nil ] }
+  -- | ParenArgs
 -}
 OptCallArgs: -- # nothing { [] }
   CallArgs { undefined } -- { $1 }
@@ -518,134 +506,49 @@ Primary: Literal { $1 }
 --      | Qwords
 --      | Symbols
 --      | Qsymbols
-      | VarRef { $1 }
-      | Backref { $1 }
-      | tFID { mk_call_method $1 }
-      | kBEGIN Bodystmt kEND { mk_begin_keyword $2 }
+  | VarRef { $1 }
+  | Backref { $1 }
+  | tFID { mk_call_method $1 }
+  | kBEGIN Bodystmt kEND { mk_begin_keyword $2 }
 --      | tLPAREN_ARG Stmt Rparen { mk_begin $2 $3 }
 --      | tLPAREN_ARG OptNl tRPAREN { mk_begin $2 }
-      | tLPAREN Compstmt tRPAREN { mk_begin $2 }
-      | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 }
-      | tCOLON3 tCONSTANT { mk_const_global $1 $2 }
---      | tLBRACK ArefArgs tRBRACK { mk_array $1 $2 $3 }
---      | tLBRACE AssocList tRCURLY KReturn { mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1 }
---      | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $1 $2 $3 $4 }
---      | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1, $2, [], $3 }
+  | tLPAREN Compstmt tRPAREN { mk_begin $2 }
+  | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 }
+  | tCOLON3 tCONSTANT { mk_const_global $1 $2 }
+--  | tLBRACK ArefArgs tRBRACK { mk_array $1 $2 $3 }
+--  | tLBRACE AssocList tRCURLY KReturn { mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1 }
+--  | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $1 $2 $3 $4 }
+--  | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1, $2, [], $3 }
       -- | kYIELD { mk_keyword_cmd Yield $1 }
       -- | kDEFINED OptNl tLPAREN2 Expr Rparen { (mk_keyword_cmd :defined?, $1, $3 [ $4 ] $5) }
       -- | kNOT tLPAREN2 Expr Rparen { mk_not_op $1 $2 $3 $4 }
       -- | kNOT tLPAREN2 Rparen { mk_not_op $1 $2 Nil $3 }
-      -- | Operation BraceBlock {
-      --       MethodCall = mk_call_method Nil, Nil, $1)
-
-      --       begin_t, Args, body, end_t = $2
-      --       result      = mk_block MethodCall begin_t Args body end_t }
+      -- | Operation BraceBlock { let (begin_t, Args, body, end_t) = $2 in mk_block (mk_call_method Nil Nil $1) begin_t Args body end_t }
       -- | MethodCall
-      -- | MethodCall BraceBlock {
-      --       begin_t, Args, body, end_t = $2
-      --       result      = mk_block($1,
-      --                       begin_t, Args, body, end_t) }
-      -- | tLAMBDA lambda {
-      --       lambda_call = mk_call_lambda($1)
-
-      --       Args, (begin_t, body, end_t) = $2
-      --       result      = mk_block(lambda_call,
-      --                       begin_t, Args, body, end_t) }
-      -- | kIF Expr Then Compstmt IfTail kEND { else_t, else_ = $5 ; mk_condition($1, $2, $3, $4, else_t, else_,  $6) }
-      -- | kUNLESS Expr Then Compstmt OptElse kEND { else_t, else_ = $5; mk_condition($1, $2, $3, else_,  else_t, $4, $6) }
-      -- | kWHILE ExprValueDo Compstmt kEND  { (mk_loop :while, $1, *$2 $3 $4)  }
-      -- | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop :until, $1, *$2 $3 $4) }
+      -- | MethodCall BraceBlock { let (begin_t, Args, body, end_t) = $2 in (mk_block $1 begin_t Args body end_t) }
+      -- | tLAMBDA Lambda { let (args, (begin_t, body, end_t)) = $2 in (mk_block (mk_call_lambda $1) begin_t args body end_t) }
+      -- | kIF Expr Then Compstmt IfTail kEND { let (else_t, else_) = $5 in (mk_condition $1 $2 $3 $4 else_t else_  $6) }
+      -- | kUNLESS Expr Then Compstmt OptElse kEND { let (else_t, else_) = $5 in (mk_condition $1 $2 $3 else_  else_t $4 $6) }
+      -- | kWHILE ExprValueDo Compstmt kEND  { (mk_loop While $1 $2 $3 $4)  }
+      -- | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
       -- | kCASE Expr OptTerms CaseBody kEND
       --     {
       --       *when_bodies, (else_t, else_body) = *$4
-
-      --       mk_case($1, $2,
-      --                                     when_bodies, else_t, else_body,
-      --                                     $5) }
-      --       | kCASE            OptTerms CaseBody kEND {
+      --       (mk_case $1 $2 when_bodies else_t else_body $5) }
+      --       | kCASE OptTerms CaseBody kEND {
       --             *when_bodies, (else_t, else_body) = *$3
-
-      --             mk_case($1, Nil,
-      --                                     when_bodies, else_t, else_body,
-      --                                     $4) }
+      --             mk_case($1, Nil, when_bodies, else_t, else_body, $4) }
       --       | kFOR for_--var kIN ExprValueDo Compstmt kEND  { (mk_for $1, $2, $3, *$4 $5 $6)
       --     }
-      -- | kCLASS cpath superclass
-      --     {
-      --       @static_env.extend_static
-      --       @lexer.cmdarg.push(false)
-      --       @lexer.cond.push(false)
-      --             @context.push(:class) }
-      --           Bodystmt kEND {
-      --             unless @context.class_definition_allowed?
-      --               error ":class_in_def, Nil, $1"
-      --             end
-
-      --             lt_t, superclass = $3
-      --             mk_def_class($1, $2,
-      --                                         lt_t, superclass,
-      --                                         $5, $6)
-
-      --             @lexer.cmdarg.pop
-      --             @lexer.cond.pop
-      --             @static_env.unextend
-      --             @context.pop }
-      -- | kCLASS tLSHFT Expr Term {
-      --             @static_env.extend_static
-      --             @lexer.cmdarg.push(false)
-      --             @lexer.cond.push(false)
-      --             @context.push(:sclass) }
-      --           Bodystmt kEND {
-      --             mk_def_sclass $1 $2 $3 $6 $7
-
-      --             @lexer.cmdarg.pop
-      --             @lexer.cond.pop
-      --             @static_env.unextend
-      --             @context.pop }
-      --       | kMODULE cpath {
-      --             @static_env.extend_static
-      --             @lexer.cmdarg.push(false) }
-      --           Bodystmt kEND {
-      --             unless @context.module_definition_allowed?
-      --               error ":module_in_def, Nil, $1"
-      --             end
-
-      --             mk_def_module($1, $2,
-      --                                           $4, $5)
-
-      --             @lexer.cmdarg.pop
-      --             @static_env.unextend }
-      --       | kDEF Fname {
-      --             @static_env.extend_static
-      --             @lexer.cmdarg.push(false)
-      --             @lexer.cond.push(false)
-      --             @context.push(:def) }
-      --           f_arglist Bodystmt kEND {
-      --             mk_def_method($1, $2,
-      --                         $4, $5, $6)
-
-      --             @lexer.cmdarg.pop
-      --             @lexer.cond.pop
-      --             @static_env.unextend
-      --             @context.pop }
-      --       | kDEF Singleton DotOrColon {
-      --             @lexer.state = :expr_fname }
-      --           Fname {
-      --             @static_env.extend_static
-      --             @lexer.cmdarg.push(false)
-      --             @lexer.cond.push(false)
-      --             @context.push(:defs) }
-      --           f_arglist Bodystmt kEND {
-      --             mk_def_singleton $1 $2 $3 $5 $7 $8 $9
-
-      --             @lexer.cmdarg.pop
-      --             @lexer.cond.pop
-      --             @static_env.unextend
-      --             @context.pop }
-            | kBREAK { mk_keyword_cmd Break, $1 }
-            | kNEXT { mk_keyword_cmd Next, $1 }
-            | kREDO { mk_keyword_cmd Redo $1 }
-            | kRETRY { mk_keyword_cmd Retry $1 }
+      -- | kCLASS Cpath superclass Bodystmt kEND { let (lt_t, superclass) = $3 in (mk_def_class $1 $2 lt_t superclass $5 $6) }
+      -- | kCLASS tLSHFT Expr Term Bodystmt kEND { mk_def_sclass $1 $2 $3 $6 $7 }
+      -- | kMODULE Cpath Bodystmt kEND { (mk_def_module $1 $2 $4 $5) }
+      -- | kDEF Fname FArglist Bodystmt kEND { (mk_def_method $1 $2 $4 $5 $6) }
+      -- | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { mk_def_singleton $1 $2 $3 $5 $7 $8 $9 }
+  | kBREAK { mk_keyword_cmd Break, $1 }
+  | kNEXT { mk_keyword_cmd Next, $1 }
+  | kREDO { mk_keyword_cmd Redo $1 }
+  | kRETRY { mk_keyword_cmd Retry $1 }
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
 
@@ -658,7 +561,7 @@ Do: Term { undefined }
 
 {-
 
-IfTail: OptElse
+IfTail: OptElse { undefined }
   | kELSIF Expr Then Compstmt IfTail { else_t, else_ = $5 [ $1, mk_condition($1, $2, $3, $4, else_t, else_,  Nil) ] }
 
 -}
@@ -674,152 +577,70 @@ FMargList: FMarg { [ $1 ] }
 
 FMargs: FMargList { $1 }
   -- | FMargList tCOMMA tSTAR FNormArg { $1. push(mk_restarg $3 $4) }
-  -- | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { $1. push(mk_restarg $3 $4). concat($6) }
+  -- | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { $1. push(mk_restarg $3 $4). ++ $6 }
   -- | FMargList tCOMMA tSTAR { $1. push(mk_restarg($3)) }
-  -- | FMargList tCOMMA tSTAR tCOMMA FMargList { $1. push(mk_restarg($3)). concat($5) }
+  -- | FMargList tCOMMA tSTAR tCOMMA FMargList { $1. push(mk_restarg($3)). ++ $5 }
   -- | tSTAR FNormArg { [ (mk_restarg $1 $2) ] }
   -- | tSTAR FNormArg tCOMMA FMargList { [ (mk_restarg $1 $2), *$4 ] }
   | tSTAR { [ mk_restarg $1 ] }
   -- | tSTAR tCOMMA FMargList { [ mk_restarg($1), *$3 ] }
 {-
-block_args_tail: FBlockKwarg tCOMMA FKwrest OptFBlockArg {
-            $1.concat($3).concat($4) }
-      | FBlockKwarg OptFBlockArg {
-            $1.concat($2) }
-      | FKwrest OptFBlockArg {
-            $1.concat($2) }
-      | FBlockArg { [ $1 ] }
+BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4) }
+  | FBlockKwarg OptFBlockArg { $1 ++ $2) }
+  | FKwrest OptFBlockArg { $1 ++ $2) }
+  | FBlockArg { [ $1 ] }
 
-opt_block_args_tail:
-        tCOMMA block_args_tail { $2 }
-      | # nothing { [] }
+OptBlockArgsTail: tCOMMA BlockArgsTail { $2 }
+  -- | # nothing { [] }
 
-block_param: FArg tCOMMA FBlockOptarg tCOMMA FRestArg              opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($7).
-                        concat($8) }
-      | FArg tCOMMA FBlockOptarg                                opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      | FArg tCOMMA FBlockOptarg tCOMMA                   FArg opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      | FArg tCOMMA                       FRestArg              opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
+BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
+      | FArg tCOMMA FBlockOptarg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+      | FArg tCOMMA FBlockOptarg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FArg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
       | FArg tCOMMA
-      | FArg tCOMMA                       FRestArg tCOMMA FArg opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      | FArg                                                      opt_block_args_tail {
-            if $2.empty? && $1.size == 1
-              [mk_procarg0($1[0])]
-            else
-              $1.concat($2)
-            end }
-      | FBlockOptarg tCOMMA              FRestArg              opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      | FBlockOptarg tCOMMA              FRestArg tCOMMA FArg opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      | FBlockOptarg                                             opt_block_args_tail {
-            $1.
-                        concat($2) }
-      | FBlockOptarg tCOMMA                                FArg opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      |                                    FRestArg              opt_block_args_tail {
-            $1.
-                        concat($2) }
-      |                                    FRestArg tCOMMA FArg opt_block_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-                        |                                                                block_args_tail
+      | FArg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FArg OptBlockArgsTail { if null $2 && length $1 == 1 then [mk_procarg0 $1[0]] else $1 ++ $2 }
+      | FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+      | FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FBlockOptarg OptBlockArgsTail { $1 ++ $2 }
+      | FBlockOptarg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+      | FRestArg OptBlockArgsTail { $1 ++ $2 }
+      | FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+      | BlockArgsTail
 -}
 OptBlockParam: { undefined }
 {-
 OptBlockParam: -- # nothing { (mk_args Nil [] Nil) }
-      | block_param_def { @lexer.state = :Expr }
+  | BlockParamDef { $1 }
 
-block_param_def: tPIPE opt_bv_decl tPIPE {
-            (mk_args $1 $2 $3) }
-      | tOROP {
-            (mk_args $1 [] $1) }
-      | tPIPE block_param opt_bv_decl tPIPE {
-            (mk_args $1 $2.concat($3) $4) }
+BlockParamDef: tPIPE opt_bv_decl tPIPE { (mk_args $1 $2 $3) }
+  | tOROP { (mk_args $1 [] $1) }
+  | tPIPE BlockParam opt_bv_decl tPIPE { (mk_args $1 $2.concat($3) $4) }
 
 opt_bv_decl: OptNl { [] }
-      | OptNl tSEMI bv_decls OptNl {
-            $3 }
+  | OptNl tSEMI BvDecls OptNl { $3 }
 
-bv_decls: bvar { [ $1 ] }
-      | bv_decls tCOMMA bvar {
-            $1 ++ [$3] }
+BvDecls: Bvar { [ $1 ] }
+      | BvDecls tCOMMA Bvar { $1 ++ [$3] }
 
-  bvar: tIDENTIFIER {
-            @static_env.declare $1[0]
-            mk_shadowarg($1) }
-      | FBadArg
+Bvar: tIDENTIFIER { mk_shadowarg($1) }
+    | FBadArg
 
-lambda:   {
-            @static_env.extend_dynamic }
-        f_larglist {
-            @lexer.cmdarg.push(false) }
-        lambda_body {
-            @lexer.cmdarg.pop
+Lambda: FLarglist { @lexer.cmdarg.push(false) } LambdaBody { @lexer.cmdarg.pop; [ $2, $4 ]; @static_env.unextend }
 
-            [ $2, $4 ]
+FLarglist: tLPAREN2 FArgs opt_bv_decl tRPAREN { (mk_args $1 $2.concat($3) $4) }
+  | FArgs { (mk_args Nil $1 Nil) }
 
-            @static_env.unextend }
-
-f_larglist: tLPAREN2 f_args opt_bv_decl tRPAREN {
-            (mk_args $1 $2.concat($3) $4) }
-      | f_args {
-            (mk_args Nil $1 Nil) }
-
-lambda_body: tLAMBEG {
-            @context.push(:lambda) }
-        Compstmt tRCURLY {
-            [ $1, $3, $4 ]
-            @context.pop }
-      | kDO_LAMBDA {
-            @context.push(:lambda) }
-        Bodystmt kEND {
-            [ $1, $3, $4 ]
-            @context.pop }
+LambdaBody: tLAMBEG { @context.push(:Lambda) } Compstmt tRCURLY { [ $1, $3, $4 ] @context.pop }
+  | kDO_LAMBDA { @context.push(:Lambda) } Bodystmt kEND { [ $1, $3, $4 ] @context.pop }
 
             -}
 DoBlock: kDO_BLOCK  DoBody kEND { undefined } -- { @context.push(:block) } { [ $1, *$3, $4 ] @context.pop }
 BlockCall: Command DoBlock { undefined }
 {-
-BlockCall: Command DoBlock {
-            begin_t, block_args, body, end_t = $2
-            result      = mk_block($1, begin_t, block_args, body, end_t) }
-      | BlockCall DotOrColon Operation2 opt_paren_args {
-            lparen_t, Args, rparen_t = $4
-            mk_call_method $1, $2, $3,
-                        lparen_t, Args, rparen_t) }
-      | BlockCall DotOrColon Operation2 opt_paren_args BraceBlock {
-            lparen_t, Args, rparen_t = $4
+BlockCall: Command DoBlock { let (begin_t, block_args, body, end_t) = $2 in (mk_block $1 begin_t block_args body end_t) }
+  | BlocAall DotOrColon Operation2 OptParen_args { let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1 $2 $3 lparen_t Args rparen_t } -- | BlockCall DotOrColon Operation2 OptParen_args BraceBlock { lparen_t, Args, rparen_t = $4
             MethodCall = mk_call_method $1, $2, $3,
                             lparen_t, Args, rparen_t)
 
@@ -834,36 +655,15 @@ BlockCall: Command DoBlock {
             result      = mk_block(MethodCall,
                             begin_t, Args, body, end_t) }
 
-MethodCall: Operation paren_args {
-            lparen_t, Args, rparen_t = $2
-            mk_call_method Nil, Nil, $1,
-                        lparen_t, Args, rparen_t) }
-      | Primary CallOp Operation2 opt_paren_args {
-            lparen_t, Args, rparen_t = $4
-            mk_call_method $1, $2, $3,
-                        lparen_t, Args, rparen_t) }
-      | Primary tCOLON2 Operation2 paren_args {
-            lparen_t, Args, rparen_t = $4
-            mk_call_method $1, $2, $3,
-                        lparen_t, Args, rparen_t) }
-      | Primary tCOLON2 operation3 {
-            mk_call_method $1, $2, $3) }
-      | Primary CallOp paren_args {
-            lparen_t, Args, rparen_t = $3
-            mk_call_method $1, $2, Nil,
-                        lparen_t, Args, rparen_t) }
-      | Primary tCOLON2 paren_args {
-            lparen_t, Args, rparen_t = $3
-            mk_call_method $1, $2, Nil,
-                        lparen_t, Args, rparen_t) }
-      | kSUPER paren_args {
-            lparen_t, Args, rparen_t = $2
-            mk_keyword_cmd(:super, $1,
-                        lparen_t, Args, rparen_t) }
-      | kSUPER {
-            (mk_keyword_cmd :zsuper $1) }
-      | Primary tLBRACK2 OptCallArgs RBracket {
-            (mk_index $1, $2 $3 $4) }
+MethodCall: Operation ParenArgs { let (lparen_t, Args, rparen_t) = $2 in mk_call_method Nil Nil $1 lparen_t Args rparen_t }
+      | PrAary CallOp Operation2 OptParen_args { let let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1, $2, $3, lparen_t, Args, rparen_t }
+      | Primary tCOLON2 Operation2 ParenArgs { let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1 $2 $3 lparen_t Args rparen_t }
+      | Primary tCOLON2 operation3 { mk_call_method $1 $2 $3 }
+      | Primary CallOp ParenArgs { let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t }
+      | Primary tCOLON2 ParenArgs { let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t }
+      | kSUPER ParenArgs { let (lparen_t, Args, rparen_t) = $2 in mk_keyword_cmd Super $1 lparen_t Args rparen_t }
+      | kSUPER { mk_keyword_cmd Zsuper $1 }
+      | Primary tLBRACK2 OptCallArgs RBracket { (mk_index $1, $2 $3 $4 }
 
 -}
 BraceBlock: tLCURLY BraceBody tRCURLY { undefined }
@@ -930,27 +730,22 @@ XStringContents: -- # nothing { [] }
 
 {-
 
-RLgexp: tREGEXP_BEG regexp_contents tSTRING_END tREGEXP_OPT {
+RLgexp: tREGEXP_BEG RegexpContents tSTRING_END tREGEXP_OPT {
             opts   = mk_regexp_options($4)
             (mk_regexp_compose $1, $2 $3 opts) }
 
+Qwords: tQWORDS_BEG qword_list tSTRING_END {  mk_words_compose $1 $2 $3 }
 
-Qwords: tQWORDS_BEG qword_list tSTRING_END {
-S           (mk_words_compose $1 $2 $3) }
-Qqsymbols: tQSYMBOLS_BEG qsym_list tSTRING_END {
-            (mk_symbols_compose $1 $2 $3) }
+Qqsymbols: tQSYMBOLS_BEG QsymList tSTRING_END { (mk_symbols_compose $1 $2 $3) }
+
 Bqword_list: # nothing { [] }
-      | qword_list tSTRING_CONTENT tSPACE {
-            $1 << mk_string_internal($2) }
+  | qword_list tSTRING_CONTENT tSPACE { $1 << mk_string_internal($2) }
 
-qsym_list: # nothing { [] }
-      | qsym_list tSTRING_CONTENT tSPACE {
-            $1 << mk_symbol_internal($2) }
+QsymList: -- # nothing { [] }
+  | QsymList tSTRING_CONTENT tSPACE { $1 ++ [mk_symbol_internal $2] }
 
-
-regexp_contents: # nothing { [] }
-      | regexp_contents StringContent {
-            $1 << $2 }
+RegexpContents: # nothing { [] }
+  | RegexpContents StringContent { $1 ++ [$2] }
 -}
 
 StringContents: -- # nothing { [] }
@@ -999,86 +794,32 @@ superclass: tLT {
       | # nothing {
             Nil }
 
-f_arglist: tLPAREN2 f_args Rparen {
-            (mk_args $1 $2 $3)
+FArglist: tLPAREN2 FArgs Rparen { (mk_args $1 $2 $3) }
+  | FArgs Term { mk_args Nil $2 Nil }
 
-            @lexer.state = :Expr }
-      |   {
-            @lexer.in_kwarg
-            @lexer.in_kwarg = true }
-        f_args Term {
-            @lexer.in_kwarg = $1
-            (mk_args Nil $2 Nil) }
+ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { $1.concat($3).concat($4) }
+  | FKwarg OptFBlockArg { $1.concat($2) }
+  | FKwrest OptFBlockArg { $1.concat($2) }
+  | FBlockArg { [ $1 ] }
 
-args_tail: FKwarg tCOMMA FKwrest OptFBlockArg {
-            $1.concat($3).concat($4) }
-      | FKwarg OptFBlockArg {
-            $1.concat($2) }
-      | FKwrest OptFBlockArg {
-            $1.concat($2) }
-      | FBlockArg { [ $1 ] }
+OptArgsTail: tCOMMA ArgsTail { $2 }
+  -- | # nothing { [] }
 
-opt_args_tail: tCOMMA args_tail { $2 }
-      | # nothing { [] }
-
-f_args: FArg tCOMMA FOptarg tCOMMA FRestArg              opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($7).
-                        concat($8) }
-      | FArg tCOMMA FOptarg                                opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      | FArg tCOMMA FOptarg tCOMMA                   FArg opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      | FArg tCOMMA                 FRestArg              opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      | FArg tCOMMA                 FRestArg tCOMMA FArg opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      | FArg                                                opt_args_tail {
-            $1.
-                        concat($2) }
-      |              FOptarg tCOMMA FRestArg              opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      |              FOptarg tCOMMA FRestArg tCOMMA FArg opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($5).
-                        concat($6) }
-      |              FOptarg                                opt_args_tail {
-            $1.
-                        concat($2) }
-      |              FOptarg tCOMMA                   FArg opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      |                              FRestArg              opt_args_tail {
-            $1.
-                        concat($2) }
-      |                              FRestArg tCOMMA FArg opt_args_tail {
-            $1.
-                        concat($3).
-                        concat($4) }
-      |                                                          args_tail {
-            $1 }
-      | # nothing { [] }
+FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
+      | FArg tCOMMA FOptarg OptArgsTail { $1 ++ $3 ++ $4 }
+      | FArg tCOMMA FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FArg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
+      | FArg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FArg OptArgsTail { $1 ++ $2 }
+      | FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
+      | FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+      | FOptarg OptArgsTail { $1 ++ $2 }
+      | FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
+      | FRestArg OptArgsTail { $1 ++ $2 }
+      | FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
+      | ArgsTail { $1 }
+--    | # nothing { [] }
 
 -}
 
@@ -1137,12 +878,10 @@ FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $1 $2 ] }
 
 blkarg_mark: tAMPER2 | tAMPER
 
-FBlockArg: blkarg_mark tIDENTIFIER {
-            @static_env.declare $2[0]
+FBlockArg: blkarg_mark tIDENTIFIER { mk_blockarg $1 $2 }
 
-            (mk_blockarg $1 $2) }
-
-OptFBlockArg: tCOMMA FBlockArg { [ $2 ] } | { [] }
+OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
+  | { [] }
 
 Singleton: VarRef
   | tLPAREN2 Expr Rparen { $2 }
