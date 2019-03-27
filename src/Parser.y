@@ -292,13 +292,13 @@ Command: -- Operation CommandArgs =tLOWEST { mk_call_method Nil Nil $1 Nil $2 Ni
 
             begin_t Args body end_t = $5
             result      = mk_block(MethodCall,
-                            begin_t Args body end_t) }
-      | kSUPER CommandArgs { mk_keyword_cmd Super $1 Nil $2 Nil }
-      | kYIELD CommandArgs { mk_keyword_cmd Yield $1 Nil $2 Nil }
-      | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
-      | kBREAK CallArgs { mk_keyword_cmd Break $1 Nil $2 Nil }
-      | kNEXT CallArgs { mk_keyword_cmd Next $1 Nil $2 Nil }
--}
+                            begin_t Args body end_t) } -}
+  | kSUPER CommandArgs { mk_keyword_cmd Super $1 Nil $2 Nil }
+  | kYIELD CommandArgs { mk_keyword_cmd Yield $1 Nil $2 Nil }
+  | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
+  | kBREAK CallArgs { mk_keyword_cmd Break $1 Nil $2 Nil }
+  | kNEXT CallArgs { mk_keyword_cmd Next $1 Nil $2 Nil }
+
 Mlhs: MlhsBasic { mk_multi_lhs Nil $1 Nil }
   | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
 
@@ -673,11 +673,9 @@ Primary: Literal { $1 }
             | kNEXT { mk_keyword_cmd Next, $1 }
             | kREDO { mk_keyword_cmd Redo $1 }
             | kRETRY { mk_keyword_cmd Retry $1 }
-{-
 
-KReturn: kRETURN { error ":invalid_return, Nil, $1" if @context.in_class?  }
+KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
 
--}
 Then: Term { $1 }
   | kTHEN { undefined }
   | Term kTHEN { $1 }

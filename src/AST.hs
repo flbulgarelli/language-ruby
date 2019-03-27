@@ -58,6 +58,9 @@ data Term =
        | Retry
        | Dstr [Term]
        | File
+       | Yield
+       | Super
+       | Return
        deriving (Eq, Show)
 
 data Mlhs = Mlhs [Term] deriving (Eq, Show)
