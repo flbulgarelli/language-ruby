@@ -298,43 +298,43 @@ Command: -- Operation CommandArgs =tLOWEST { mk_call_method Nil Nil $1 Nil $2 Ni
       | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
       | kBREAK CallArgs { mk_keyword_cmd Break $1 Nil $2 Nil }
       | kNEXT CallArgs { mk_keyword_cmd Next $1 Nil $2 Nil }
-
+-}
 Mlhs: MlhsBasic { mk_multi_lhs Nil $1 Nil }
-    | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
+  | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
 
 MlhsInner: MlhsBasic { mk_multi_lhs Nil $1 Nil }
-      | tLPAREN MlhsInner Rparen { mk_multi_lhs $1 $2 $3 }
+  | tLPAREN MlhsInner Rparen { mk_multi_lhs $1 $2 $3 }
 
-MlhsBasic: MlhsHead
-      | MlhsHead MlhsItem { $1. push($2) }
-      | MlhsHead tSTAR MlhsNode { $1. push((mk_splat $2 $3)) }
-      | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { $1. push((mk_splat $2 $3)). concat($5) }
-      | MlhsHead tSTAR { $1. push(mk_splat($2)) }
-      | MlhsHead tSTAR tCOMMA MlhsPost { $1. push(mk_splat($2)). concat($4) }
-      | tSTAR MlhsNode { [ mk_splat $1 $2 ] }
-      | tSTAR MlhsNode tCOMMA MlhsPost { [ (mk_splat $1 $2), *$4 ] }
-      | tSTAR { [ mk_splat $1 ] }
-      | tSTAR tCOMMA MlhsPost { [ mk_splat $1 *$3 ] }
+MlhsBasic: MlhsHead { $1 }
+      | MlhsHead MlhsItem { error "$1. push($2)" }
+      | MlhsHead tSTAR MlhsNode { error " $1. push((mk_splat $2 $3)) " }
+      | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { error " $1. push((mk_splat $2 $3)). concat($5) " }
+      | MlhsHead tSTAR { error " $1. push(mk_splat($2)) " }
+      | MlhsHead tSTAR tCOMMA MlhsPost { error " $1. push(mk_splat($2)). concat($4) " }
+      | tSTAR MlhsNode { error " [ mk_splat $1 $2 ] " }
+      | tSTAR MlhsNode tCOMMA MlhsPost { error " [ (mk_splat $1 $2), *$4 ] " }
+      | tSTAR { error " [ mk_splat $1 ] " }
+      | tSTAR tCOMMA MlhsPost { error " [ mk_splat $1 *$3 ] " }
 
-MlhsItem: MlhsNode
-      | tLPAREN MlhsInner Rparen { (mk_begin $1 $2 $3) }
+MlhsItem: MlhsNode { $1 }
+      | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
 
 MlhsHead: MlhsItem tCOMMA { [ $1 ] }
-  | MlhsHead MlhsItem tCOMMA { $1 << $2 }
+  | MlhsHead MlhsItem tCOMMA { $1 ++ [$2] }
 
 MlhsPost: MlhsItem { [ $1 ] }
   | MlhsPost tCOMMA MlhsItem { $1 ++ [$3] }
 
 MlhsNode: UserVariable { mk_assignable $1  }
       | KeywordVariable { mk_assignable $1 }
-      | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
+--      | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
       | Primary CallOp tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
       | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
       | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
       | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $2 $3) }
       | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
       | Backref { mk_assignable $1 }
-
+{-
 Lhs: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
   | Primary tLBRACK2 OptCallArgs RBracket { (mk_index_asgn $1, $2 $3 $4) }
