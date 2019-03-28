@@ -141,7 +141,7 @@ import Control.Monad.Error
     tSTRING_END {L.TSTRING_END}
     tSTRING_DEND {L.TSTRING_DEND}
     tSTRING {L.TSTRING {} }
-    tSYMBOL {L.TSYMBOL}
+    tSYMBOL {L.TSYMBOL {}}
     tNL {L.TNL}
     tEH {L.TEH}
     tCOLON {L.TCOLON}

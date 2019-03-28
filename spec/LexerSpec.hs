@@ -26,6 +26,9 @@ spec = describe "Lexer:" $ do
   --   testLex "089"    `shouldBe` "[TINTEGER 0,TINTEGER 89]"
   --   testLex "0xGh"   `shouldBe` "[TINTEGER 0,IdentifierToken 'xGx']"
 
+  it "symbol" $ do
+    testLex ":cat"  `shouldBe` (TSYMBOL "cat")
+
   it "string double quote" $ do
     testLex "\"dog\""   `shouldBe` (TSTRING "dog")
 

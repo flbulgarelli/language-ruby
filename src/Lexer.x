@@ -128,13 +128,12 @@ tokens :-
     \;    { symbolToken TSEMI }
 }
 
+<0> ":" $ident_letter($ident_letter|$digit)*  { token TSYMBOL id }
 <0> $lower_letter($ident_letter|$digit)*  { keywordOrIdent }
 <0> $upper_letter($ident_letter|$digit)*  { token TCONSTANT id }
 <0> "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
 <0> "@" $ident_letter($ident_letter|$digit)*  { token TIVAR id }
 <0> "@@" $ident_letter($ident_letter|$digit)*  { token TCVAR id }
-
-
 
 {
 data Token =
@@ -267,7 +266,7 @@ data Token =
   | TSTRING_END
   | TSTRING_DEND
   | TSTRING String
-  | TSYMBOL
+  | TSYMBOL String
   | TNL
   | TEH
   | TCOLON
