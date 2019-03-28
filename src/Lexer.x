@@ -21,6 +21,8 @@ $not_eol_char = ~$eol_char -- anything but an end of line character
 $white_char   = [\ \n\r\f\v\t]
 $white_no_nl = $white_char # $eol_char
 $ident_letter = [a-zA-Z_]
+$upper_letter = [A-Z]
+$lower_letter = [a-z_]
 $digit    = 0-9
 $non_zero_digit = 1-9
 $oct_digit = 0-7
@@ -65,8 +67,8 @@ $not_double_quote = [. \n] # \"
 tokens :-
 
 <0> {
-   ' @short_str_item_single* ' { token TSTRING read }
-   \" @short_str_item_double* \" { token TSTRING read }
+   ' @short_str_item_single* ' { mkString }
+   \" @short_str_item_double* \" { mkString }
 }
 
 <0> {
@@ -126,7 +128,12 @@ tokens :-
     \;    { symbolToken TSEMI }
 }
 
-<0> $ident_letter($ident_letter|$digit)*  { \str -> keywordOrIdent str }
+<0> $lower_letter($ident_letter|$digit)*  { keywordOrIdent }
+<0> $upper_letter($ident_letter|$digit)*  { token TCONSTANT id }
+<0> "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
+<0> "@" $ident_letter($ident_letter|$digit)*  { token TIVAR id }
+<0> "@@" $ident_letter($ident_letter|$digit)*  { token TCVAR id }
+
 
 
 {
@@ -312,6 +319,7 @@ readToken = do
 lexer::(Token -> P a)->P a
 lexer cont = readToken >>= cont
 
+
 ----------
 
 type Action = String -> P Token
@@ -330,6 +338,9 @@ token mkToken read str = return $ mkToken (read str)
 symbolToken :: Token -> Action
 symbolToken t _ = return t
 
+
+mkString :: Action
+mkString = token TSTRING (\str -> drop 1 . take (length str - 1) $ str)
 
 -------------
 
