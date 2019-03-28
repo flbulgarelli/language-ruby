@@ -6,9 +6,8 @@ import Data.Ratio (Rational)
 import Data.Complex
 import Lexer (Token)
 
-data Term =
-       Empty
-       | Begin [Term]
+data Term
+       = Begin [Term]
        | KWBegin
        | Nil
        | RTrue

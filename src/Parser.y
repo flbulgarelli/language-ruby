@@ -190,7 +190,7 @@ TopCompstmt :: { Term }
 TopCompstmt: TopStmts OptTerms { mkExpression $1 }
 
 TopStmts :: { [Term] }
-TopStmts: {- nothing -} { error "TopStmts" }
+TopStmts: {- nothing -} { [] }
   | TopStmt { [ $1 ] }
   | TopStmts Terms TopStmt { $1 ++ [$3] }
   | error TopStmt { [$2] }
@@ -374,8 +374,9 @@ Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | 
     | kWHEN     {$1} | kYIELD    {$1} | kIF           {$1} | kUNLESS {$1} | kWHILE    {$1}
     | kUNTIL    {$1}
 
+Arg :: { Term }
 Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
- --  | var_lhs tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
+  | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
  --  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { mk_op_assign( mk_index($1, $2, $3, $4), $5, $6) }
  --  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { mk_op_assign( mk_call_method $1, $2, $3), $4, $5) }
  --  | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { mk_op_assign( mk_call_method $1, $2, $3), $4, $5) }
@@ -387,11 +388,11 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
  --       const  = mk_const_op_assignable((mk_const_global $1 $2))
  --       (mk_op_assign const $3 $4) }
  --  | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $2 $3) }
- --  | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
- --  | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
- --  | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
- --  | Arg tDOT3 { (mk_range_exclusive $1 $2 Nil) }
- --  | Arg tPLUS Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
+  | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
+  | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
+  | Arg tDOT3 { (mk_range_exclusive $1 $2 Nil) }
+  | Arg tPLUS Arg { (mk_binary_op $1 $2 $3) }
   | Arg tMINUS Arg { (mk_binary_op $1 $2 $3) }
   | Arg tSTAR2 Arg { (mk_binary_op $1 $2 $3) }
   | Arg tDIVIDE Arg { error "divide" }

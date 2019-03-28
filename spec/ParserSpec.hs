@@ -16,7 +16,7 @@ test title code term = it title $ do
 spec :: Spec
 spec = do
   describe "parseRuby" $ do
-    test "empty stmt" "" Empty
+    test "empty stmt" "" Nil
 
     test "nil" "nil" Nil
 
