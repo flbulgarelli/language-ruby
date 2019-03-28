@@ -75,6 +75,7 @@ casgn name parent = Casgn name parent . Just
 mkLogicalOp = undefined
 mkExpression = undefined
 
+mk_postexe = undefined
 mk___ENCODING__ = undefined
 mk___FILE__ = undefined
 mk___LINE__ = undefined

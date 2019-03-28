@@ -120,6 +120,7 @@ import Control.Monad.Error
     tMINUS {L.TMINUS}
     tLT {L.TLT}
     tGT {L.TGT}
+    tLOWEST {L.TLOWEST}
     tPIPE {L.TPIPE}
     tBANG {L.TBANG}
     tCARET {L.TCARET}
@@ -156,12 +157,36 @@ import Control.Monad.Error
     tANDDOT {L.TANDDOT}
     tMETHREF {L.TMETHREF}
 
+
+%right    tBANG tTILDE tUPLUS
+%right    tPOW
+%right    tUNARY_NUM tUMINUS
+%left     tSTAR2 tDIVIDE tPERCENT
+%left     tPLUS tMINUS
+%left     tLSHFT tRSHFT
+%left     tAMPER2
+%left     tPIPE tCARET
+%left     tGT tGEQ tLT tLEQ
+%nonassoc tCMP tEQ tEQQ tNEQ tMATCH tNMATCH
+%left     tANDOP
+%left     tOROP
+%nonassoc tDOT2 tDOT3
+%right    tEH tCOLON
+%left     kRESCUE_MOD
+%right    tEQL tOP_ASGN
+%nonassoc kDEFINED
+%right    kNOT
+%left     kOR kAND
+%nonassoc kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
+%nonassoc tLBRACE_ARG
+%nonassoc tLOWEST
+
 %%
 
 Program: TopCompstmt { undefined }
 TopCompstmt: TopStmts OptTerms { mkExpression $1 }
-TopStmts: -- nothing { Nil }
-  TopStmt { [ $1 ] }
+TopStmts: { undefined }
+  | TopStmt { [ $1 ] }
   | TopStmts Terms TopStmt { $1 ++ [$3] }
   | error TopStmt { [$2] }
 
@@ -169,7 +194,7 @@ TopStmt: Stmt { $1 } | klBEGIN BeginBlock { mk_preexe $1 $2 }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
--- Bodystmt: Compstmt OptRescue OptElse OptEnsure { undefined }
+Bodystmt: Compstmt OptRescue OptElse OptEnsure { undefined }
 -- {-  {
 --             rescue_bodies     = $2;
 --             else_t,   else_   = $3;
@@ -196,24 +221,23 @@ StmtOrBegin: Stmt { $1 }
   | klBEGIN BeginBlock { error ("begin_in_method " ++ show $1) }
 
 Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
---   --  | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
---   --  | kALIAS tGVAR tBACK_REF { (mk_alias $1 mk_gvar($2) mk_back_ref($3)) }
---   --  | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
+  | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
+  | kALIAS tGVAR tBACK_REF { (mk_alias $1 (mk_gvar $2) (mk_back_ref $3)) }
+  | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
   | kUNDEF UndefList { (mk_undef_method $1 $2) }
   | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
---   | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $2 $3 }
---   | Stmt kWHILE_MOD Expr { mk_loop_mod While $1 $2 $3 }
---   | Stmt kUNTIL_MOD Expr { mk_loop_mod Until $1 $2 $3 }
---   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
---   --  | klEND tLCURLY Compstmt tRCURLY { Postexe $ $2 $3 $4 }
---   --  | CommandAsgn
+  | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $2 $3 }
+  | Stmt kWHILE_MOD Expr { mk_loop_mod While $1 $2 $3 }
+  | Stmt kUNTIL_MOD Expr { mk_loop_mod Until $1 $2 $3 }
+  | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
+  | klEND tLCURLY Compstmt tRCURLY { mk_postexe $3 }
+  | CommandAsgn { $1 }
 --   --  | Mlhs tEQL CommandCall { MultiAssign $1 $2 $3 }
 --   | Lhs tEQL Mrhs { undefined } -- { mk_assign $1 $2 mk_array Nil $3 Nil }
 --   --  | Mlhs tEQL MrhsArg { MultiAssign $1 $2 $3 }  --  | Expr {$1 }
 
--- {-
--- CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
---   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
+CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
+-- {---   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
 --   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs {
 --         mk_op_assign(
 --                     mk_index(
@@ -225,7 +249,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
 --   | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $4 $5 }
 --   | Backref tOP_ASGN CommandRhs { mk_op_assign $1 $2 $3 }
 
--- CommandRhs: CommandCall =tOP_ASGN
+CommandRhs: CommandCall {-=-} tOP_ASGN { $1 }
 --   | CommandCall kRESCUE_MOD Stmt { mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
 --   | CommandAsgn { $1 }
 -- -}
@@ -246,20 +270,20 @@ CommandCall: Command { $1 }
 -- BlockCommand: BlockCall { $1 }
 --   | BlockCall DotOrColon Operation2 CommandArgs { mk_call_method $1 $2 $3 Nil $4 Nil }
 
--- CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
+CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
 -- -- tLBRACE_ARG { @context.push(:block) } BraceBody tRCURLY { [ $1, *$3, $4 ] @context.pop }
 
-Command: Operation CommandArgs {-=tLOWEST-} { mk_call_method Nil Nil $1 Nil $2 Nil }
---   | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
---   | Primary CallOp Operation2 CommandArgs {-=tLOWEST-} { mk_call_method $1 $2 $3 $4 }
---   | Primary CallOp Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $2 $3 $4 $5 }
---   | Primary tCOLON2 Operation2 CommandArgs {-=tLOWEST-} { mk_call_method $1 $3 $4 }
---   | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $3 $4 $5 }
---   | kSUPER CommandArgs { mk_keyword_cmd Super $1 Nil $2 Nil }
---   | kYIELD CommandArgs { mk_keyword_cmd Yield $1 Nil $2 Nil }
---   | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
---   | kBREAK CallArgs { mk_keyword_cmd Break $1 Nil $2 Nil }
---   | kNEXT CallArgs { mk_keyword_cmd Next $1 Nil $2 Nil }
+Command: Operation CommandArgs {-=-}tLOWEST { mk_call_method Nil Nil $1 Nil $2 Nil }
+  | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
+  | Primary CallOp Operation2 CommandArgs {-=-}tLOWEST { mk_call_method $1 $2 $3 $4 }
+  | Primary CallOp Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $2 $3 $4 $5 }
+  | Primary tCOLON2 Operation2 CommandArgs {-=-}tLOWEST { mk_call_method $1 $3 $4 }
+  | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $3 $4 $5 }
+  | kSUPER CommandArgs { mk_keyword_cmd Super $1 Nil $2 Nil }
+  | kYIELD CommandArgs { mk_keyword_cmd Yield $1 Nil $2 Nil }
+  | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
+  | kBREAK CallArgs { mk_keyword_cmd Break $1 Nil $2 Nil }
+  | kNEXT CallArgs { mk_keyword_cmd Next $1 Nil $2 Nil }
 
 -- Mlhs: MlhsBasic { mk_multi_lhs Nil $1 Nil }
 --   | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
@@ -297,7 +321,7 @@ Command: Operation CommandArgs {-=tLOWEST-} { mk_call_method Nil Nil $1 Nil $2 N
 --       | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
 --       | Backref { mk_assignable $1 }
 
--- Lhs: UserVariable { mk_assignable $1 }
+Lhs: UserVariable { mk_assignable $1 }
 --   | KeywordVariable { mk_assignable $1 }
 --   | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
 --   | Primary CallOp tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
@@ -489,7 +513,7 @@ Args: Arg { [ $1 ] }
 --   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
 --   | tSTAR Arg { undefined } -- { [ mk_splat $1 $2 ] }
 
--- Primary: Literal { $1 }
+Primary: Literal { $1 }
 -- --      | Strings
 -- --      | Xstring
 -- --      | Regexp
@@ -541,9 +565,9 @@ Args: Arg { [ $1 ] }
 --   | kREDO { mk_keyword_cmd Redo $1 }
 --   | kRETRY { mk_keyword_cmd Retry $1 }
 
--- KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
+KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
 
--- Then: Term { $1 }
+Then: Term { $1 }
 --   | kTHEN { undefined }
 --   | Term kTHEN { $1 }
 
@@ -557,7 +581,7 @@ Args: Arg { [ $1 ] }
 
 -- -}
 
--- OptElse: None { undefined } -- { $1 }
+OptElse: None { undefined } -- { $1 }
 --   | kELSE Compstmt { undefined } --{ $2 }
 
 -- FMarg: FNormArg { mk_arg $1 }
@@ -600,7 +624,7 @@ Args: Arg { [ $1 ] }
 --       | FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
 --       | BlockArgsTail
 -- -}
--- OptBlockParam: { undefined }
+OptBlockParam: { undefined }
 -- {-
 -- OptBlockParam: -- # nothing { (mk_args Nil [] Nil) }
 --   | BlockParamDef { $1 }
@@ -662,7 +686,7 @@ Args: Arg { [ $1 ] }
 
 -- DoBody: OptBlockParam Bodystmt { undefined }-- { @static_env.extend_dynamic } { @lexer.cmdarg.push(false) } { result = [ val[2], val[3] ] @static_env.unextend @lexer.cmdarg.pop  }
 
--- BraceBody: OptBlockParam Compstmt OptBlockParam Bodystmt { undefined } -- OptBlockParam Bodystmt { undefined } { [ $2, $3 ] @static_env.unextend  { @static_env.extend_dynamic }  @lexer.cmdarg.push(false) }
+BraceBody: OptBlockParam Compstmt OptBlockParam Bodystmt { undefined } -- OptBlockParam Bodystmt { undefined } { [ $2, $3 ] @static_env.unextend  { @static_env.extend_dynamic }  @lexer.cmdarg.push(false) }
 --      -- [ $3, $4 ] @static_env.unextend @lexer.cmdarg.pop }
 
 -- CaseBody: kWHEN Args Then Compstmt Cases { undefined } -- { [mk_when $1 $2 $3 $4] ++ $5 }
@@ -670,7 +694,7 @@ Args: Arg { [ $1 ] }
 -- Cases: OptElse { undefined } -- { [ $1 ] }
 --  | CaseBody { undefined } -- { $1 }
 
--- OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { undefined } {-
+OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { undefined } {-
 --             assoc_t, ExcVar = $3
 --             if $2
 --               ExcList = (mk_array Nil $2 Nil)
@@ -678,19 +702,19 @@ Args: Arg { [ $1 ] }
 --             [ mk_rescue_body $1, ExcList, assoc_t, ExcVar, $4, $5), *$6 ] -}
 --   -- | { [] }
 
--- ExcList: Arg { undefined } -- { [ $1 ] }
+ExcList: Arg { undefined } -- { [ $1 ] }
 --   | Mrhs { undefined } -- { $1 }
 --   | None { undefined } -- { $1 }
 
--- ExcVar: tASSOC Lhs { undefined } --{ [ $1, $2 ] }
+ExcVar: tASSOC Lhs { undefined } --{ [ $1, $2 ] }
 --   | None { undefined } -- { $1 }
 
--- OptEnsure: kENSURE Compstmt { undefined } -- { undefined }
+OptEnsure: kENSURE Compstmt { undefined } -- { undefined }
 --   | None { undefined } -- { $1 }
 
--- Literal: Numeric { $1 }
---   | Symbol { $1 }
---   | Dsym { $1 }
+Literal: Numeric { $1 }
+  | Symbol { $1 }
+  | Dsym { $1 }
 
 -- Strings: String { mk_string_compose $1 }
 
@@ -751,34 +775,34 @@ StringDvar: tGVAR { mk_gvar $1 }
   | tCVAR { mk_cvar $1 }
 --  | Backref { undefined }
 
--- Symbol: tSYMBOL { mk_symbol($1) }
+Symbol: tSYMBOL { mk_symbol $1 }
 
 Dsym: tSYMBEG XStringContents tSTRING_END { mk_symbol_compose $1 $2 $3 }
 
--- Numeric: SimpleNumeric { $1 }
---   | tUNARY_NUM SimpleNumeric { mk_unary_num $1 $2 }
+Numeric: SimpleNumeric { $1 }
+  | tUNARY_NUM SimpleNumeric tLOWEST { mk_unary_num $1 $2 }
 
--- SimpleNumeric: tINTEGER { mk_integer $1 }
---   | tFLOAT { mk_float $1 }
+SimpleNumeric: tINTEGER { mk_integer $1 }
+  | tFLOAT { mk_float $1 }
 -- -- | tRATIONAL { mk_rational($1) }
---   | tIMAGINARY { mk_complex $1 }
+  | tIMAGINARY { mk_complex $1 }
 
--- UserVariable: tIDENTIFIER { mk_ident $1 }
---   | tIVAR { mk_ivar $1 }
---   | tGVAR { mk_gvar $1 }
---   | tCONSTANT { mk_const $1 }
---   | tCVAR { mk_cvar $1 }
+UserVariable: tIDENTIFIER { mk_ident $1 }
+  | tIVAR { mk_ivar $1 }
+  | tGVAR { mk_gvar $1 }
+  | tCONSTANT { mk_const $1 }
+  | tCVAR { mk_cvar $1 }
 
--- KeywordVariable : kNIL {Nil}
---   | kSELF {Self}
---   | kTRUE {RTrue}
---   | kFALSE {RFalse}
---   | k__FILE__ {File}
---   | k__LINE__ {Line}
---   | k__ENCODING__ {Encoding}
+KeywordVariable : kNIL {Nil}
+  | kSELF {Self}
+  | kTRUE {RTrue}
+  | kFALSE {RFalse}
+  | k__FILE__ {File}
+  | k__LINE__ {Line}
+  | k__ENCODING__ {Encoding}
 
--- VarRef: UserVariable { mk_accessible($1) }
---   | KeywordVariable { mk_accessible($1) }
+VarRef: UserVariable { mk_accessible($1) }
+  | KeywordVariable { mk_accessible($1) }
 
 -- VarLhs: UserVariable { mk_assignable $1 }
 --   | KeywordVariable { mk_assignable $1 }
@@ -901,10 +925,10 @@ Operation: tIDENTIFIER { $1 }
 --   | tCONSTANT { $1 }
 --   | tFID { $1 }
 
--- Operation2: tIDENTIFIER { $1 }
---   | tCONSTANT { $1 }
---   | tFID { $1 }
---   | Op { $1 }
+Operation2: tIDENTIFIER { $1 }
+  | tCONSTANT { $1 }
+  | tFID { $1 }
+  -- | Op { $1 }
 
 -- operation3: tIDENTIFIER { $1 }
 --   | tFID { $1 }
@@ -913,7 +937,7 @@ Operation: tIDENTIFIER { $1 }
 -- DotOrColon: CallOp { $1 }
 --   | tCOLON2 { $1 }
 
--- CallOp: tDOT { undefined } -- [Dot, ($1 !! 2)]
+CallOp: tDOT { undefined } -- [Dot, ($1 !! 2)]
 --   | tANDDOT { undefined } -- [Anddot, ($1 !! 2)]
 
 OptTerms: -- |
@@ -936,7 +960,7 @@ Term: -- tSEMI { yyerrok }
 Terms: Term { $1 }
 -- -- |  $1 { Nil }
 
--- None: { undefined } -- { Nil }
+None: { undefined } -- { Nil }
 
 {
 parseError _ = throwError "!Parse Error"

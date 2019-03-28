@@ -186,6 +186,7 @@ data Token =
   | TIVAR
   | TCONSTANT
   | TLABEL
+  | TLOWEST
   | TCVAR
   | TNTH_REF
   | TBACK_REF
