@@ -184,7 +184,7 @@ import Control.Monad.Error
 %%
 
 Program :: { Term }
-Program: TopCompstmt { error "program" }
+Program: TopCompstmt { $1 }
 
 TopCompstmt :: { Term }
 TopCompstmt: TopStmts OptTerms { mkExpression $1 }
@@ -514,14 +514,15 @@ Mrhs: Args tCOMMA Arg { $1 ++ [$3] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
   | tSTAR Arg { undefined } -- { [ mk_splat $1 $2 ] }
 
+Primary :: { Term }
 Primary: Literal { $1 }
---      | Strings
---      | Xstring
+  | Strings { $1 }
+  | Xstring { $1 }
 --      | Regexp
---      | Words
---      | Qwords
---      | Symbols
---      | Qsymbols
+  | Words { $1 }
+  | Qwords { $1 }
+  | Symbols { $1 }
+  | Qsymbols { $1 }
   | VarRef { $1 }
   | Backref { $1 }
   | tFID { mk_call_method $1 }
@@ -730,7 +731,7 @@ String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
   | tSTRING { mk_string $1 }
   | tCHARACTER { mk_character $1 }
 
-Words :: { [Term] }
+Words :: { Term }
 Words: tWORDS_BEG WordList tSTRING_END { mk_words_compose $1 $2 $3 }
 
 WordList :: { [Term] }
@@ -740,13 +741,17 @@ WordList: {- nothing -} { [] }
 Word: StringContent { [ $1 ] }
   | Word StringContent { $1 ++ [$2] }
 
+Symbols :: { Term }
 Symbols: tSYMBOLS_BEG SymbolList tSTRING_END { mk_symbols_compose $1 $2 $3 }
 
+SymbolList :: { [Term] }
 SymbolList:  {- nothing -} { [] }
   | SymbolList Word tSPACE { $1 ++ [mk_word $2] }
 
+Xstring :: { Term  }
 Xstring: tXSTRING_BEG XStringContents tSTRING_END { mk_xstring_compose $2 }
 
+XStringContents :: { [Term] }
 XStringContents: {- nothing -} { [] }
   | XStringContents StringContent { $1 ++ [$2] }
 
@@ -755,17 +760,22 @@ XStringContents: {- nothing -} { [] }
 RLgexp: tREGEXP_BEG RegexpContents tSTRING_END tREGEXP_OPT {
             opts   = mk_regexp_options($4)
             (mk_regexp_compose $1, $2 $3 opts) }
+-}
+Qwords :: { Term }
+Qwords: tQWORDS_BEG QwordList tSTRING_END {  mk_words_compose $1 $2 $3 }
 
-Qwords: tQWORDS_BEG qword_list tSTRING_END {  mk_words_compose $1 $2 $3 }
+Qsymbols :: { Term }
+Qsymbols: tQSYMBOLS_BEG QsymList tSTRING_END { mk_symbols_compose $1 $2 $3 }
 
-Qqsymbols: tQSYMBOLS_BEG QsymList tSTRING_END { (mk_symbols_compose $1 $2 $3) }
+QwordList :: { [Term] }
+QwordList: {- nothing -} { [] }
+  | QwordList tSTRING_CONTENT tSPACE { $1 ++ [mk_string_internal $2 ] }
 
-Bqword_list: {- nothing -} { [] }
-  | qword_list tSTRING_CONTENT tSPACE { $1 << mk_string_internal($2) }
-
-QsymList: -- {- nothing -} { [] }
+QsymList :: { [Term] }
+QsymList: {- nothing -} { [] }
   | QsymList tSTRING_CONTENT tSPACE { $1 ++ [mk_symbol_internal $2] }
 
+{-
 RegexpContents: {- nothing -} { [] }
   | RegexpContents StringContent { $1 ++ [$2] }
 -}

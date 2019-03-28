@@ -73,7 +73,11 @@ gvasgn name = Gvasgn name . Just
 casgn name parent = Casgn name parent . Just
 
 mkLogicalOp = error "mkLogicalOp"
-mkExpression = error "mkExpression"
+
+mkExpression []  = Nil
+mkExpression [e] = e
+mkExpression xs  = Begin xs
+
 mk_multiassign = error "mk_multiassign"
 mk_postexe = error "mk_postexe"
 mk___ENCODING__ = error "mk___ENCODING__"
