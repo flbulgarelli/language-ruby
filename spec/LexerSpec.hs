@@ -47,6 +47,15 @@ spec = describe "Lexer:" $ do
   it "tcvar" $ do
     testLex "@@var"  `shouldBe` (TCVAR "@@var")
 
+  it "KSELF" $ do
+    testLex "self"  `shouldBe` KSELF
+
+  it "KTRUE" $ do
+    testLex "true"  `shouldBe` KTRUE
+
+  it "KNIL" $ do
+    testLex "nil"  `shouldBe` KNIL
+
   -- it "strings with escape chars" $ do
   --     testLex "'\t'"   `shouldBe` "[StringToken '\t']"
   --     testLex "'\\n'"  `shouldBe` "[StringToken '\\n']"
