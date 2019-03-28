@@ -231,9 +231,9 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
   | klEND tLCURLY Compstmt tRCURLY { mk_postexe $3 }
   | CommandAsgn { $1 }
-  --  | Mlhs tEQL CommandCall { mk_multiassign $1 $2 $3 }
+  | Mlhs tEQL CommandCall { mk_multiassign $1 $2 $3 }
   | Lhs tEQL Mrhs { undefined } -- { mk_assign $1 $2 mk_array Nil $3 Nil }
-  --  | Mlhs tEQL MrhsArg { mk_multiassign $1 $2 $3 }  --  | Expr {$1 }
+  | Mlhs tEQL MrhsArg { mk_multiassign $1 $2 $3 }  --  | Expr {$1 }
 
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
@@ -285,15 +285,15 @@ MlhsInner: MlhsBasic { mk_multi_lhs Nil $1 Nil }
   | tLPAREN MlhsInner Rparen { mk_multi_lhs $1 $2 $3 }
 
 MlhsBasic: MlhsHead { $1 }
-      | MlhsHead MlhsItem { error "$1. push($2)" }
-      | MlhsHead tSTAR MlhsNode { error " $1. push((mk_splat $2 $3)) " }
-      | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { error " $1. push((mk_splat $2 $3)). concat($5) " }
-      | MlhsHead tSTAR { error " $1. push(mk_splat($2)) " }
-      | MlhsHead tSTAR tCOMMA MlhsPost { error " $1. push(mk_splat($2)). concat($4) " }
-      | tSTAR MlhsNode { error " [ mk_splat $1 $2 ] " }
-      | tSTAR MlhsNode tCOMMA MlhsPost { error " [ (mk_splat $1 $2), *$4 ] " }
-      | tSTAR { error " [ mk_splat $1 ] " }
-      | tSTAR tCOMMA MlhsPost { error " [ mk_splat $1 *$3 ] " }
+  | MlhsHead MlhsItem { error "$1. push($2)" }
+  | MlhsHead tSTAR MlhsNode { error " $1. push((mk_splat $2 $3)) " }
+  | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { error " $1. push((mk_splat $2 $3)). concat($5) " }
+  | MlhsHead tSTAR { error " $1. push(mk_splat($2)) " }
+  | MlhsHead tSTAR tCOMMA MlhsPost { error " $1. push(mk_splat($2)). concat($4) " }
+  | tSTAR MlhsNode { error " [ mk_splat $1 $2 ] " }
+  | tSTAR MlhsNode tCOMMA MlhsPost { error " [ (mk_splat $1 $2), *$4 ] " }
+  | tSTAR { error " [ mk_splat $1 ] " }
+  | tSTAR tCOMMA MlhsPost { error " [ mk_splat $1 *$3 ] " }
 
 MlhsItem: MlhsNode { $1 }
       | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
@@ -305,14 +305,14 @@ MlhsPost: MlhsItem { [ $1 ] }
   | MlhsPost tCOMMA MlhsItem { $1 ++ [$3] }
 
 MlhsNode: UserVariable { mk_assignable $1  }
-      | KeywordVariable { mk_assignable $1 }
---      | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
-      | Primary CallOp tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
-      | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
-      | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
-      | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $2 $3) }
-      | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
-      | Backref { mk_assignable $1 }
+  | KeywordVariable { mk_assignable $1 }
+  | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
+  | Primary CallOp tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
+  | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
+  | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
+  | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $2 $3) }
+  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
+  | Backref { mk_assignable $1 }
 
 Lhs: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
@@ -324,15 +324,13 @@ Lhs: UserVariable { mk_assignable $1 }
   | tCOLON3 tCONSTANT { mk_assignable((mk_const_global $1 $2)) }
   | Backref { mk_assignable $1 }
 
-{-
 Cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
-    | tCONSTANT
+  | tCONSTANT { $1 }
 
-Cpath: tCOLON3 Cname { (mk_const_global $1 $2) }
-    | Cname { mk_const($1) }
-    | Primary tCOLON2 Cname { (mk_const_fetch $1 $2 $3) }
+Cpath: tCOLON3 Cname { mk_const_global $1 $2 }
+  | Cname { mk_const $1 }
+  | Primary tCOLON2 Cname { mk_const_fetch $1 $2 $3 }
 
--}
 Fname: tIDENTIFIER { undefined }
   | tCONSTANT { undefined }
   | tFID { undefined }
@@ -347,7 +345,6 @@ Fitem: Fsym { $1 }
 
 UndefList: Fitem { [ $1 ] }
   | UndefList tCOMMA Fitem { $1 ++ [$3] }
-
 
 Op:   tPIPE   {$1} | tCARET {$1} | tAMPER2 {$1} | tCMP {$1} | tEQ    {$1} | tEQQ         {$1}
   |   tMATCH  {$1} | tNMATCH{$1} | tGT     {$1} | tGEQ {$1} | tLT    {$1} | tLEQ         {$1}
@@ -365,7 +362,7 @@ Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | 
     | kWHEN     {$1} | kYIELD    {$1} | kIF           {$1} | kUNLESS {$1} | kWHILE    {$1}
     | kUNTIL    {$1}
 
-Arg: -- Lhs tEQL ArgRhs { (mk_assign $1 $2 $3) }
+Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
  --  | var_lhs tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
  --  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { mk_op_assign( mk_index($1, $2, $3, $4), $5, $6) }
  --  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { mk_op_assign( mk_call_method $1, $2, $3), $4, $5) }
@@ -383,30 +380,30 @@ Arg: -- Lhs tEQL ArgRhs { (mk_assign $1 $2 $3) }
  --  | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
  --  | Arg tDOT3 { (mk_range_exclusive $1 $2 Nil) }
  --  | Arg tPLUS Arg { (mk_binary_op $1 $2 $3) }
- --  | Arg tMINUS Arg { (mk_binary_op $1 $2 $3) }
- --  | Arg tSTAR2 Arg { (mk_binary_op $1 $2 $3) }
- --  | Arg tDIVIDE Arg { ($1 $2 $3 $4) }
- --  | Arg tPERCENT Arg { (mk_binary_op $1 $2 $3) }
- --  | Arg tPOW Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tMINUS Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tSTAR2 Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tDIVIDE Arg { error "divide" }
+  | Arg tPERCENT Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tPOW Arg { (mk_binary_op $1 $2 $3) }
  --  | tUNARY_NUM SimpleNumeric tPOW Arg { mk_unary_op($1, mk_binary_op( $2, $3, $4)) }
-        tUPLUS Arg { (mk_unary_op $1 $2) }
-     | tUMINUS Arg { (mk_unary_op $1 $2) }
-     | Arg tPIPE Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tAMPER2 Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tCMP Arg { (mk_binary_op $1 $2 $3) }
- --  | RelExpr =tCMP
-     | Arg tEQ Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tEQQ Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tMATCH Arg { (mk_match_op $1 $2 $3) }
-     | Arg tNMATCH Arg { (mk_binary_op $1 $2 $3) }
-     | tBANG Arg { (mk_not_op $1 Nil $2 Nil) }
-     | tTILDE Arg { (mk_unary_op $1 $2) }
-     | Arg tLSHFT Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tRSHFT Arg { (mk_binary_op $1 $2 $3) }
-     | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
-     | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
+  |   tUPLUS Arg { (mk_unary_op $1 $2) }
+  | tUMINUS Arg { (mk_unary_op $1 $2) }
+  | Arg tPIPE Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tAMPER2 Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tCMP Arg { (mk_binary_op $1 $2 $3) }
+--  | RelExpr =tCMP
+  | Arg tEQ Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tEQQ Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tMATCH Arg { (mk_match_op $1 $2 $3) }
+  | Arg tNMATCH Arg { (mk_binary_op $1 $2 $3) }
+  | tBANG Arg { (mk_not_op $1 Nil $2 Nil) }
+  | tTILDE Arg { (mk_unary_op $1 $2) }
+  | Arg tLSHFT Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tRSHFT Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
+  | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
  --  | kDEFINED OptNl Arg { (mk_keyword_cmd Defined $1 Nil [ $3 ] Nil }
  --  | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $2 $3 $5 $6 }
  --  | Primary
@@ -416,24 +413,22 @@ Relop: tGT { $1 }
   | tGEQ { $1 }
   | tLEQ { $1 }
 
-{-
-
-RelExpr: Arg Relop Arg =tGT { mk_binary_op $1 $2 $3 }
-  | RelExpr Relop Arg =tGT { mk_binary_op $1 $2 $3 }
+RelExpr: Arg Relop Arg {-=-} tGT { mk_binary_op $1 $2 $3 }
+  | RelExpr Relop Arg {-=-} tGT { mk_binary_op $1 $2 $3 }
 
 ArefArgs: None { undefined }
   | Args Trailer { undefined }
   | Args tCOMMA Assocs Trailer { $1 ++ [mk_associate Nil $3 Nil] }
   | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
 
-ArgRhs: Arg =tOP_ASGN
-  | Arg kRESCUE_MOD Arg { (mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ]) }
+ArgRhs: Arg {-=-} tOP_ASGN { $1 }
+  | Arg kRESCUE_MOD Arg { mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ] }
 
 ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 
-OptParenArgs: -- {- nothing -} { [ Nil, [], Nil ] }
-  -- | ParenArgs
--}
+OptParenArgs: {- nothing -} { error "[ Nil, [], Nil ]" }
+  | ParenArgs { $1 }
+
 OptCallArgs: {- nothing -} { [] }
   | CallArgs { undefined } -- { $1 }
   | Args tCOMMA { undefined } -- { $1 }
@@ -442,8 +437,8 @@ OptCallArgs: {- nothing -} { [] }
 
 CallArgs: Command { [ $1 ] }
   | Args OptBlockArg { $1 ++ $2 }
---  | Assocs OptBlockArg { [ (mk_associate Nil $1 Nil) ] result.concat($2) }
---  | Args tCOMMA Assocs OptBlockArg { $1 ++ [mk_associate Nil $3 Nil] ++ $4 }
+  | Assocs OptBlockArg { [ mk_associate Nil $1 Nil ] ++ $2  }
+  | Args tCOMMA Assocs OptBlockArg { $1 ++ [mk_associate Nil $3 Nil] ++ $4 }
   | BlockArg { [ $1 ] }
 
 CommandArgs: CallArgs { $1 }
@@ -518,15 +513,15 @@ Primary: Literal { $1 }
   | Backref { $1 }
   | tFID { mk_call_method $1 }
   | kBEGIN Bodystmt kEND { mk_begin_keyword $2 }
---      | tLPAREN_ARG Stmt Rparen { mk_begin $2 $3 }
---      | tLPAREN_ARG OptNl tRPAREN { mk_begin $2 }
+  | tLPAREN_ARG Stmt Rparen { mk_begin $2 $3 }
+  | tLPAREN_ARG OptNl tRPAREN { mk_begin $2 }
   | tLPAREN Compstmt tRPAREN { mk_begin $2 }
   | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 }
   | tCOLON3 tCONSTANT { mk_const_global $1 $2 }
---  | tLBRACK ArefArgs tRBRACK { mk_array $1 $2 $3 }
---  | tLBRACE AssocList tRCURLY KReturn { mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1 }
---  | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $1 $2 $3 $4 }
---  | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1, $2, [], $3 }
+  | tLBRACK ArefArgs tRBRACK { mk_array $1 $2 $3 }
+  | tLBRACE AssocList tRCURLY KReturn { mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1 }
+  |  kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $1 $2 $3 $4 }
+  | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1 $2 [] $3 }
       -- | kYIELD { mk_keyword_cmd Yield $1 }
       -- | kDEFINED OptNl tLPAREN2 Expr Rparen { (mk_keyword_cmd :defined?, $1, $3 [ $4 ] $5) }
       -- | kNOT tLPAREN2 Expr Rparen { mk_not_op $1 $2 $3 $4 }
