@@ -377,17 +377,17 @@ Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | 
 Arg :: { Term }
 Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
   | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
- --  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { mk_op_assign( mk_index($1, $2, $3, $4), $5, $6) }
- --  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { mk_op_assign( mk_call_method $1, $2, $3), $4, $5) }
- --  | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { mk_op_assign( mk_call_method $1, $2, $3), $4, $5) }
- --  | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { mk_op_assign( mk_call_method $1, $2, $3), $4, $5) }
- --  | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs {
+  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $5 $6) }
+  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $4 $5) }
+  | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $4 $5) }
+  | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $4 $5) }
+  | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs { undefined }
  --       const  = mk_const_op_assignable( (mk_const_fetch $1 $2 $3))
  --       (mk_op_assign const $4 $5) }
- --  | tCOLON3 tCONSTANT tOP_ASGN ArgRhs {
+  | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { undefined }
  --       const  = mk_const_op_assignable((mk_const_global $1 $2))
  --       (mk_op_assign const $3 $4) }
- --  | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $2 $3) }
+  | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $2 $3 }
   | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
   | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
   | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
@@ -398,14 +398,14 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
   | Arg tDIVIDE Arg { error "divide" }
   | Arg tPERCENT Arg { (mk_binary_op $1 $2 $3) }
   | Arg tPOW Arg { (mk_binary_op $1 $2 $3) }
- --  | tUNARY_NUM SimpleNumeric tPOW Arg { mk_unary_op($1, mk_binary_op( $2, $3, $4)) }
-  |   tUPLUS Arg { (mk_unary_op $1 $2) }
+  | tUNARY_NUM SimpleNumeric tPOW Arg { (mk_unary_op $1 (mk_binary_op $2 $3 $4)) }
+  | tUPLUS Arg { (mk_unary_op $1 $2) }
   | tUMINUS Arg { (mk_unary_op $1 $2) }
   | Arg tPIPE Arg { (mk_binary_op $1 $2 $3) }
   | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
   | Arg tAMPER2 Arg { (mk_binary_op $1 $2 $3) }
   | Arg tCMP Arg { (mk_binary_op $1 $2 $3) }
---  | RelExpr =tCMP
+  | RelExpr {-=-} tCMP { undefined }
   | Arg tEQ Arg { (mk_binary_op $1 $2 $3) }
   | Arg tEQQ Arg { (mk_binary_op $1 $2 $3) }
   | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
@@ -417,9 +417,9 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
   | Arg tRSHFT Arg { (mk_binary_op $1 $2 $3) }
   | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
   | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
- --  | kDEFINED OptNl Arg { (mk_keyword_cmd Defined $1 Nil [ $3 ] Nil }
- --  | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $2 $3 $5 $6 }
- --  | Primary
+  | kDEFINED OptNl Arg { error "(mk_keyword_cmd Defined $1 Nil [ $3 ] Nil" }
+  | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $2 $3 $5 $6 }
+  | Primary { $1 }
 
 Relop: tGT { $1 }
   | tLT { $1 }
@@ -625,7 +625,7 @@ BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3
       | FBlockOptarg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
       | FRestArg OptBlockArgsTail { $1 ++ $2 }
       | FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
-      | BlockArgsTail
+      | BlockArgsTail { $1 }
 -}
 
 OptBlockParam: {- nothing -} { mk_args Nil [] Nil }
