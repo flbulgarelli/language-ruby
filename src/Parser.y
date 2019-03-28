@@ -63,11 +63,11 @@ import Control.Monad.Error
     k__ENCODING__ {L.K__ENCODING__}
     tIDENTIFIER {L.TIDENTIFIER {}}
     tFID {L.TFID}
-    tGVAR {L.TGVAR}
-    tIVAR {L.TIVAR}
-    tCONSTANT {L.TCONSTANT}
+    tGVAR {L.TGVAR {}}
+    tIVAR {L.TIVAR {}}
+    tCONSTANT {L.TCONSTANT {}}
     tLABEL {L.TLABEL}
-    tCVAR {L.TCVAR}
+    tCVAR {L.TCVAR {}}
     tNTH_REF {L.TNTH_REF}
     tBACK_REF {L.TBACK_REF}
     tSTRING_CONTENT {L.TSTRING_CONTENT}

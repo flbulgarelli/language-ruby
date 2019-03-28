@@ -182,12 +182,12 @@ data Token =
   | K__ENCODING__
   | TIDENTIFIER String
   | TFID
-  | TGVAR
-  | TIVAR
-  | TCONSTANT
+  | TGVAR String
+  | TIVAR String
+  | TCONSTANT String
   | TLABEL
   | TLOWEST
-  | TCVAR
+  | TCVAR String
   | TNTH_REF
   | TBACK_REF
   | TSTRING_CONTENT
