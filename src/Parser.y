@@ -185,7 +185,7 @@ import Control.Monad.Error
 
 Program: TopCompstmt { undefined }
 TopCompstmt: TopStmts OptTerms { mkExpression $1 }
-TopStmts: { undefined }
+TopStmts: {- nothing -} { undefined }
   | TopStmt { [ $1 ] }
   | TopStmts Terms TopStmt { $1 ++ [$3] }
   | error TopStmt { [$2] }
@@ -211,7 +211,7 @@ Bodystmt: Compstmt OptRescue OptElse OptEnsure { undefined }
 -- -}
 
 Compstmt: Stmts OptTerms { mkExpression $1 }
-Stmts: { [] }
+Stmts: {- nothing -} { [] }
   | StmtOrBegin { [ $1 ] }
   | Stmts Terms StmtOrBegin { $1 ++ [$3] }
   | error Stmt {  [ $2 ] }
@@ -265,7 +265,6 @@ BlockCommand: BlockCall { $1 }
   | BlockCall DotOrColon Operation2 CommandArgs { mk_call_method $1 $2 $3 Nil $4 Nil }
 
 CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
-  | tLBRACE_ARG BraceBody tRCURLY { undefined }
 
 Command: Operation CommandArgs {-=-}tLOWEST { mk_call_method Nil Nil $1 Nil $2 Nil }
   | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
@@ -435,8 +434,8 @@ ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 OptParenArgs: -- {- nothing -} { [ Nil, [], Nil ] }
   -- | ParenArgs
 -}
-OptCallArgs: -- {- nothing -} { [] }
-  CallArgs { undefined } -- { $1 }
+OptCallArgs: {- nothing -} { [] }
+  | CallArgs { undefined } -- { $1 }
   | Args tCOMMA { undefined } -- { $1 }
   | Args tCOMMA Assocs tCOMMA { undefined } -- { $1 ++ [mk_associate Nil $3 Nil] }
   | Assocs tCOMMA { undefined } -- { [ mk_associate Nil $1 Nil ] }
@@ -493,7 +492,7 @@ CommandArgs:   {
  -}
 BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
 OptBlockArg: tCOMMA BlockArg { [ $2 ] }
-  | { [] }
+  | {- nothing -} { [] }
 
 Args: Arg { [ $1 ] }
   | tSTAR Arg { [mk_splat $1 $2] }
@@ -594,7 +593,7 @@ FMargs: FMargList { $1 }
   | tSTAR { [ mk_restarg $1 ] }
   -- | tSTAR tCOMMA FMargList { [ mk_restarg($1), *$3 ] }
 {-
-BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4) }
+BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
   | FBlockKwarg OptFBlockArg { $1 ++ $2) }
   | FKwrest OptFBlockArg { $1 ++ $2) }
   | FBlockArg { [ $1 ] }
@@ -618,15 +617,17 @@ BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3
       | FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
       | BlockArgsTail
 -}
-OptBlockParam: { undefined }
-{-
-OptBlockParam: -- {- nothing -} { (mk_args Nil [] Nil) }
+
+OptBlockParam: {- nothing -} { mk_args Nil [] Nil }
   | BlockParamDef { $1 }
 
-BlockParamDef: tPIPE opt_bv_decl tPIPE { (mk_args $1 $2 $3) }
-  | tOROP { (mk_args $1 [] $1) }
-  | tPIPE BlockParam opt_bv_decl tPIPE { (mk_args $1 $2.concat($3) $4) }
+BlockParamDef: -- tPIPE opt_bv_decl tPIPE { mk_args $1 $2 $3 }
+  tOROP { (mk_args $1 [] $1) }
+--  | tPIPE BlockParam opt_bv_decl tPIPE { mk_args $1 ($2 ++ $3) $4 }
 
+
+
+{-
 opt_bv_decl: OptNl { [] }
   | OptNl tSEMI BvDecls OptNl { $3 }
 
@@ -721,20 +722,20 @@ String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
 
 Words: tWORDS_BEG WordList tSTRING_END { mk_words_compose $1 $2 $3 }
 
-WordList: -- {- nothing -} { [] }
-  WordList Word tSPACE { $1 ++ [mk_word $2] }
+WordList: {- nothing -} { [] }
+  | WordList Word tSPACE { $1 ++ [mk_word $2] }
 
 Word: StringContent { [ $1 ] }
   | Word StringContent { $1 ++ [$2] }
 
 Symbols: tSYMBOLS_BEG SymbolList tSTRING_END { mk_symbols_compose $1 $2 $3 }
 
-SymbolList: -- {- nothing -} { [] }
-  SymbolList Word tSPACE { $1 ++ [mk_word $2] }
+SymbolList:  {- nothing -} { [] }
+  | SymbolList Word tSPACE { $1 ++ [mk_word $2] }
 
 Xstring: tXSTRING_BEG XStringContents tSTRING_END { mk_xstring_compose $2 }
 
-XStringContents: { [] }
+XStringContents: {- nothing -} { [] }
   | XStringContents StringContent { $1 ++ [$2] }
 
 {-
@@ -757,8 +758,8 @@ RegexpContents: {- nothing -} { [] }
   | RegexpContents StringContent { $1 ++ [$2] }
 -}
 
-StringContents: -- {- nothing -} { [] }
-  StringContents StringContent { $1 ++ [$2] }
+StringContents: {- nothing -} { [] }
+  | StringContents StringContent { $1 ++ [$2] }
 
 StringContent: tSTRING_CONTENT { mk_string_internal $1 }
   | tSTRING_DVAR StringDvar { $2 }
@@ -767,7 +768,7 @@ StringContent: tSTRING_CONTENT { mk_string_internal $1 }
 StringDvar: tGVAR { mk_gvar $1 }
   | tIVAR { mk_ivar $1 }
   | tCVAR { mk_cvar $1 }
---  | Backref { undefined }
+  | Backref { undefined }
 
 Symbol: tSYMBOL { mk_symbol $1 }
 
@@ -901,11 +902,10 @@ OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
 
 Singleton: VarRef
   | tLPAREN2 Expr Rparen { $2 }
-
-AssocList: -- {- nothing -} { [] }
-  Assocs Trailer
-
 -}
+AssocList: {- nothing -} { [] }
+  | Assocs Trailer { $1 }
+
 Assocs: Assoc { [ $1 ] }
   | Assocs tCOMMA Assoc { $1 ++ [$3] }
 
@@ -931,7 +931,7 @@ DotOrColon: CallOp { $1 }
   | tCOLON2 { $1 }
 
 CallOp: tDOT { undefined } -- [Dot, ($1 !! 2)]
---   | tANDDOT { undefined } -- [Anddot, ($1 !! 2)]
+  | tANDDOT { undefined } -- [Anddot, ($1 !! 2)]
 
 OptTerms: -- |
 --   -- | Terms OptNl
