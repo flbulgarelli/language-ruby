@@ -231,9 +231,9 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
   | klEND tLCURLY Compstmt tRCURLY { mk_postexe $3 }
   | CommandAsgn { $1 }
-  --  | Mlhs tEQL CommandCall { MultiAssign $1 $2 $3 }
+  --  | Mlhs tEQL CommandCall { mk_multiassign $1 $2 $3 }
   | Lhs tEQL Mrhs { undefined } -- { mk_assign $1 $2 mk_array Nil $3 Nil }
-  --  | Mlhs tEQL MrhsArg { MultiAssign $1 $2 $3 }  --  | Expr {$1 }
+  --  | Mlhs tEQL MrhsArg { mk_multiassign $1 $2 $3 }  --  | Expr {$1 }
 
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
@@ -432,10 +432,10 @@ ArgRhs: Arg =tOP_ASGN
 
 ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 
-OptParenArgs: -- # nothing { [ Nil, [], Nil ] }
+OptParenArgs: -- {- nothing -} { [ Nil, [], Nil ] }
   -- | ParenArgs
 -}
-OptCallArgs: -- # nothing { [] }
+OptCallArgs: -- {- nothing -} { [] }
   CallArgs { undefined } -- { $1 }
   | Args tCOMMA { undefined } -- { $1 }
   | Args tCOMMA Assocs tCOMMA { undefined } -- { $1 ++ [mk_associate Nil $3 Nil] }
@@ -600,7 +600,7 @@ BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4) }
   | FBlockArg { [ $1 ] }
 
 OptBlockArgsTail: tCOMMA BlockArgsTail { $2 }
-  -- | # nothing { [] }
+  -- | {- nothing -} { [] }
 
 BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
       | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
@@ -620,7 +620,7 @@ BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3
 -}
 OptBlockParam: { undefined }
 {-
-OptBlockParam: -- # nothing { (mk_args Nil [] Nil) }
+OptBlockParam: -- {- nothing -} { (mk_args Nil [] Nil) }
   | BlockParamDef { $1 }
 
 BlockParamDef: tPIPE opt_bv_decl tPIPE { (mk_args $1 $2 $3) }
@@ -721,7 +721,7 @@ String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
 
 Words: tWORDS_BEG WordList tSTRING_END { mk_words_compose $1 $2 $3 }
 
-WordList: -- # nothing { [] }
+WordList: -- {- nothing -} { [] }
   WordList Word tSPACE { $1 ++ [mk_word $2] }
 
 Word: StringContent { [ $1 ] }
@@ -729,7 +729,7 @@ Word: StringContent { [ $1 ] }
 
 Symbols: tSYMBOLS_BEG SymbolList tSTRING_END { mk_symbols_compose $1 $2 $3 }
 
-SymbolList: -- # nothing { [] }
+SymbolList: -- {- nothing -} { [] }
   SymbolList Word tSPACE { $1 ++ [mk_word $2] }
 
 Xstring: tXSTRING_BEG XStringContents tSTRING_END { mk_xstring_compose $2 }
@@ -747,17 +747,17 @@ Qwords: tQWORDS_BEG qword_list tSTRING_END {  mk_words_compose $1 $2 $3 }
 
 Qqsymbols: tQSYMBOLS_BEG QsymList tSTRING_END { (mk_symbols_compose $1 $2 $3) }
 
-Bqword_list: # nothing { [] }
+Bqword_list: {- nothing -} { [] }
   | qword_list tSTRING_CONTENT tSPACE { $1 << mk_string_internal($2) }
 
-QsymList: -- # nothing { [] }
+QsymList: -- {- nothing -} { [] }
   | QsymList tSTRING_CONTENT tSPACE { $1 ++ [mk_symbol_internal $2] }
 
-RegexpContents: # nothing { [] }
+RegexpContents: {- nothing -} { [] }
   | RegexpContents StringContent { $1 ++ [$2] }
 -}
 
-StringContents: -- # nothing { [] }
+StringContents: -- {- nothing -} { [] }
   StringContents StringContent { $1 ++ [$2] }
 
 StringContent: tSTRING_CONTENT { mk_string_internal $1 }
@@ -808,7 +808,7 @@ superclass: tLT {
             @lexer.state = :Expr }
           Expr Term {
             [ $1, $3 ] }
-      | # nothing {
+      | {- nothing -} {
             Nil }
 
 FArglist: tLPAREN2 FArgs Rparen { (mk_args $1 $2 $3) }
@@ -820,7 +820,7 @@ ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { $1.concat($3).concat($4) }
   | FBlockArg { [ $1 ] }
 
 OptArgsTail: tCOMMA ArgsTail { $2 }
-  -- | # nothing { [] }
+  -- | {- nothing -} { [] }
 
 FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
       | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
@@ -836,7 +836,7 @@ FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
       | FRestArg OptArgsTail { $1 ++ $2 }
       | FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
       | ArgsTail { $1 }
---    | # nothing { [] }
+--    | {- nothing -} { [] }
 
 -}
 
@@ -902,7 +902,7 @@ OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
 Singleton: VarRef
   | tLPAREN2 Expr Rparen { $2 }
 
-AssocList: -- # nothing { [] }
+AssocList: -- {- nothing -} { [] }
   Assocs Trailer
 
 -}
