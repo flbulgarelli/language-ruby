@@ -193,14 +193,14 @@ Stmts: { [] }
 
 
 StmtOrBegin: Stmt { $1 }
---   | klBEGIN BeginBlock { error ("begin_in_method " ++ show $1) }
+  | klBEGIN BeginBlock { error ("begin_in_method " ++ show $1) }
 
-Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4) }
+Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
 --   --  | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
 --   --  | kALIAS tGVAR tBACK_REF { (mk_alias $1 mk_gvar($2) mk_back_ref($3)) }
 --   --  | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
-      kUNDEF UndefList { (mk_undef_method $1 $2) }
---   | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
+  | kUNDEF UndefList { (mk_undef_method $1 $2) }
+  | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
 --   | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $2 $3 }
 --   | Stmt kWHILE_MOD Expr { mk_loop_mod While $1 $2 $3 }
 --   | Stmt kUNTIL_MOD Expr { mk_loop_mod Until $1 $2 $3 }
@@ -230,7 +230,7 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
 --   | CommandAsgn { $1 }
 -- -}
 
--- Expr: CommandCall { $1 }
+Expr: CommandCall { $1 }
 --     | Expr kAND Expr { mkLogicalOp And $1 $2 $3 }
 --     | Expr kOR Expr { mkLogicalOp Or $1 $2 $3 }
 --     -- | kNOT OptNl Expr { mk_not_op $1 Dl3Nil) }
@@ -240,7 +240,7 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
 -- ExprValueDo: --  { @lexer.cond.push(true) }
 --   Expr Do { undefined } -- { @lexer.cond.pop; [ $2, $3 ] }
 
--- CommandCall: Command { $1 }
+CommandCall: Command { $1 }
 --   -- | BlockCommand { $1 }
 
 -- BlockCommand: BlockCall { $1 }
@@ -249,7 +249,7 @@ Stmt: -- kALIAS Fitem { @lexer.state = :expr_fname } Fitem { (mk_alias $1 $2 $4)
 -- CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
 -- -- tLBRACE_ARG { @context.push(:block) } BraceBody tRCURLY { [ $1, *$3, $4 ] @context.pop }
 
--- Command: Operation CommandArgs {-=tLOWEST-} { mk_call_method Nil Nil $1 Nil $2 Nil }
+Command: Operation CommandArgs {-=tLOWEST-} { mk_call_method Nil Nil $1 Nil $2 Nil }
 --   | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
 --   | Primary CallOp Operation2 CommandArgs {-=tLOWEST-} { mk_call_method $1 $2 $3 $4 }
 --   | Primary CallOp Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $2 $3 $4 $5 }
@@ -348,7 +348,7 @@ UndefList: Fitem { [ $1 ] }
 --     | kWHEN     {$1} | kYIELD    {$1} | kIF           {$1} | kUNLESS {$1} | kWHILE    {$1}
 --     | kUNTIL    {$1}
 
--- Arg: -- Lhs tEQL ArgRhs { (mk_assign $1 $2 $3) }
+Arg: -- Lhs tEQL ArgRhs { (mk_assign $1 $2 $3) }
 --  --  | var_lhs tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
 --  --  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { mk_op_assign( mk_index($1, $2, $3, $4), $5, $6) }
 --  --  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { mk_op_assign( mk_call_method $1, $2, $3), $4, $5) }
@@ -372,7 +372,7 @@ UndefList: Fitem { [ $1 ] }
 --  --  | Arg tPERCENT Arg { (mk_binary_op $1 $2 $3) }
 --  --  | Arg tPOW Arg { (mk_binary_op $1 $2 $3) }
 --  --  | tUNARY_NUM SimpleNumeric tPOW Arg { mk_unary_op($1, mk_binary_op( $2, $3, $4)) }
---      tUPLUS Arg { (mk_unary_op $1 $2) }
+        tUPLUS Arg { (mk_unary_op $1 $2) }
 --      | tUMINUS Arg { (mk_unary_op $1 $2) }
 --      | Arg tPIPE Arg { (mk_binary_op $1 $2 $3) }
 --      | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
@@ -423,13 +423,13 @@ UndefList: Fitem { [ $1 ] }
 --   | Args tCOMMA Assocs tCOMMA { undefined } -- { $1 ++ [mk_associate Nil $3 Nil] }
 --   | Assocs tCOMMA { undefined } -- { [ mk_associate Nil $1 Nil ] }
 
--- CallArgs: Command { [ $1 ] }
---   | Args OptBlockArg { $1 ++ $2 }
+CallArgs: Command { [ $1 ] }
+  | Args OptBlockArg { $1 ++ $2 }
 -- --  | Assocs OptBlockArg { [ (mk_associate Nil $1 Nil) ] result.concat($2) }
 -- --  | Args tCOMMA Assocs OptBlockArg { $1 ++ [mk_associate Nil $3 Nil] ++ $4 }
 --   | BlockArg { [ $1 ] }
 
--- CommandArgs: CallArgs { $1 }
+CommandArgs: CallArgs { $1 }
 
 -- {-
 -- CommandArgs:   {
@@ -473,14 +473,14 @@ UndefList: Fitem { [ $1 ] }
 --  $2 }
 
 --  -}
--- BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
--- OptBlockArg: tCOMMA BlockArg { [ $2 ] }
---   -- | # nothing { [] }
+BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
+OptBlockArg: tCOMMA BlockArg { [ $2 ] }
+  | { [] }
 
--- Args: Arg { [ $1 ] }
---   | tSTAR Arg { [mk_splat $1 $2] }
---   | Args tCOMMA Arg { $1 ++ [$3] }
---   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
+Args: Arg { [ $1 ] }
+  | tSTAR Arg { [mk_splat $1 $2] }
+  | Args tCOMMA Arg { $1 ++ [$3] }
+  | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
 
 -- MrhsArg: Mrhs { mk_array Nil $1 Nil }
 --   | Arg { undefined }
@@ -897,7 +897,7 @@ Dsym: tSYMBEG XStringContents tSTRING_END { mk_symbol_compose $1 $2 $3 }
 -- --    | tSTRING_BEG StringContents tLABEL_END Arg { mk_pair_quoted $1, $2 $3 $4 }
 -- --    | tDSTAR Arg { mk_kwsplat $1 $2 }
 
--- Operation: tIDENTIFIER { $1 }
+Operation: tIDENTIFIER { $1 }
 --   | tCONSTANT { $1 }
 --   | tFID { $1 }
 
