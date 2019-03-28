@@ -183,14 +183,20 @@ import Control.Monad.Error
 
 %%
 
+Program :: { Term }
 Program: TopCompstmt { error "program" }
+
+TopCompstmt :: { Term }
 TopCompstmt: TopStmts OptTerms { mkExpression $1 }
+
+TopStmts :: { [Term] }
 TopStmts: {- nothing -} { error "TopStmts" }
   | TopStmt { [ $1 ] }
   | TopStmts Terms TopStmt { $1 ++ [$3] }
   | error TopStmt { [$2] }
 
-TopStmt: Stmt { $1 } | klBEGIN BeginBlock { mk_preexe $1 $2 }
+TopStmt :: { Term }
+TopStmt: Stmt { $1 } | klBEGIN BeginBlock { mk_preexe $2 }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
@@ -211,6 +217,7 @@ Bodystmt: Compstmt OptRescue OptElse OptEnsure { error "Bodystmt"  }
 -- -}
 
 Compstmt: Stmts OptTerms { mkExpression $1 }
+Stmts :: { [Term] }
 Stmts: {- nothing -} { [] }
   | StmtOrBegin { [ $1 ] }
   | Stmts Terms StmtOrBegin { $1 ++ [$3] }
@@ -219,6 +226,7 @@ Stmts: {- nothing -} { [] }
 StmtOrBegin: Stmt { $1 }
   | klBEGIN BeginBlock { error ("begin_in_method " ++ show $1) }
 
+Stmt :: { Term }
 Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
   | kALIAS tGVAR tBACK_REF { (mk_alias $1 (mk_gvar $2) (mk_back_ref $3)) }
@@ -235,6 +243,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Lhs tEQL Mrhs { undefined } -- { mk_assign $1 $2 mk_array Nil $3 Nil }
   | Mlhs tEQL MrhsArg { mk_multiassign $1 $2 $3 }  --  | Expr {$1 }
 
+CommandAsgn :: { Term }
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $5 $6) }
@@ -266,6 +275,7 @@ BlockCommand: BlockCall { $1 }
 
 CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
 
+Command :: { Term }
 Command: Operation CommandArgs {-=-}tLOWEST { mk_call_method Nil Nil $1 Nil $2 Nil }
   | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
   | Primary CallOp Operation2 CommandArgs {-=-}tLOWEST { mk_call_method $1 $2 $3 $4 }
@@ -337,12 +347,14 @@ Fname: tIDENTIFIER { undefined }
   | Op { undefined }
   | Reswords { undefined }
 
+Fsym :: { Term }
 Fsym: Fname { mk_symbol $1 }
   | Symbol { $1 }
 
 Fitem: Fsym { $1 }
      | Dsym { $1 }
 
+UndefList :: { [Term] }
 UndefList: Fitem { [ $1 ] }
   | UndefList tCOMMA Fitem { $1 ++ [$3] }
 
@@ -489,6 +501,7 @@ BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
 OptBlockArg: tCOMMA BlockArg { [ $2 ] }
   | {- nothing -} { [] }
 
+Args :: { [Term] }
 Args: Arg { [ $1 ] }
   | tSTAR Arg { [mk_splat $1 $2] }
   | Args tCOMMA Arg { $1 ++ [$3] }
@@ -548,8 +561,8 @@ Primary: Literal { $1 }
       -- | kMODULE Cpath Bodystmt kEND { (mk_def_module $1 $2 $4 $5) }
       -- | kDEF Fname FArglist Bodystmt kEND { (mk_def_method $1 $2 $4 $5 $6) }
       -- | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { mk_def_singleton $1 $2 $3 $5 $7 $8 $9 }
-  | kBREAK { mk_keyword_cmd Break, $1 }
-  | kNEXT { mk_keyword_cmd Next, $1 }
+  | kBREAK { mk_keyword_cmd Break $1 }
+  | kNEXT { mk_keyword_cmd Next $1 }
   | kREDO { mk_keyword_cmd Redo $1 }
   | kRETRY { mk_keyword_cmd Retry $1 }
 
@@ -701,12 +714,15 @@ ExcVar: tASSOC Lhs { undefined } --{ [ $1, $2 ] }
 OptEnsure: kENSURE Compstmt { undefined } -- { undefined }
   | None { undefined } -- { $1 }
 
+Literal :: { Term }
 Literal: Numeric { $1 }
   | Symbol { $1 }
   | Dsym { $1 }
 
+Strings :: { Term }
 Strings: String { mk_string_compose $1 }
 
+String :: { [Term] }
 String: String1 { [ $1 ] }
   | String String1 { $1 ++ [$2] }
 
@@ -714,8 +730,10 @@ String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
   | tSTRING { mk_string $1 }
   | tCHARACTER { mk_character $1 }
 
+Words :: { [Term] }
 Words: tWORDS_BEG WordList tSTRING_END { mk_words_compose $1 $2 $3 }
 
+WordList :: { [Term] }
 WordList: {- nothing -} { [] }
   | WordList Word tSPACE { $1 ++ [mk_word $2] }
 
@@ -764,6 +782,7 @@ StringDvar: tGVAR { mk_gvar $1 }
   | tCVAR { mk_cvar $1 }
   | Backref { undefined }
 
+Symbol :: { Term }
 Symbol: tSYMBOL { mk_symbol $1 }
 
 Dsym: tSYMBEG XStringContents tSTRING_END { mk_symbol_compose $1 $2 $3 }
@@ -776,12 +795,14 @@ SimpleNumeric: tINTEGER { mk_integer $1 }
 -- -- | tRATIONAL { mk_rational($1) }
   | tIMAGINARY { mk_complex $1 }
 
+UserVariable :: { Term }
 UserVariable: tIDENTIFIER { mk_ident $1 }
   | tIVAR { mk_ivar $1 }
   | tGVAR { mk_gvar $1 }
   | tCONSTANT { mk_const $1 }
   | tCVAR { mk_cvar $1 }
 
+KeywordVariable :: { Term }
 KeywordVariable : kNIL {Nil}
   | kSELF {Self}
   | kTRUE {RTrue}
@@ -884,9 +905,9 @@ FOptarg: FOpt { [ $1 ] }
 RestargMark: tSTAR2 { undefined }
   | tSTAR { undefined }
 
+FRestArg :: { [Term] }
 FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $1 $2 ] }
   | RestargMark { [ mk_restarg $1 ] }
-
 
 BlkargMark: tAMPER2 { undefined }
   | tAMPER { undefined }
@@ -926,27 +947,27 @@ operation3: tIDENTIFIER { $1 }
 DotOrColon: CallOp { $1 }
   | tCOLON2 { $1 }
 
-CallOp: tDOT { undefined } -- [Dot, ($1 !! 2)]
-  | tANDDOT { undefined } -- [Anddot, ($1 !! 2)]
+CallOp: tDOT { error "CallOp" } -- [Dot, ($1 !! 2)]
+  | tANDDOT { error "CallOp" } -- [Anddot, ($1 !! 2)]
 
 OptTerms: { undefined }
-  | Terms { $1 }
+  | Terms { undefined }
 
 OptNl: { undefined }
-  | tNL { $1 }
+  | tNL { undefined }
 
-Rparen: OptNl tRPAREN { $2 }
-RBracket: OptNl tRBRACK { $2 }
+Rparen: OptNl tRPAREN { undefined }
+RBracket: OptNl tRBRACK { undefined }
 
 Trailer: { undefined }
-  | tNL { $1 }
-  | tCOMMA { $1 }
+  | tNL { undefined }
+  | tCOMMA { undefined }
 
 Term: tSEMI { undefined }
-  | tNL { Nil }
+  | tNL { undefined }
 
-Terms: Term { $1 }
-  | Terms tSEMI { $1 }
+Terms: Term { undefined }
+  | Terms tSEMI { undefined }
 
 None: { undefined } -- { Nil }
 
