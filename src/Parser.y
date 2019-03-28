@@ -183,9 +183,9 @@ import Control.Monad.Error
 
 %%
 
-Program: TopCompstmt { undefined }
+Program: TopCompstmt { error "program" }
 TopCompstmt: TopStmts OptTerms { mkExpression $1 }
-TopStmts: {- nothing -} { undefined }
+TopStmts: {- nothing -} { error "TopStmts" }
   | TopStmt { [ $1 ] }
   | TopStmts Terms TopStmt { $1 ++ [$3] }
   | error TopStmt { [$2] }
@@ -194,7 +194,7 @@ TopStmt: Stmt { $1 } | klBEGIN BeginBlock { mk_preexe $1 $2 }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
-Bodystmt: Compstmt OptRescue OptElse OptEnsure { undefined }
+Bodystmt: Compstmt OptRescue OptElse OptEnsure { error "Bodystmt"  }
 -- {-  {
 --             rescue_bodies     = $2;
 --             else_t,   else_   = $3;
@@ -677,12 +677,11 @@ MethodCall: Operation ParenArgs { let (lparen_t, Args, rparen_t) = $2 in mk_call
 
 -}
 BraceBlock: tLCURLY BraceBody tRCURLY { undefined }
-  | kDO { undefined }
+  | kDO DoBody kEND  { undefined }
+
+BraceBody: OptBlockParam Compstmt { undefined }
 
 DoBody: OptBlockParam Bodystmt { undefined }-- { @static_env.extend_dynamic } { @lexer.cmdarg.push(false) } { result = [ val[2], val[3] ] @static_env.unextend @lexer.cmdarg.pop  }
-
-BraceBody: OptBlockParam Compstmt OptBlockParam Bodystmt { undefined } -- OptBlockParam Bodystmt { undefined } { [ $2, $3 ] @static_env.unextend  { @static_env.extend_dynamic }  @lexer.cmdarg.push(false) }
-     -- [ $3, $4 ] @static_env.unextend @lexer.cmdarg.pop }
 
 CaseBody: kWHEN Args Then Compstmt Cases { undefined } -- { [mk_when $1 $2 $3 $4] ++ $5 }
 
@@ -886,23 +885,25 @@ FBlockOptarg: FBlockOpt { [ $1 ] }
 
 FOptarg: FOpt { [ $1 ] }
   | FOptarg tCOMMA FOpt { $1 ++ [$3] }
-
-RestargMark: tSTAR2 { undefiend }
-  | tSTAR { undefiend }
+-}
+RestargMark: tSTAR2 { undefined }
+  | tSTAR { undefined }
 
 FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $1 $2 ] }
   | RestargMark { [ mk_restarg $1 ] }
 
-blkarg_mark: tAMPER2 | tAMPER
 
-FBlockArg: blkarg_mark tIDENTIFIER { mk_blockarg $1 $2 }
+BlkargMark: tAMPER2 { undefined }
+  | tAMPER { undefined }
+{-
+FBlockArg: BlkargMark tIDENTIFIER { mk_blockarg $1 $2 }
 
 OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
   | { [] }
-
-Singleton: VarRef
-  | tLPAREN2 Expr Rparen { $2 }
 -}
+Singleton: VarRef { $1 }
+  | tLPAREN2 Expr Rparen { $2 }
+
 AssocList: {- nothing -} { [] }
   | Assocs Trailer { $1 }
 
@@ -910,18 +911,18 @@ Assocs: Assoc { [ $1 ] }
   | Assocs tCOMMA Assoc { $1 ++ [$3] }
 
 Assoc: Arg tASSOC Arg { mk_pair $1 $2 $3 }
---    | tLABEL Arg { mk_pair_keyword $1 $2 }
+   | tLABEL Arg { mk_pair_keyword $1 $2 }
 --    | tSTRING_BEG StringContents tLABEL_END Arg { mk_pair_quoted $1, $2 $3 $4 }
---    | tDSTAR Arg { mk_kwsplat $1 $2 }
+   | tDSTAR Arg { mk_kwsplat $1 $2 }
 
 Operation: tIDENTIFIER { $1 }
---   | tCONSTANT { $1 }
---   | tFID { $1 }
+  | tCONSTANT { $1 }
+  | tFID { $1 }
 
 Operation2: tIDENTIFIER { $1 }
   | tCONSTANT { $1 }
   | tFID { $1 }
-  -- | Op { $1 }
+  | Op { $1 }
 
 operation3: tIDENTIFIER { $1 }
   | tFID { $1 }
@@ -933,18 +934,17 @@ DotOrColon: CallOp { $1 }
 CallOp: tDOT { undefined } -- [Dot, ($1 !! 2)]
   | tANDDOT { undefined } -- [Anddot, ($1 !! 2)]
 
-OptTerms: -- |
---   -- | Terms OptNl
-  tNL { $1 }
+OptTerms: { undefined }
+  | Terms { $1 }
 
-OptNl: -- |
-  tNL { $1 }
+OptNl: { undefined }
+  | tNL { $1 }
 
 Rparen: OptNl tRPAREN { $2 }
 RBracket: OptNl tRBRACK { $2 }
 
-Trailer: -- |
-  tNL { $1 }
+Trailer: { undefined }
+  | tNL { $1 }
   | tCOMMA { $1 }
 
 Term: tSEMI { undefined }
