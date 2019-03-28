@@ -947,11 +947,11 @@ Trailer: -- |
   tNL { $1 }
   | tCOMMA { $1 }
 
-Term: -- tSEMI { yyerrok }
-   tNL { Nil }
+Term: tSEMI { undefined }
+  | tNL { Nil }
 
 Terms: Term { $1 }
--- -- |  $1 { Nil }
+  | Terms tSEMI { $1 }
 
 None: { undefined } -- { Nil }
 
