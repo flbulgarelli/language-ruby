@@ -196,7 +196,7 @@ TopStmts: {- nothing -} { [] }
   | error TopStmt { [$2] }
 
 TopStmt :: { Term }
-TopStmt: Stmt { $1 } | klBEGIN BeginBlock { mk_preexe $2 }
+TopStmt: Stmt { $1 } | klBEGIN BeginBlock { error "mk_preexe $2" }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
@@ -227,41 +227,42 @@ StmtOrBegin: Stmt { $1 }
   | klBEGIN BeginBlock { error ("begin_in_method " ++ show $1) }
 
 Stmt :: { Term }
-Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
+Stmt: kALIAS Fitem Fitem { error "mk_alias $2 $3" }
   | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
   | kALIAS tGVAR tBACK_REF { (mk_alias $1 (mk_gvar $2) (mk_back_ref $3)) }
   | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
   | kUNDEF UndefList { (mk_undef_method $1 $2) }
-  | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $2 $3 }
-  | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $2 $3 }
-  | Stmt kWHILE_MOD Expr { mk_loop_mod While $1 $2 $3 }
-  | Stmt kUNTIL_MOD Expr { mk_loop_mod Until $1 $2 $3 }
+  | Stmt kIF_MOD Expr { error "mk_condition_mod $1 Nil $2 $3" }
+  | Stmt kUNLESS_MOD Expr { error "mk_condition_mod Nil $1 $2 $3" }
+  | Stmt kWHILE_MOD Expr { error "mk_loop_mod While $1 $2 $3" }
+  | Stmt kUNTIL_MOD Expr { error "mk_loop_mod Until $1 $2 $3" }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
-  | klEND tLCURLY Compstmt tRCURLY { mk_postexe $3 }
+  | klEND tLCURLY Compstmt tRCURLY { error "mk_postexe $3" }
   | CommandAsgn { $1 }
-  | Mlhs tEQL CommandCall { mk_multiassign $1 $2 $3 }
-  | Lhs tEQL Mrhs { undefined } -- { mk_assign $1 $2 mk_array Nil $3 Nil }
-  | Mlhs tEQL MrhsArg { mk_multiassign $1 $2 $3 }  --  | Expr {$1 }
+  | Mlhs tEQL CommandCall { error "mk_multiassign $1 $2 $3" }
+  | Lhs tEQL Mrhs { undefined } -- { error "mk_assign $1 $2 mk_array Nil $3 Nil" }
+  | Mlhs tEQL MrhsArg { error "mk_multiassign $1 $2 $3" }
+  | Expr { $1 }
 
 CommandAsgn :: { Term }
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $5 $6) }
-  | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $4 $5 }
-  | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { mk_op_assign  (mk_call_method  $1 $2 $3) $4 $5 }
-  | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $2 $3)) $4 $5 }
-  | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $4 $5 }
-  | Backref tOP_ASGN CommandRhs { mk_op_assign $1 $2 $3 }
+  | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { error "mk_op_assign (mk_call_method $1 $2 $3) $4 $5" }
+  | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { error "mk_op_assign  (mk_call_method  $1 $2 $3) $4 $5" }
+  | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { error "mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $2 $3)) $4 $5" }
+  | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { error "mk_op_assign (mk_call_method $1 $2 $3) $4 $5" }
+  | Backref tOP_ASGN CommandRhs { error "mk_op_assign $1 $2 $3" }
 
 CommandRhs: CommandCall {-=-} tOP_ASGN { $1 }
-  | CommandCall kRESCUE_MOD Stmt { mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
+  | CommandCall kRESCUE_MOD Stmt { error "mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3]" }
   | CommandAsgn { $1 }
 
 Expr: CommandCall { $1 }
   | Expr kAND Expr { mkLogicalOp And $1 $2 $3 }
   | Expr kOR Expr { mkLogicalOp Or $1 $2 $3 }
-  | kNOT OptNl Expr { mk_not_op $2 $3 }
-  | tBANG CommandCall{ mk_not_op $1 Nil $2 Nil }
+  | kNOT OptNl Expr { error "mk_not_op $2 $3" }
+  | tBANG CommandCall{ error "mk_not_op $1 Nil $2 Nil" }
   | Arg { $1 }
 
 ExprValueDo: --  { @lexer.cond.push(true) }
@@ -271,28 +272,28 @@ CommandCall: Command { $1 }
   | BlockCommand { $1 }
 
 BlockCommand: BlockCall { $1 }
-  | BlockCall DotOrColon Operation2 CommandArgs { mk_call_method $1 $2 $3 Nil $4 Nil }
+  | BlockCall DotOrColon Operation2 CommandArgs { error "mk_call_method $1 $2 $3 Nil $4 Nil" }
 
 CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
 
 Command :: { Term }
-Command: Operation CommandArgs {-=-}tLOWEST { mk_call_method Nil Nil $1 Nil $2 Nil }
+Command: Operation CommandArgs {-=-}tLOWEST { error "mk_call_method Nil Nil $1 Nil $2 Nil" }
   | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
-  | Primary CallOp Operation2 CommandArgs {-=-}tLOWEST { mk_call_method $1 $2 $3 $4 }
-  | Primary CallOp Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $2 $3 $4 $5 }
-  | Primary tCOLON2 Operation2 CommandArgs {-=-}tLOWEST { mk_call_method $1 $3 $4 }
-  | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { mk_block' $1 $3 $4 $5 }
-  | kSUPER CommandArgs { mk_keyword_cmd Super $1 Nil $2 Nil }
-  | kYIELD CommandArgs { mk_keyword_cmd Yield $1 Nil $2 Nil }
-  | KReturn CallArgs { mk_keyword_cmd Return $1 Nil $2 Nil }
-  | kBREAK CallArgs { mk_keyword_cmd Break $1 Nil $2 Nil }
-  | kNEXT CallArgs { mk_keyword_cmd Next $1 Nil $2 Nil }
+  | Primary CallOp Operation2 CommandArgs {-=-}tLOWEST { error "mk_call_method $1 $2 $3 $4" }
+  | Primary CallOp Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $2 $3 $4 $5" }
+  | Primary tCOLON2 Operation2 CommandArgs {-=-}tLOWEST { error "mk_call_method $1 $3 $4" }
+  | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $3 $4 $5" }
+  | kSUPER CommandArgs { error "mk_keyword_cmd Super $1 Nil $2 Nil" }
+  | kYIELD CommandArgs { error "mk_keyword_cmd Yield $1 Nil $2 Nil" }
+  | KReturn CallArgs { error "mk_keyword_cmd Return $1 Nil $2 Nil" }
+  | kBREAK CallArgs { error "mk_keyword_cmd Break $1 Nil $2 Nil" }
+  | kNEXT CallArgs { error "mk_keyword_cmd Next $1 Nil $2 Nil" }
 
-Mlhs: MlhsBasic { mk_multi_lhs Nil $1 Nil }
-  | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
+Mlhs: MlhsBasic { error "mk_multi_lhs Nil $1 Nil" }
+  | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
 
-MlhsInner: MlhsBasic { mk_multi_lhs Nil $1 Nil }
-  | tLPAREN MlhsInner Rparen { mk_multi_lhs $1 $2 $3 }
+MlhsInner: MlhsBasic { error "mk_multi_lhs Nil $1 Nil" }
+  | tLPAREN MlhsInner Rparen { error "mk_multi_lhs $1 $2 $3" }
 
 MlhsBasic: MlhsHead { $1 }
   | MlhsHead MlhsItem { error "$1. push($2)" }
@@ -306,7 +307,7 @@ MlhsBasic: MlhsHead { $1 }
   | tSTAR tCOMMA MlhsPost { error " [ mk_splat $1 *$3 ] " }
 
 MlhsItem: MlhsNode { $1 }
-      | tLPAREN MlhsInner Rparen { mk_begin $1 $2 $3 }
+      | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
 
 MlhsHead: MlhsItem tCOMMA { [ $1 ] }
   | MlhsHead MlhsItem tCOMMA { $1 ++ [$2] }
@@ -314,32 +315,32 @@ MlhsHead: MlhsItem tCOMMA { [ $1 ] }
 MlhsPost: MlhsItem { [ $1 ] }
   | MlhsPost tCOMMA MlhsItem { $1 ++ [$3] }
 
-MlhsNode: UserVariable { mk_assignable $1  }
-  | KeywordVariable { mk_assignable $1 }
-  | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
-  | Primary CallOp tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
-  | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
-  | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
-  | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $2 $3) }
-  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
-  | Backref { mk_assignable $1 }
+MlhsNode: UserVariable { error "mk_assignable $1 " }
+  | KeywordVariable { error "mk_assignable $1" }
+  | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
+  | Primary CallOp tIDENTIFIER { error "mk_attr_asgn $1 $2 $3" }
+  | Primary tCOLON2 tIDENTIFIER { error "mk_attr_asgn $1 $2 $3" }
+  | Primary CallOp tCONSTANT { error "mk_attr_asgn $1 $2 $3" }
+  | Primary tCOLON2 tCONSTANT { error "mk_assignable (mk_const_fetch $1 $2 $3)" }
+  | tCOLON3 tCONSTANT { error "mk_assignable (mk_const_global $1 $2)" }
+  | Backref { error "mk_assignable $1" }
 
-Lhs: UserVariable { mk_assignable $1 }
-  | KeywordVariable { mk_assignable $1 }
-  | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $2 $3 $4 }
+Lhs: UserVariable { error "mk_assignable $1" }
+  | KeywordVariable { error "mk_assignable $1" }
+  | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
   | Primary CallOp tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary tCOLON2 tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary CallOp tCONSTANT { (mk_attr_asgn $1 $2 $3) }
-  | Primary tCOLON2 tCONSTANT { mk_assignable((mk_const_fetch $1 $2 $3)) }
-  | tCOLON3 tCONSTANT { mk_assignable((mk_const_global $1 $2)) }
-  | Backref { mk_assignable $1 }
+  | Primary tCOLON2 tCONSTANT { error "mk_assignable((mk_const_fetch $1 $2 $3))" }
+  | tCOLON3 tCONSTANT { error "mk_assignable((mk_const_global $1 $2))" }
+  | Backref { error "mk_assignable $1" }
 
 Cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
   | tCONSTANT { $1 }
 
-Cpath: tCOLON3 Cname { mk_const_global $1 $2 }
-  | Cname { mk_const $1 }
-  | Primary tCOLON2 Cname { mk_const_fetch $1 $2 $3 }
+Cpath: tCOLON3 Cname { error "mk_const_global $1 $2" }
+  | Cname { error "mk_const $1" }
+  | Primary tCOLON2 Cname { error "mk_const_fetch $1 $2 $3" }
 
 Fname: tIDENTIFIER { undefined }
   | tCONSTANT { undefined }
@@ -348,7 +349,7 @@ Fname: tIDENTIFIER { undefined }
   | Reswords { undefined }
 
 Fsym :: { Term }
-Fsym: Fname { mk_symbol $1 }
+Fsym: Fname { error "mk_symbol $1" }
   | Symbol { $1 }
 
 Fitem: Fsym { $1 }
@@ -375,7 +376,7 @@ Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | 
     | kUNTIL    {$1}
 
 Arg :: { Term }
-Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
+Arg: Lhs tEQL ArgRhs { error "mk_assign $1 $2 $3" }
   | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $5 $6) }
   | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $4 $5) }
@@ -387,7 +388,7 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
   | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { undefined }
  --       const  = mk_const_op_assignable((mk_const_global $1 $2))
  --       (mk_op_assign const $3 $4) }
-  | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $2 $3 }
+  | Backref tOP_ASGN ArgRhs { error "mk_op_assign $1 $2 $3" }
   | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
   | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
   | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
@@ -418,7 +419,7 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $2 $3 }
   | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
   | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
   | kDEFINED OptNl Arg { error "(mk_keyword_cmd Defined $1 Nil [ $3 ] Nil" }
-  | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $2 $3 $5 $6 }
+  | Arg tEH Arg OptNl tCOLON Arg { error "mk_ternary $1 $2 $3 $5 $6" }
   | Primary { $1 }
 
 Relop: tGT { $1 }
@@ -426,8 +427,8 @@ Relop: tGT { $1 }
   | tGEQ { $1 }
   | tLEQ { $1 }
 
-RelExpr: Arg Relop Arg {-=-} tGT { mk_binary_op $1 $2 $3 }
-  | RelExpr Relop Arg {-=-} tGT { mk_binary_op $1 $2 $3 }
+RelExpr: Arg Relop Arg {-=-} tGT { error "mk_binary_op $1 $2 $3" }
+  | RelExpr Relop Arg {-=-} tGT { error "mk_binary_op $1 $2 $3" }
 
 ArefArgs: None { undefined }
   | Args Trailer { undefined }
@@ -435,7 +436,7 @@ ArefArgs: None { undefined }
   | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
 
 ArgRhs: Arg {-=-} tOP_ASGN { $1 }
-  | Arg kRESCUE_MOD Arg { mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ] }
+  | Arg kRESCUE_MOD Arg { error "mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ]" }
 
 ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 
@@ -456,49 +457,7 @@ CallArgs: Command { [ $1 ] }
 
 CommandArgs: CallArgs { $1 }
 
-{-
-CommandArgs:   {
-            # When branch gets invoked by RACC's lookahead
-            # and Command Args start with '[' or '('
-            # we need to put `true` to the cmdarg stack
-            # **before** `false` pushed by lexer
-            #   m [], n
-            #     ^
-            # Right here we have cmdarg [...0] because
-            # lexer pushed it on '['
-            # We need to modify cmdarg stack to [...10]
-            #
-            # For all other Cases (like `m n` or `m n, []`) we simply put 1 to the stack
-            # and later lexer pushes corresponding bits on top of it.
-            last_token = @last_token[0]
-            lookahead = last_token == :tLBRACK || last_token == :tLPAREN_ARG
-
-            if lookahead
-              top = @lexer.cmdarg.pop
-              @lexer.cmdarg.push(true)
-              @lexer.cmdarg.push(top)
-            else
-              @lexer.cmdarg.push(true)
-            end }
-        CallArgs {
-            # CallArgs can be followed by tLBRACE_ARG (that does cmdarg.push(0) in the lexer)
-            # but the push must be done after cmdarg.pop() in the parser.
-            # So this code does cmdarg.pop() to pop 0 pushed by tLBRACE_ARG,
-            # cmdarg.pop() to pop 1 pushed by CommandArgs,
-            # and cmdarg.push(0) to restore back the flag set by tLBRACE_ARG.
-            last_token = @last_token[0]
-            lookahead = last_token == :tLBRACE_ARG
-            if lookahead
-              top = @lexer.cmdarg.pop
-              @lexer.cmdarg.pop
-              @lexer.cmdarg.push(top)
-            else
-              @lexer.cmdarg.pop
-            end
- $2 }
-
- -}
-BlockArg: tAMPER Arg { mk_block_pass $1 $2 }
+BlockArg: tAMPER Arg { error "mk_block_pass $1 $2" }
 OptBlockArg: tCOMMA BlockArg { [ $2 ] }
   | {- nothing -} { [] }
 
@@ -508,7 +467,7 @@ Args: Arg { [ $1 ] }
   | Args tCOMMA Arg { $1 ++ [$3] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
 
-MrhsArg: Mrhs { mk_array Nil $1 Nil }
+MrhsArg: Mrhs { error "mk_array Nil $1 Nil" }
   | Arg { undefined }
 
 Mrhs: Args tCOMMA Arg { $1 ++ [$3] }
@@ -519,37 +478,37 @@ Primary :: { Term }
 Primary: Literal { $1 }
   | Strings { $1 }
   | Xstring { $1 }
---      | Regexp
+  | Regexp { $1 }
   | Words { $1 }
   | Qwords { $1 }
   | Symbols { $1 }
   | Qsymbols { $1 }
   | VarRef { $1 }
   | Backref { $1 }
-  | tFID { mk_call_method $1 }
-  | kBEGIN Bodystmt kEND { mk_begin_keyword $2 }
-  | tLPAREN_ARG Stmt Rparen { mk_begin $2 $3 }
-  | tLPAREN_ARG OptNl tRPAREN { mk_begin $2 }
-  | tLPAREN Compstmt tRPAREN { mk_begin $2 }
-  | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 }
-  | tCOLON3 tCONSTANT { mk_const_global $1 $2 }
-  | tLBRACK ArefArgs tRBRACK { mk_array $1 $2 $3 }
-  | tLBRACE AssocList tRCURLY KReturn { mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1 }
-  |  kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $1 $2 $3 $4 }
-  | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield $1 $2 [] $3 }
-      -- | kYIELD { mk_keyword_cmd Yield $1 }
-      -- | kDEFINED OptNl tLPAREN2 Expr Rparen { (mk_keyword_cmd :defined?, $1, $3 [ $4 ] $5) }
-      -- | kNOT tLPAREN2 Expr Rparen { mk_not_op $1 $2 $3 $4 }
-      -- | kNOT tLPAREN2 Rparen { mk_not_op $1 $2 Nil $3 }
-      -- | Operation BraceBlock { let (begin_t, Args, body, end_t) = $2 in mk_block (mk_call_method Nil Nil $1) begin_t Args body end_t }
-      -- | MethodCall
-      -- | MethodCall BraceBlock { let (begin_t, Args, body, end_t) = $2 in (mk_block $1 begin_t Args body end_t) }
-      -- | tLAMBDA Lambda { let (args, (begin_t, body, end_t)) = $2 in (mk_block (mk_call_lambda $1) begin_t args body end_t) }
-      -- | kIF Expr Then Compstmt IfTail kEND { let (else_t, else_) = $5 in (mk_condition $1 $2 $3 $4 else_t else_  $6) }
-      -- | kUNLESS Expr Then Compstmt OptElse kEND { let (else_t, else_) = $5 in (mk_condition $1 $2 $3 else_  else_t $4 $6) }
-      -- | kWHILE ExprValueDo Compstmt kEND  { (mk_loop While $1 $2 $3 $4)  }
-      -- | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
-      -- | kCASE Expr OptTerms CaseBody kEND
+  | tFID { error "mk_call_method $1" }
+  | kBEGIN Bodystmt kEND { error "mk_begin_keyword $2" }
+  | tLPAREN_ARG Stmt Rparen { error "mk_begin $2 $3" }
+  | tLPAREN_ARG OptNl tRPAREN { error "mk_begin $2" }
+  | tLPAREN Compstmt tRPAREN { error "mk_begin $2" }
+  | Primary tCOLON2 tCONSTANT { error "mk_const_fetch $1" }
+  | tCOLON3 tCONSTANT { error "mk_const_global $1 $2" }
+  | tLBRACK ArefArgs tRBRACK { error "mk_array $1 $2 $3" }
+  | tLBRACE AssocList tRCURLY KReturn { error "mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1" }
+  |  kYIELD tLPAREN2 CallArgs Rparen { error "mk_keyword_cmd Yield $1 $2 $3 $4" }
+  | kYIELD tLPAREN2 Rparen { error "mk_keyword_cmd Yield $1 $2 [] $3" }
+  | kYIELD { error "mk_keyword_cmd Yield $1" }
+  | kDEFINED OptNl tLPAREN2 Expr Rparen { error "mk_keyword_cmd Defined $1 $3 [$4] $5" }
+  | kNOT tLPAREN2 Expr Rparen { error "mk_not_op $1 $2 $3 $4" }
+  | kNOT tLPAREN2 Rparen { error "mk_not_op $1 $2 Nil $3" }
+  | Operation BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in mk_block (mk_call_method Nil Nil $1) begin_t Args body end_t" }
+  | MethodCall { $1 }
+  | MethodCall BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in (mk_block $1 begin_t Args body end_t)" }
+  | tLAMBDA Lambda { error "let (args, (begin_t, body, end_t)) = $2 in (mk_block (mk_call_lambda $1) begin_t args body end_t)" }
+  | kIF Expr Then Compstmt IfTail kEND { error "let (else_t, else_) = $5 in (mk_condition $1 $2 $3 $4 else_t else_  $6)" }
+  | kUNLESS Expr Then Compstmt OptElse kEND { error "let (else_t, else_) = $5 in (mk_condition $1 $2 $3 else_  else_t $4 $6)" }
+  | kWHILE ExprValueDo Compstmt kEND  { (mk_loop While $1 $2 $3 $4)  }
+  | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
+  | kCASE Expr OptTerms CaseBody kEND { undefined }
       --     {
       --       *when_bodies, (else_t, else_body) = *$4
       --       (mk_case $1 $2 when_bodies else_t else_body $5) }
@@ -558,15 +517,16 @@ Primary: Literal { $1 }
       --             mk_case($1, Nil, when_bodies, else_t, else_body, $4) }
       --       | kFOR for_--var kIN ExprValueDo Compstmt kEND  { (mk_for $1, $2, $3, *$4 $5 $6)
       --     }
-      -- | kCLASS Cpath superclass Bodystmt kEND { let (lt_t, superclass) = $3 in (mk_def_class $1 $2 lt_t superclass $5 $6) }
-      -- | kCLASS tLSHFT Expr Term Bodystmt kEND { mk_def_sclass $1 $2 $3 $6 $7 }
-      -- | kMODULE Cpath Bodystmt kEND { (mk_def_module $1 $2 $4 $5) }
-      -- | kDEF Fname FArglist Bodystmt kEND { (mk_def_method $1 $2 $4 $5 $6) }
-      -- | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { mk_def_singleton $1 $2 $3 $5 $7 $8 $9 }
-  | kBREAK { mk_keyword_cmd Break $1 }
-  | kNEXT { mk_keyword_cmd Next $1 }
-  | kREDO { mk_keyword_cmd Redo $1 }
-  | kRETRY { mk_keyword_cmd Retry $1 }
+  | kCLASS Cpath Superclass Bodystmt kEND { error "let (lt_t, Superclass) = $3 in (mk_def_class $1 $2 lt_t Superclass $5 $6)" }
+  | kCLASS tLSHFT Expr Term Bodystmt kEND { error "mk_def_sclass $3 $4 $5" }
+  | kMODULE Cpath Bodystmt kEND { error "mk_def_module $2 $3" }
+  | kDEF Fname FArglist Bodystmt kEND { error "mk_def_method $2 $3 $4" }
+  | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { error "mk_def_singleton $2 $3 $4 $5 $6 $7" }
+  | kBREAK { error "mk_keyword_cmd Break $1" }
+  | kNEXT { error "mk_keyword_cmd Next $1" }
+  | kREDO { error "mk_keyword_cmd Redo $1" }
+  | kRETRY { error "mk_keyword_cmd Retry $1" }
+  | Primary tMETHREF Operation2 { undefined }
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
 
@@ -577,18 +537,14 @@ Then: Term { $1 }
 Do: Term { undefined }
   | kDO_COND { undefined }
 
-{-
-
 IfTail: OptElse { undefined }
-  | kELSIF Expr Then Compstmt IfTail { else_t, else_ = $5 [ $1, mk_condition($1, $2, $3, $4, else_t, else_,  Nil) ] }
-
--}
+  | kELSIF Expr Then Compstmt IfTail { error "else_t, else_ = $5 [ $1, mk_condition($1, $2, $3, $4, else_t, else_,  Nil) ]" }
 
 OptElse: None { undefined } -- { $1 }
   | kELSE Compstmt { undefined } --{ $2 }
 
-FMarg: FNormArg { mk_arg $1 }
-  | tLPAREN FMargs Rparen { mk_multi_lhs $1 $2 $3 }
+FMarg: FNormArg { error "mk_arg $1" }
+  | tLPAREN FMargs Rparen { error "mk_multi_lhs $1 $2 $3" }
 
 FMargList :: { [Term] }
 FMargList: FMarg { [ $1 ] }
@@ -596,14 +552,14 @@ FMargList: FMarg { [ $1 ] }
 
 FMargs ::  { [Term] }
 FMargs: FMargList { $1 }
-  -- | FMargList tCOMMA tSTAR FNormArg { $1. push(mk_restarg $3 $4) }
-  -- | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { $1. push(mk_restarg $3 $4). ++ $6 }
-  -- | FMargList tCOMMA tSTAR { $1. push(mk_restarg($3)) }
-  -- | FMargList tCOMMA tSTAR tCOMMA FMargList { $1. push(mk_restarg($3)). ++ $5 }
-  -- | tSTAR FNormArg { [ (mk_restarg $1 $2) ] }
-  -- | tSTAR FNormArg tCOMMA FMargList { [ (mk_restarg $1 $2), *$4 ] }
+  | FMargList tCOMMA tSTAR FNormArg { error "$1. push(mk_restarg $3 $4)" }
+  | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { error "$1. push(mk_restarg $3 $4). ++ $6" }
+  | FMargList tCOMMA tSTAR { error "$1. push(mk_restarg($3))" }
+  | FMargList tCOMMA tSTAR tCOMMA FMargList { error "$1. push(mk_restarg($3)). ++ $5" }
+  | tSTAR FNormArg { error "[ (mk_restarg $1 $2) ]" }
+  | tSTAR FNormArg tCOMMA FMargList { error "[ (mk_restarg $1 $2), *$4 ]" }
   | tSTAR { [ mk_restarg $1 ] }
-  -- | tSTAR tCOMMA FMargList { [ mk_restarg $1 $3 ] }
+  | tSTAR tCOMMA FMargList { [ mk_restarg $1 $3 ] }
 
 BlockArgsTail :: { [Term] }
 BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
@@ -613,82 +569,75 @@ BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
 
 OptBlockArgsTail: tCOMMA BlockArgsTail { $2 }
   | {- nothing -} { [] }
-{-
-BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
-      | FArg tCOMMA FBlockOptarg OptBlockArgsTail { $1 ++ $3 ++ $4 }
-      | FArg tCOMMA FBlockOptarg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FArg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
-      | FArg tCOMMA
-      | FArg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FArg OptBlockArgsTail { if null $2 && length $1 == 1 then [mk_procarg0 $1[0]] else $1 ++ $2 }
-      | FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
-      | FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FBlockOptarg OptBlockArgsTail { $1 ++ $2 }
-      | FBlockOptarg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
-      | FRestArg OptBlockArgsTail { $1 ++ $2 }
-      | FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
-      | BlockArgsTail { $1 }
--}
 
-OptBlockParam: {- nothing -} { mk_args Nil [] Nil }
+BlockParam :: { [Term] }
+BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $7 ++ $8" }
+  | FArg tCOMMA FBlockOptarg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
+  | FArg tCOMMA FBlockOptarg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FArg tCOMMA FRestArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
+  | FArg tCOMMA { error "$1" }
+  | FArg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FArg OptBlockArgsTail { error "if null $2 && length $1 == 1 then [mk_procarg0 $1[0]] else $1 ++ $2" }
+  | FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
+  | FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FBlockOptarg OptBlockArgsTail { error "$1 ++ $2" }
+  | FBlockOptarg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
+  | FRestArg OptBlockArgsTail { error "$1 ++ $2" }
+  | FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
+  | BlockArgsTail { error "$1" }
+
+OptBlockParam: {- nothing -} { error "mk_args Nil [] Nil" }
   | BlockParamDef { $1 }
 
-BlockParamDef: -- tPIPE opt_bv_decl tPIPE { mk_args $1 $2 $3 }
-  tOROP { (mk_args $1 [] $1) }
---  | tPIPE BlockParam opt_bv_decl tPIPE { mk_args $1 ($2 ++ $3) $4 }
+BlockParamDef: tPIPE OptBvDecl tPIPE { error "mk_args $1 $2 $3" }
+ | tOROP { (mk_args $1 [] $1) }
+ | tPIPE BlockParam OptBvDecl tPIPE { error "mk_args $1 ($2 ++ $3) $4" }
 
-
-
-{-
-opt_bv_decl: OptNl { [] }
+OptBvDecl: OptNl { [] }
   | OptNl tSEMI BvDecls OptNl { $3 }
 
 BvDecls: Bvar { [ $1 ] }
       | BvDecls tCOMMA Bvar { $1 ++ [$3] }
 
-Bvar: tIDENTIFIER { mk_shadowarg($1) }
-    | FBadArg
+Bvar: tIDENTIFIER { error "mk_shadowarg $1" }
+    | FBadArg { $1 }
 
-Lambda: FLarglist { @lexer.cmdarg.push(false) } LambdaBody { @lexer.cmdarg.pop; [ $2, $4 ]; @static_env.unextend }
+Lambda: FLarglist LambdaBody { error "[ $2, $4 ]" }
 
-FLarglist: tLPAREN2 FArgs opt_bv_decl tRPAREN { (mk_args $1 $2.concat($3) $4) }
-  | FArgs { (mk_args Nil $1 Nil) }
+FLarglist: tLPAREN2 FArgs OptBvDecl tRPAREN { error "mk_args $1 $2.concat($3) $4" }
+  | FArgs { error "mk_args Nil $1 Nil" }
 
-LambdaBody: tLAMBEG { @context.push(:Lambda) } Compstmt tRCURLY { [ $1, $3, $4 ] @context.pop }
-  | kDO_LAMBDA { @context.push(:Lambda) } Bodystmt kEND { [ $1, $3, $4 ] @context.pop }
+LambdaBody: tLAMBEG Compstmt tRCURLY { error "[ $1, $3, $4 ]" }
+  | kDO_LAMBDA Bodystmt kEND { error "[ $1, $3, $4 ]" }
 
-            -}
 DoBlock: kDO_BLOCK  DoBody kEND { undefined } -- { @context.push(:block) } { [ $1, *$3, $4 ] @context.pop }
-BlockCall: Command DoBlock { undefined }
-{-
-BlockCall: Command DoBlock { let (begin_t, block_args, body, end_t) = $2 in (mk_block $1 begin_t block_args body end_t) }
-  | BlocAall DotOrColon Operation2 OptParen_args { let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1 $2 $3 lparen_t Args rparen_t } -- | BlockCall DotOrColon Operation2 OptParen_args BraceBlock { lparen_t, Args, rparen_t = $4
+BlockCall: Command DoBlock { error "let (begin_t, block_args, body, end_t) = $2 in (mk_block $1 begin_t block_args body end_t)" }
+  | BlockCall DotOrColon Operation2 OptParenArgs { undefined } {- let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1 $2 $3 lparen_t Args rparen_t } -- | BlockCall DotOrColon Operation2 OptParenArgs BraceBlock { lparen_t, Args, rparen_t = $4
             MethodCall = mk_call_method $1, $2, $3,
                             lparen_t, Args, rparen_t)
 
             begin_t, Args, body, end_t = $5
             result      = mk_block(MethodCall,
-                            begin_t, Args, body, end_t) }
-      | BlockCall DotOrColon Operation2 CommandArgs DoBlock {
+                            begin_t, Args, body, end_t) -}
+  | BlockCall DotOrColon Operation2 CommandArgs DoBlock { undefined } {-
             MethodCall = mk_call_method $1, $2, $3,
                             Nil, $4, Nil)
 
             begin_t, Args, body, end_t = $5
             result      = mk_block(MethodCall,
-                            begin_t, Args, body, end_t) }
+                            begin_t, Args, body, end_t) -}
 
-MethodCall: Operation ParenArgs { let (lparen_t, Args, rparen_t) = $2 in mk_call_method Nil Nil $1 lparen_t Args rparen_t }
-      | PrAary CallOp Operation2 OptParen_args { let let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1, $2, $3, lparen_t, Args, rparen_t }
-      | Primary tCOLON2 Operation2 ParenArgs { let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1 $2 $3 lparen_t Args rparen_t }
-      | Primary tCOLON2 operation3 { mk_call_method $1 $2 $3 }
-      | Primary CallOp ParenArgs { let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t }
-      | Primary tCOLON2 ParenArgs { let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t }
-      | kSUPER ParenArgs { let (lparen_t, Args, rparen_t) = $2 in mk_keyword_cmd Super $1 lparen_t Args rparen_t }
-      | kSUPER { mk_keyword_cmd Zsuper $1 }
-      | Primary tLBRACK2 OptCallArgs RBracket { (mk_index $1, $2 $3 $4 }
+MethodCall: Operation ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in mk_call_method Nil Nil $1 lparen_t Args rparen_t" }
+  | Primary CallOp Operation2 OptParenArgs { error "let let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1, $2, $3, lparen_t, Args, rparen_t" }
+  | Primary tCOLON2 Operation2 ParenArgs { error "let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1 $2 $3 lparen_t Args rparen_t" }
+  | Primary tCOLON2 operation3 { error "mk_call_method $1 $2 $3" }
+  | Primary CallOp ParenArgs { error "let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t" }
+  | Primary tCOLON2 ParenArgs { error "let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t" }
+  | kSUPER ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in mk_keyword_cmd Super $1 lparen_t Args rparen_t" }
+  | kSUPER { error "mk_keyword_cmd Zsuper $1" }
+  | Primary tLBRACK2 OptCallArgs RBracket { error "(mk_index $1, $2 $3 $4" }
 
--}
 BraceBlock: tLCURLY BraceBody tRCURLY { undefined }
   | kDO DoBody kEND  { undefined }
 
@@ -725,18 +674,23 @@ Literal: Numeric { $1 }
   | Dsym { $1 }
 
 Strings :: { Term }
-Strings: String { mk_string_compose $1 }
+Strings: String { error "mk_string_compose $1" }
 
 String :: { [Term] }
 String: String1 { [ $1 ] }
   | String String1 { $1 ++ [$2] }
 
-String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
-  | tSTRING { mk_string $1 }
-  | tCHARACTER { mk_character $1 }
+String1: tSTRING_BEG StringContents tSTRING_END { error "mk_string_compose $2" }
+  | tSTRING { error "mk_string $1" }
+  | tCHARACTER { error "mk_character $1" }
+
+Xstring :: { Term  }
+Xstring: tXSTRING_BEG XStringContents tSTRING_END { error "mk_xstring_compose $2" }
+
+Regexp: tREGEXP_BEG RegexpContents tSTRING_END tREGEXP_OPT { error "mk_regexp_compose $1 $2 $3 (mk_regexp_options $4)" }
 
 Words :: { Term }
-Words: tWORDS_BEG WordList tSTRING_END { mk_words_compose $1 $2 $3 }
+Words: tWORDS_BEG WordList tSTRING_END { error "mk_words_compose $1 $2 $3" }
 
 WordList :: { [Term] }
 WordList: {- nothing -} { [] }
@@ -746,30 +700,17 @@ Word: StringContent { [ $1 ] }
   | Word StringContent { $1 ++ [$2] }
 
 Symbols :: { Term }
-Symbols: tSYMBOLS_BEG SymbolList tSTRING_END { mk_symbols_compose $1 $2 $3 }
+Symbols: tSYMBOLS_BEG SymbolList tSTRING_END { error "mk_symbols_compose $1 $2 $3" }
 
 SymbolList :: { [Term] }
 SymbolList:  {- nothing -} { [] }
   | SymbolList Word tSPACE { $1 ++ [mk_word $2] }
 
-Xstring :: { Term  }
-Xstring: tXSTRING_BEG XStringContents tSTRING_END { mk_xstring_compose $2 }
-
-XStringContents :: { [Term] }
-XStringContents: {- nothing -} { [] }
-  | XStringContents StringContent { $1 ++ [$2] }
-
-{-
-
-RLgexp: tREGEXP_BEG RegexpContents tSTRING_END tREGEXP_OPT {
-            opts   = mk_regexp_options($4)
-            (mk_regexp_compose $1, $2 $3 opts) }
--}
 Qwords :: { Term }
-Qwords: tQWORDS_BEG QwordList tSTRING_END {  mk_words_compose $1 $2 $3 }
+Qwords: tQWORDS_BEG QwordList tSTRING_END { error "mk_words_compose $1 $2 $3" }
 
 Qsymbols :: { Term }
-Qsymbols: tQSYMBOLS_BEG QsymList tSTRING_END { mk_symbols_compose $1 $2 $3 }
+Qsymbols: tQSYMBOLS_BEG QsymList tSTRING_END { error "mk_symbols_compose $1 $2 $3" }
 
 QwordList :: { [Term] }
 QwordList: {- nothing -} { [] }
@@ -779,42 +720,45 @@ QsymList :: { [Term] }
 QsymList: {- nothing -} { [] }
   | QsymList tSTRING_CONTENT tSPACE { $1 ++ [mk_symbol_internal $2] }
 
-{-
-RegexpContents: {- nothing -} { [] }
-  | RegexpContents StringContent { $1 ++ [$2] }
--}
-
 StringContents: {- nothing -} { [] }
   | StringContents StringContent { $1 ++ [$2] }
 
-StringContent: tSTRING_CONTENT { mk_string_internal $1 }
-  | tSTRING_DVAR StringDvar { $2 }
-  | tSTRING_DBEG Compstmt tSTRING_DEND { mk_begin $1 $2 $3 } -- { @lexer.cmdarg.push(false); @lexer.cond.push(false); @lexer.cmdarg.pop @lexer.cond.pop
+XStringContents :: { [Term] }
+XStringContents: {- nothing -} { [] }
+  | XStringContents StringContent { $1 ++ [$2] }
 
-StringDvar: tGVAR { mk_gvar $1 }
-  | tIVAR { mk_ivar $1 }
-  | tCVAR { mk_cvar $1 }
+RegexpContents :: { [Term] }
+RegexpContents: {- nothing -} { [] }
+  | RegexpContents StringContent { $1 ++ [$2] }
+
+StringContent: tSTRING_CONTENT { error "mk_string_internal $1" }
+  | tSTRING_DVAR StringDvar { $2 }
+  | tSTRING_DBEG Compstmt tSTRING_DEND { error "mk_begin $1 $2 $3" } -- { @lexer.cmdarg.push(false); @lexer.cond.push(false); @lexer.cmdarg.pop @lexer.cond.pop
+
+StringDvar: tGVAR { error "mk_gvar $1" }
+  | tIVAR { error "mk_ivar $1" }
+  | tCVAR { error "mk_cvar $1" }
   | Backref { undefined }
 
 Symbol :: { Term }
-Symbol: tSYMBOL { mk_symbol $1 }
+Symbol: tSYMBOL { error "mk_symbol $1" }
 
-Dsym: tSYMBEG XStringContents tSTRING_END { mk_symbol_compose $1 $2 $3 }
+Dsym: tSYMBEG XStringContents tSTRING_END { error "mk_symbol_compose $1 $2 $3" }
 
 Numeric: SimpleNumeric { $1 }
-  | tUNARY_NUM SimpleNumeric tLOWEST { mk_unary_num $1 $2 }
+  | tUNARY_NUM SimpleNumeric tLOWEST { error "mk_unary_num $1 $2" }
 
-SimpleNumeric: tINTEGER { mk_integer $1 }
-  | tFLOAT { mk_float $1 }
-  | tRATIONAL { mk_rational $1 }
-  | tIMAGINARY { mk_complex $1 }
+SimpleNumeric: tINTEGER { error "mk_integer $1" }
+  | tFLOAT { error "mk_float $1" }
+  | tRATIONAL { error "mk_rational $1" }
+  | tIMAGINARY { error "mk_complex $1" }
 
 UserVariable :: { Term }
-UserVariable: tIDENTIFIER { mk_ident $1 }
-  | tIVAR { mk_ivar $1 }
-  | tGVAR { mk_gvar $1 }
-  | tCONSTANT { mk_const $1 }
-  | tCVAR { mk_cvar $1 }
+UserVariable: tIDENTIFIER { error "mk_ident $1" }
+  | tIVAR { error "mk_ivar $1" }
+  | tGVAR { error "mk_gvar $1" }
+  | tCONSTANT { error "mk_const $1" }
+  | tCVAR { error "mk_cvar $1" }
 
 KeywordVariable :: { Term }
 KeywordVariable : kNIL {Nil}
@@ -825,24 +769,20 @@ KeywordVariable : kNIL {Nil}
   | k__LINE__ {Line}
   | k__ENCODING__ {Encoding}
 
-VarRef: UserVariable { mk_accessible($1) }
-  | KeywordVariable { mk_accessible($1) }
+VarRef: UserVariable { mk_accessible $1 }
+  | KeywordVariable { mk_accessible $1 }
 
-VarLhs: UserVariable { mk_assignable $1 }
-  | KeywordVariable { mk_assignable $1 }
+VarLhs: UserVariable { error "mk_assignable $1" }
+  | KeywordVariable { error "mk_assignable $1" }
 
-Backref: tNTH_REF { mk_nth_ref $1 }
-  | tBACK_REF { mk_back_ref $1 }
-{-
-superclass: tLT {
-            @lexer.state = :Expr }
-          Expr Term {
-            [ $1, $3 ] }
-      | {- nothing -} {
-            Nil }
--}
+Backref: tNTH_REF { error "mk_nth_ref $1" }
+  | tBACK_REF { error "mk_back_ref $1" }
+
+Superclass: tLT Expr Term { error "[ $1, $3 ]" }
+  | {- nothing -} { Nil }
+
 FArglist: tLPAREN2 FArgs Rparen { (mk_args $1 $2 $3) }
-  | FArgs Term { mk_args Nil $2 Nil }
+  | FArgs Term { error "mk_args Nil $2 Nil" }
 
 ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { error "$1.concat($3).concat($4)" }
   | FKwarg OptFBlockArg { error "$1.concat($2)" }
@@ -852,21 +792,21 @@ ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { error "$1.concat($3).concat($4)" 
 OptArgsTail: tCOMMA ArgsTail { $2 }
   | {- nothing -} { [] }
 
-FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-  | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
-  | FArg tCOMMA FOptarg OptArgsTail { $1 ++ $3 ++ $4 }
-  | FArg tCOMMA FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-  | FArg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
-  | FArg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-  | FArg OptArgsTail { $1 ++ $2 }
-  | FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
-  | FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-  | FOptarg OptArgsTail { $1 ++ $2 }
-  | FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
-  | FRestArg OptArgsTail { $1 ++ $2 }
-  | FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
-  | ArgsTail { $1 }
-  | {- nothing -} { [] }
+FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $7 ++ $8" }
+  | FArg tCOMMA FOptarg OptArgsTail { error "$1 ++ $3 ++ $4" }
+  | FArg tCOMMA FOptarg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FArg tCOMMA FRestArg OptArgsTail { error "$1 ++ $3 ++ $4" }
+  | FArg tCOMMA FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FArg OptArgsTail { error "$1 ++ $2" }
+  | FOptarg tCOMMA FRestArg OptArgsTail { error "$1 ++ $3 ++ $4" }
+  | FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
+  | FOptarg OptArgsTail { error "$1 ++ $2" }
+  | FOptarg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $4" }
+  | FRestArg OptArgsTail { error "$1 ++ $2" }
+  | FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $4" }
+  | ArgsTail { error "$1" }
+  | {- nothing -} { error "[]" }
 
 
 FBadArg: tCONSTANT { error ":argument_const, Nil, $1" }
@@ -879,19 +819,19 @@ FNormArg: FBadArg { $1 }
 
 FArgAsgn: FNormArg { $1 }
 
-FArgItem: FArgAsgn { mk_arg $1 }
-  | tLPAREN FMargs Rparen { mk_multi_lhs $1 $2 $3 }
+FArgItem: FArgAsgn { error "mk_arg $1" }
+  | tLPAREN FMargs Rparen { error "mk_multi_lhs $1 $2 $3" }
 
 FArg: FArgItem { [ $1 ] }
   | FArg tCOMMA FArgItem { $1 ++ [$3] }
 
 FLabel: tLABEL { undefined } -- { check_kwarg_name($1) @static_env.declare $1[0] $1 }
 
-FKw: FLabel Arg { mk_kwoptarg $1 $2 }
-  | FLabel { mk_kwarg $1 }
+FKw: FLabel Arg { error "mk_kwoptarg $1 $2" }
+  | FLabel { error "mk_kwarg $1" }
 
-FBlockKw: FLabel Primary { mk_kwoptarg $1 $2 }
-  | FLabel { mk_kwarg $1 }
+FBlockKw: FLabel Primary { error "mk_kwoptarg $1 $2" }
+  | FLabel { error "mk_kwarg $1" }
 
 FBlockKwarg: FBlockKw { [ $1 ] }
   | FBlockKwarg tCOMMA FBlockKw { $1 ++ [$3] }
@@ -905,9 +845,9 @@ KwrestMark: tPOW { $1 }
 FKwrest: KwrestMark tIDENTIFIER {  [ mk_kwrestarg $1 $2 ] }
   | KwrestMark { [ mk_kwrestarg($1) ] }
 
-FOpt: FArgAsgn tEQL Arg { mk_optarg $1 $2 $3 }
+FOpt: FArgAsgn tEQL Arg { error "mk_optarg $1 $2 $3" }
 
-FBlockOpt: FArgAsgn tEQL Primary { mk_optarg $1 $2 $3 }
+FBlockOpt: FArgAsgn tEQL Primary { error "mk_optarg $1 $2 $3" }
 
 FBlockOptarg: FBlockOpt { [ $1 ] }
   | FBlockOptarg tCOMMA FBlockOpt { $1 ++ [$3] }
@@ -926,7 +866,7 @@ FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $1 $2 ] }
 BlkargMark: tAMPER2 { undefined }
   | tAMPER { undefined }
 
-FBlockArg: BlkargMark tIDENTIFIER { mk_blockarg $1 $2 }
+FBlockArg: BlkargMark tIDENTIFIER { error "mk_blockarg $1 $2" }
 
 OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
   | {- nothing -} { [] }
@@ -940,10 +880,10 @@ AssocList: {- nothing -} { [] }
 Assocs: Assoc { [ $1 ] }
   | Assocs tCOMMA Assoc { $1 ++ [$3] }
 
-Assoc: Arg tASSOC Arg { mk_pair $1 $2 $3 }
-   | tLABEL Arg { mk_pair_keyword $1 $2 }
---    | tSTRING_BEG StringContents tLABEL_END Arg { mk_pair_quoted $1, $2 $3 $4 }
-   | tDSTAR Arg { mk_kwsplat $1 $2 }
+Assoc: Arg tASSOC Arg { error "mk_pair $1 $2 $3" }
+   | tLABEL Arg { error "mk_pair_keyword $1 $2" }
+   | tSTRING_BEG StringContents tLABEL_END Arg { error "mk_pair_quoted $1 $2 $3 $4" }
+   | tDSTAR Arg { error "mk_kwsplat $1 $2" }
 
 Operation: tIDENTIFIER { $1 }
   | tCONSTANT { $1 }
