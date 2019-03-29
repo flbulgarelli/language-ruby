@@ -590,9 +590,11 @@ OptElse: None { undefined } -- { $1 }
 FMarg: FNormArg { mk_arg $1 }
   | tLPAREN FMargs Rparen { mk_multi_lhs $1 $2 $3 }
 
+FMargList :: { [Term] }
 FMargList: FMarg { [ $1 ] }
   | FMargList tCOMMA FMarg { $1 ++ [$3] }
 
+FMargs ::  { [Term] }
 FMargs: FMargList { $1 }
   -- | FMargList tCOMMA tSTAR FNormArg { $1. push(mk_restarg $3 $4) }
   -- | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { $1. push(mk_restarg $3 $4). ++ $6 }
@@ -601,16 +603,17 @@ FMargs: FMargList { $1 }
   -- | tSTAR FNormArg { [ (mk_restarg $1 $2) ] }
   -- | tSTAR FNormArg tCOMMA FMargList { [ (mk_restarg $1 $2), *$4 ] }
   | tSTAR { [ mk_restarg $1 ] }
-  -- | tSTAR tCOMMA FMargList { [ mk_restarg($1), *$3 ] }
-{-
+  -- | tSTAR tCOMMA FMargList { [ mk_restarg $1 $3 ] }
+
+BlockArgsTail :: { [Term] }
 BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
-  | FBlockKwarg OptFBlockArg { $1 ++ $2) }
-  | FKwrest OptFBlockArg { $1 ++ $2) }
+  | FBlockKwarg OptFBlockArg { $1 ++ $2 }
+  | FKwrest OptFBlockArg { $1 ++ $2 }
   | FBlockArg { [ $1 ] }
 
 OptBlockArgsTail: tCOMMA BlockArgsTail { $2 }
-  -- | {- nothing -} { [] }
-
+  | {- nothing -} { [] }
+{-
 BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
       | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
       | FArg tCOMMA FBlockOptarg OptBlockArgsTail { $1 ++ $3 ++ $4 }
@@ -704,7 +707,7 @@ OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { undefined } {-
               ExcList = (mk_array Nil $2 Nil)
             end
             [ mk_rescue_body $1, ExcList, assoc_t, ExcVar, $4, $5), *$6 ] -}
-  -- | { [] }
+  | {- nothing -} { [] }
 
 ExcList: Arg { undefined } -- { [ $1 ] }
   | Mrhs { undefined } -- { $1 }
@@ -803,7 +806,7 @@ Numeric: SimpleNumeric { $1 }
 
 SimpleNumeric: tINTEGER { mk_integer $1 }
   | tFLOAT { mk_float $1 }
--- -- | tRATIONAL { mk_rational($1) }
+  | tRATIONAL { mk_rational $1 }
   | tIMAGINARY { mk_complex $1 }
 
 UserVariable :: { Term }
@@ -837,35 +840,34 @@ superclass: tLT {
             [ $1, $3 ] }
       | {- nothing -} {
             Nil }
-
+-}
 FArglist: tLPAREN2 FArgs Rparen { (mk_args $1 $2 $3) }
   | FArgs Term { mk_args Nil $2 Nil }
 
-ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { $1.concat($3).concat($4) }
-  | FKwarg OptFBlockArg { $1.concat($2) }
-  | FKwrest OptFBlockArg { $1.concat($2) }
+ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { error "$1.concat($3).concat($4)" }
+  | FKwarg OptFBlockArg { error "$1.concat($2)" }
+  | FKwrest OptFBlockArg { error "$1.concat($2)" }
   | FBlockArg { [ $1 ] }
 
 OptArgsTail: tCOMMA ArgsTail { $2 }
-  -- | {- nothing -} { [] }
+  | {- nothing -} { [] }
 
 FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
-      | FArg tCOMMA FOptarg OptArgsTail { $1 ++ $3 ++ $4 }
-      | FArg tCOMMA FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FArg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
-      | FArg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FArg OptArgsTail { $1 ++ $2 }
-      | FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
-      | FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-      | FOptarg OptArgsTail { $1 ++ $2 }
-      | FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
-      | FRestArg OptArgsTail { $1 ++ $2 }
-      | FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
-      | ArgsTail { $1 }
---    | {- nothing -} { [] }
+  | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
+  | FArg tCOMMA FOptarg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FArg tCOMMA FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FArg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg OptArgsTail { $1 ++ $2 }
+  | FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FOptarg OptArgsTail { $1 ++ $2 }
+  | FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FRestArg OptArgsTail { $1 ++ $2 }
+  | FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | ArgsTail { $1 }
+  | {- nothing -} { [] }
 
--}
 
 FBadArg: tCONSTANT { error ":argument_const, Nil, $1" }
   | tIVAR { error ":argument_ivar, Nil, $1" }
@@ -904,15 +906,16 @@ FKwrest: KwrestMark tIDENTIFIER {  [ mk_kwrestarg $1 $2 ] }
   | KwrestMark { [ mk_kwrestarg($1) ] }
 
 FOpt: FArgAsgn tEQL Arg { mk_optarg $1 $2 $3 }
-{-
+
 FBlockOpt: FArgAsgn tEQL Primary { mk_optarg $1 $2 $3 }
 
 FBlockOptarg: FBlockOpt { [ $1 ] }
   | FBlockOptarg tCOMMA FBlockOpt { $1 ++ [$3] }
 
+FOptarg :: { [Term] }
 FOptarg: FOpt { [ $1 ] }
   | FOptarg tCOMMA FOpt { $1 ++ [$3] }
--}
+
 RestargMark: tSTAR2 { undefined }
   | tSTAR { undefined }
 
@@ -922,12 +925,12 @@ FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $1 $2 ] }
 
 BlkargMark: tAMPER2 { undefined }
   | tAMPER { undefined }
-{-
+
 FBlockArg: BlkargMark tIDENTIFIER { mk_blockarg $1 $2 }
 
 OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
-  | { [] }
--}
+  | {- nothing -} { [] }
+
 Singleton: VarRef { $1 }
   | tLPAREN2 Expr Rparen { $2 }
 
