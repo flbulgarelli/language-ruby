@@ -351,7 +351,7 @@ Fname: tIDENTIFIER { undefined }
   | Reswords { undefined }
 
 Fsym :: { Term }
-Fsym: Fname { error "mk_symbol $1" }
+Fsym: Fname { mk_symbol $1 }
   | Symbol { $1 }
 
 Fitem: Fsym { $1 }
@@ -676,15 +676,15 @@ Literal: Numeric { $1 }
   | Dsym { $1 }
 
 Strings :: { Term }
-Strings: String { error "mk_string_compose $1" }
+Strings: String { mk_string_compose $1 }
 
 String :: { [Term] }
 String: String1 { [ $1 ] }
   | String String1 { $1 ++ [$2] }
 
-String1: tSTRING_BEG StringContents tSTRING_END { error "mk_string_compose $2" }
-  | tSTRING { error "mk_string $1" }
-  | tCHARACTER { error "mk_character $1" }
+String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
+  | tSTRING { mk_string $1 }
+  | tCHARACTER { mk_character $1 }
 
 Xstring :: { Term  }
 Xstring: tXSTRING_BEG XStringContents tSTRING_END { error "mk_xstring_compose $2" }
@@ -733,19 +733,19 @@ RegexpContents :: { [Term] }
 RegexpContents: {- nothing -} { [] }
   | RegexpContents StringContent { $1 ++ [$2] }
 
-StringContent: tSTRING_CONTENT { error "mk_string_internal $1" }
+StringContent: tSTRING_CONTENT { mk_string_internal $1 }
   | tSTRING_DVAR StringDvar { $2 }
   | tSTRING_DBEG Compstmt tSTRING_DEND { error "mk_begin $1 $2 $3" } -- { @lexer.cmdarg.push(false); @lexer.cond.push(false); @lexer.cmdarg.pop @lexer.cond.pop
 
-StringDvar: tGVAR { error "mk_gvar $1" }
-  | tIVAR { error "mk_ivar $1" }
-  | tCVAR { error "mk_cvar $1" }
+StringDvar: tGVAR { mk_gvar $1 }
+  | tIVAR { mk_ivar $1 }
+  | tCVAR { mk_cvar $1 }
   | Backref { undefined }
 
 Symbol :: { Term }
-Symbol: tSYMBOL { error "mk_symbol $1" }
+Symbol: tSYMBOL { mk_symbol $1 }
 
-Dsym: tSYMBEG XStringContents tSTRING_END { error "mk_symbol_compose $1 $2 $3" }
+Dsym: tSYMBEG XStringContents tSTRING_END { mk_symbol_compose $2 }
 
 Numeric: SimpleNumeric { $1 }
   | tUNARY_NUM SimpleNumeric tLOWEST { error "mk_unary_num $1 $2" }
@@ -756,11 +756,11 @@ SimpleNumeric: tINTEGER { mk_integer $1 }
   | tIMAGINARY { error "mk_complex $1" }
 
 UserVariable :: { Term }
-UserVariable: tIDENTIFIER { error "mk_ident $1" }
-  | tIVAR { error "mk_ivar $1" }
-  | tGVAR { error "mk_gvar $1" }
-  | tCONSTANT { error "mk_const $1" }
-  | tCVAR { error "mk_cvar $1" }
+UserVariable: tIDENTIFIER { mk_ident $1 }
+  | tIVAR { mk_ivar $1 }
+  | tGVAR { mk_gvar $1 }
+  | tCONSTANT { mk_const $1 }
+  | tCVAR { mk_cvar $1 }
 
 KeywordVariable :: { Term }
 KeywordVariable : kNIL {Nil}

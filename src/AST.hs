@@ -76,15 +76,13 @@ type StaticEnv = [String]
 
 mkLogicalOp = error "mkLogicalOp"
 
+mkExpression :: [Term] -> Term
 mkExpression []  = Nil
 mkExpression [e] = e
 mkExpression xs  = Begin xs
 
 mk_multiassign = error "mk_multiassign"
 mk_postexe = error "mk_postexe"
-mk___ENCODING__ = error "mk___ENCODING__"
-mk___FILE__ = error "mk___FILE__"
-mk___LINE__ = error "mk___LINE__"
 
 mk_accessible :: Term -> StaticEnv -> Term
 mk_accessible (Lvar name) env | elem name env = Send Nil name []
@@ -113,31 +111,33 @@ mk_character = error "mk_character"
 mk_complex = error "mk_complex"
 mk_condition = error "mk_condition"
 mk_condition_mod = error "mk_condition_mod"
-mk_const = error "mk_const"
 mk_const_fetch = error "mk_const_fetch"
 mk_const_global = error "mk_const_global"
 mk_const_op_assignable = error "mk_const_op_assignable"
-mk_cvar = error "mk_cvar"
+
+mk_cvar, mk_gvar, mk_ivar, mk_const, mk_ident :: Token -> Term
+mk_cvar (TCVAR i)        = Cvar i
+mk_gvar (TGVAR i)        = Gvar i
+mk_ivar (TIVAR i)        = Ivar i
+mk_const (TCONSTANT i)   = Const Nil i
+mk_ident (TIDENTIFIER i) = Lvar i
+
 mk_def_class = error "mk_def_class"
 mk_def_method = error "mk_def_method"
 mk_def_module = error "mk_def_module"
 mk_def_sclass = error "mk_def_sclass"
 mk_def_singleton = error "mk_def_singleton"
-mk_false = error "mk_false"
 
 mk_float :: Token -> Term
 mk_float (TFLOAT f) = RFloat f
 
 mk_for = error "mk_for"
-mk_gvar = error "mk_gvar"
-mk_ident = error "mk_ident"
 mk_index = error "mk_index"
 mk_index_asgn = error "mk_index_asgn"
 
 mk_integer :: Token -> Term
 mk_integer (TINTEGER i) = RInt i
 
-mk_ivar = error "mk_ivar"
 mk_keyword_cmd = error "mk_keyword_cmd"
 mk_kwarg = error "mk_kwarg"
 mk_kwoptarg = error "mk_kwoptarg"
@@ -147,7 +147,6 @@ mk_loop = error "mk_loop"
 mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"
 mk_multi_lhs = error "mk_multi_lhs"
-mk_Nil = error "mk_Nil"
 mk_not_op = error "mk_not_op"
 mk_nth_ref = error "mk_nth_ref"
 mk_op_assign = error "mk_op_assign"
@@ -164,18 +163,28 @@ mk_regexp_compose = error "mk_regexp_compose"
 mk_regexp_options = error "mk_regexp_options"
 mk_rescue_body = error "mk_rescue_body"
 mk_restarg = error "mk_restarg"
-mk_self = error "mk_self"
 mk_shadowarg = error "mk_shadowarg"
 mk_splat = error "mk_splat"
-mk_string = error "mk_string"
-mk_string_compose = error "mk_string_compose"
-mk_string_internal = error "mk_string_internal"
-mk_symbol = error "mk_symbol"
+
+mk_string_compose :: [Term] -> Term
+mk_string_compose [t]                = t
+mk_string_compose (Dstr parts:ts)    = Dstr (parts ++ ts)
+mk_string_compose (Str s1:Str s2:ts) = mk_string_compose (Str (s1 ++ s2):ts)
+mk_string_compose (s:Dstr parts:ts)  = mk_string_compose (Dstr (s:parts):ts)
+
+mk_string, mk_string_internal :: Token -> Term
+mk_string = mk_string_internal
+mk_string_internal (TSTRING s) = Str s
+
+mk_symbol_compose :: [Term] -> Term
 mk_symbol_compose = error "mk_symbol_compose"
+
+mk_symbol, mk_symbol_internal :: Token -> Term
+mk_symbol = mk_symbol_internal
 mk_symbol_internal = error "mk_symbol_internal"
+
 mk_symbols_compose = error "mk_symbols_compose"
 mk_ternary = error "mk_ternary"
-mk_true = error "mk_true"
 mk_unary_num = error "mk_unary_num"
 mk_unary_op = error "mk_unary_op"
 mk_undef_method = error "mk_undef_method"

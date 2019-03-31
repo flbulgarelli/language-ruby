@@ -73,8 +73,8 @@ spec = do
     test "cvasgn" "@@var = 10"  (cvasgn "@@var" (RInt 10))
     test "gvasgn" "$var = 10"  (gvasgn "$var" (RInt 10))
 
-    test "asgn_cmd" "foo = m foo"  (lvasgn "foo" (Send Nil "m" (Lvar "foo")))
-    test "asgn_cmd" "foo = bar = m foo"  (lvasgn "foo" (lvasgn "bar" (Send Nil "m" (Lvar "foo"))))
+    test "asgn_cmd" "foo = m foo"  (lvasgn "foo" (Send Nil "m" [Lvar "foo"]))
+    test "asgn_cmd" "foo = bar = m foo"  (lvasgn "foo" (lvasgn "bar" (Send Nil "m" [Lvar "foo"])))
 
     test "casgn_toplevel" "::Foo = 10" (casgn Cbase "Foo"  (RInt 10))
     test "casgn_scoped" "Bar::Foo = 10" (casgn (Const Nil "Bar") "Foo"  (RInt 10))
@@ -153,7 +153,7 @@ spec = do
   --         s(:lvasgn, :foo)),
   --       s(:lvar, :foo)),
 
-    test "masgn_cmd" "foo, bar = m foo" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (Send Nil "m" (Lvar "foo")))
+    test "masgn_cmd" "foo, bar = m foo" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (Send Nil "m" [Lvar "foo"]))
 
     test "asgn_mrhs" "foo = bar, 1" (Lvasgn "foo" (Just (RArray [Lvar "bar", RInt 1])))
     test "asgn_mrhs" "foo = *bar" (Lvasgn "foo" (Just (RArray [Splat (Just(Lvar "bar"))])))
