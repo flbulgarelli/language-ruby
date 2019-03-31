@@ -1,9 +1,11 @@
 {
+
 module Parser(parse) where
 import AST
 import qualified Lexer as L
 import Control.Monad.Error
 }
+
 
 %monad{L.P}
 %lexer{L.lexer}{L.TEOF}
@@ -748,8 +750,8 @@ Dsym: tSYMBEG XStringContents tSTRING_END { error "mk_symbol_compose $1 $2 $3" }
 Numeric: SimpleNumeric { $1 }
   | tUNARY_NUM SimpleNumeric tLOWEST { error "mk_unary_num $1 $2" }
 
-SimpleNumeric: tINTEGER { error "mk_integer $1" }
-  | tFLOAT { error "mk_float $1" }
+SimpleNumeric: tINTEGER { mk_integer $1 }
+  | tFLOAT { mk_float $1 }
   | tRATIONAL { error "mk_rational $1" }
   | tIMAGINARY { error "mk_complex $1" }
 
@@ -769,8 +771,8 @@ KeywordVariable : kNIL {Nil}
   | k__LINE__ {Line}
   | k__ENCODING__ {Encoding}
 
-VarRef: UserVariable { mk_accessible $1 }
-  | KeywordVariable { mk_accessible $1 }
+VarRef: UserVariable { mk_accessible $1 [] }
+  | KeywordVariable { mk_accessible $1 [] }
 
 VarLhs: UserVariable { error "mk_assignable $1" }
   | KeywordVariable { error "mk_assignable $1" }

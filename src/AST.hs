@@ -4,7 +4,7 @@ module AST where
 
 import Data.Ratio (Rational)
 import Data.Complex
-import Lexer (Token)
+import Lexer (Token (..))
 
 data Term
        = Begin [Term]
@@ -13,7 +13,7 @@ data Term
        | RTrue
        | RFalse
        | RInt Int
-       | RFloat Float
+       | RFloat Double
        | RRational Rational
        -- | RComplex (forall a. Num a => Complex (a))
        | RComplex (Complex Double)
@@ -29,7 +29,7 @@ data Term
        | Alias Term Term
        | RArray [Term]
        | Masgn Mlhs Term
-       | Send Term String Term
+       | Send Term String [Term]
        | Splat (Maybe Term)
        | Lvasgn String (Maybe Term) -- variables
        | Lvar String
@@ -65,11 +65,14 @@ data Term
 data Mlhs = Mlhs [Term] deriving (Eq, Show)
 data Args = Args [Term] deriving (Eq, Show)
 
+
 lvasgn name = Lvasgn name . Just
 ivasgn name = Ivasgn name . Just
 cvasgn name = Cvasgn name . Just
 gvasgn name = Gvasgn name . Just
 casgn name parent = Casgn name parent . Just
+
+type StaticEnv = [String]
 
 mkLogicalOp = error "mkLogicalOp"
 
@@ -82,7 +85,11 @@ mk_postexe = error "mk_postexe"
 mk___ENCODING__ = error "mk___ENCODING__"
 mk___FILE__ = error "mk___FILE__"
 mk___LINE__ = error "mk___LINE__"
-mk_accessible node = error ("mk_accessible " ++ show node)
+
+mk_accessible :: Term -> StaticEnv -> Term
+mk_accessible (Lvar name) env | elem name env = Send Nil name []
+mk_accessible term        _   = term
+
 mk_alias = error "mk_alias"
 mk_arg = error "mk_arg"
 mk_args = error "mk_args"
@@ -117,13 +124,19 @@ mk_def_module = error "mk_def_module"
 mk_def_sclass = error "mk_def_sclass"
 mk_def_singleton = error "mk_def_singleton"
 mk_false = error "mk_false"
-mk_float = error "mk_float"
+
+mk_float :: Token -> Term
+mk_float (TFLOAT f) = RFloat f
+
 mk_for = error "mk_for"
 mk_gvar = error "mk_gvar"
 mk_ident = error "mk_ident"
 mk_index = error "mk_index"
 mk_index_asgn = error "mk_index_asgn"
-mk_integer = error "mk_integer"
+
+mk_integer :: Token -> Term
+mk_integer (TINTEGER i) = RInt i
+
 mk_ivar = error "mk_ivar"
 mk_keyword_cmd = error "mk_keyword_cmd"
 mk_kwarg = error "mk_kwarg"
