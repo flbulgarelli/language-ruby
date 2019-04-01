@@ -106,12 +106,14 @@ tokens :-
     ">="  { symbolToken TGEQ }
     "=="  { symbolToken TEQQ }
     "!="  { symbolToken TNEQ }
-  -- "^"   { symbolToken XorToken }
-  -- "|"   { symbolToken BinaryOrToken }
-  -- "&&"  { symbolToken AndToken }
-  -- "&"   { symbolToken BinaryAndToken }
+    "^"   { symbolToken TCARET }
+    "|"   { symbolToken TPIPE }
+    "&&"  { symbolToken TAMPER2 }
+    "&"   { symbolToken TAMPER }
   -- "||"  { symbolToken OrToken }
-  -- ":"   { symbolToken ColonToken }
+     ":"   { symbolToken TCOLON }
+    "::"   { symbolToken TCOLON2 }
+    ":::"  { symbolToken TCOLON3 }
   -- "="   { symbolToken AssignToken }
   -- "+="  { symbolToken PlusAssignToken }
   -- "-="  { symbolToken MinusAssignToken }
@@ -129,12 +131,14 @@ tokens :-
 }
 
 <0> ":" $ident_letter($ident_letter|$digit)*  { mkSymbol }
-<0> $lower_letter($ident_letter|$digit)*  { keywordOrIdent }
-<0> $upper_letter($ident_letter|$digit)*  { token TCONSTANT id }
+<0> $lower_letter($ident_letter|$digit)*      { keywordOrIdent }
+<0> $upper_letter($ident_letter|$digit)*      { token TCONSTANT id }
 <0> "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
+<0> "$" ($digit | $non_zero_digit($digit)*)   { token TNTH_REF (read . drop 1) }
+<0> "$" ("&" | "`" | "'" | "+" )              { token TBACK_REF id }
 <0> "@" $ident_letter($ident_letter|$digit)*  { token TIVAR id }
-<0> "@@" $ident_letter($ident_letter|$digit)*  { token TCVAR id }
-<0> "?" $short_str_char { token TCHARACTER last }
+<0> "@@" $ident_letter($ident_letter|$digit)* { token TCVAR id }
+<0> "?" $short_str_char                       { token TCHARACTER last }
 
 {
 data Token =
@@ -192,17 +196,17 @@ data Token =
   | TGVAR String
   | TIVAR String
   | TCONSTANT String
-  | TLABEL
-  | TLOWEST
+  | TLABEL -- hashes labels bareword + !/?
+  | TLOWEST -- ??
   | TCVAR String
-  | TNTH_REF
-  | TBACK_REF
+  | TNTH_REF Int
+  | TBACK_REF String
   | TSTRING_CONTENT
   | TINTEGER Int
   | TFLOAT Double
   | TUPLUS
   | TUMINUS
-  | TUNARY_NUM
+  | TUNARY_NUM -- maybe could be removed
   | TPOW
   | TCMP
   | TEQ
@@ -365,6 +369,7 @@ keywords = Map.fromList keywordNames
 keywordNames :: [(String, Token)]
 keywordNames =
    [
+    ("class", KCLASS),
     ("module", KMODULE),
     ("def", KDEF),
     ("undef", KUNDEF),
@@ -407,7 +412,7 @@ keywordNames =
     ("until_mod", KUNTIL_MOD),
     ("rescue_mod", KRESCUE_MOD),
     ("alias", KALIAS),
-    ("defined", KDEFINED),
+    ("defined?", KDEFINED),
     ("__LINE__", K__LINE__),
     ("__FILE__", K__FILE__),
     ("__ENCODING__", K__ENCODING__)

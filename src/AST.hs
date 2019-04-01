@@ -44,7 +44,7 @@ data Term
        | Defined Term
        | Encoding
        | Line
-       | NthRef Integer
+       | NthRef Int
        | BackRef String
        | Defs Term String Args Term
        | Def String Args Term
@@ -96,7 +96,11 @@ mk_assign = error "mk_assign"
 mk_assignable = error "mk_assignable"
 mk_associate = error "mk_associate"
 mk_attr_asgn = error "mk_attr_asgn"
-mk_back_ref = error "mk_back_ref"
+
+mk_back_ref, mk_nth_ref :: Token -> Term
+mk_back_ref (TBACK_REF s) = BackRef s
+mk_nth_ref  (TNTH_REF i)  = NthRef i
+
 mk_begin = error "mk_begin"
 mk_begin_body = error "mk_begin_body"
 mk_begin_keyword = error "mk_begin_keyword"
@@ -114,7 +118,10 @@ mk_character (TCHARACTER c)  = Str [c]
 mk_complex = error "mk_complex"
 mk_condition = error "mk_condition"
 mk_condition_mod = error "mk_condition_mod"
-mk_const_fetch = error "mk_const_fetch"
+
+mk_const_fetch :: Term -> Token -> Term
+mk_const_fetch first second = error ("mk_const_fetch " ++ show first ++ " " ++ show second)
+
 mk_const_global = error "mk_const_global"
 mk_const_op_assignable = error "mk_const_op_assignable"
 
@@ -151,7 +158,6 @@ mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"
 mk_multi_lhs = error "mk_multi_lhs"
 mk_not_op = error "mk_not_op"
-mk_nth_ref = error "mk_nth_ref"
 mk_op_assign = error "mk_op_assign"
 mk_optarg = error "mk_optarg"
 mk_pair = error "mk_pair"

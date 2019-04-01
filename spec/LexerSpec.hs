@@ -25,6 +25,12 @@ spec = describe "Lexer:" $ do
   it "hex integers" $ do
     testLex "0xab"   `shouldBe` (TINTEGER 0xab)
 
+  -- it "rationals" $ do
+  --   testLex "123r"    `shouldBe` (TRATIONAL 123)
+
+  -- it "complex" $ do
+  --   testLex "123i"    `shouldBe` (TCOMPLEX 123)
+
   it "floats" $ do
     testLex "0.5" `shouldBe` (TFLOAT 0.5)
 
@@ -46,6 +52,22 @@ spec = describe "Lexer:" $ do
   it "gvar" $ do
     testLex "$var"  `shouldBe` (TGVAR "$var")
 
+  it "backref" $ do
+    testLex "$+"  `shouldBe` (TBACK_REF "$+")
+  it "backref" $ do
+    testLex "$`"  `shouldBe` (TBACK_REF "$`")
+  it "backref" $ do
+    testLex "$&"  `shouldBe` (TBACK_REF "$&")
+
+  it "nthref" $ do
+    testLex "$1"  `shouldBe` (TNTH_REF 1)
+
+  it "nthref" $ do
+    testLex "$10" `shouldBe` (TNTH_REF 10)
+
+  it "nthref" $ do
+    testLex "$0"  `shouldBe` (TNTH_REF 0)
+
   it "ivar" $ do
     testLex "@var"  `shouldBe` (TIVAR "@var")
 
@@ -63,6 +85,15 @@ spec = describe "Lexer:" $ do
 
   it "KNIL" $ do
     testLex "nil"  `shouldBe` KNIL
+
+  it "KDEF" $ do
+    testLex "def"  `shouldBe` KDEF
+
+  it "KIF" $ do
+    testLex "if"  `shouldBe` KIF
+
+  it "KDEFINED" $ do
+    testLex "defined?"  `shouldBe` KDEFINED
 
   -- it "strings with escape chars" $ do
   --     testLex "'\t'"   `shouldBe` "[StringToken '\t']"
