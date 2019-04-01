@@ -70,8 +70,8 @@ import Control.Monad.Error
     tCONSTANT {L.TCONSTANT {}}
     tLABEL {L.TLABEL}
     tCVAR {L.TCVAR {}}
-    tNTH_REF {L.TNTH_REF}
-    tBACK_REF {L.TBACK_REF}
+    tNTH_REF {L.TNTH_REF {}}
+    tBACK_REF {L.TBACK_REF {}}
     tSTRING_CONTENT {L.TSTRING_CONTENT}
     tINTEGER {L.TINTEGER {}}
     tFLOAT {L.TFLOAT {}}
