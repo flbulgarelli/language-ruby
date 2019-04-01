@@ -107,7 +107,10 @@ mk_blockarg = error "mk_blockarg"
 mk_call_lambda = error "mk_call_lambda"
 mk_call_method = error "mk_call_method"
 mk_case = error "mk_case"
-mk_character = error "mk_character"
+
+mk_character :: Token -> Term
+mk_character (TCHARACTER c)  = Str [c]
+
 mk_complex = error "mk_complex"
 mk_condition = error "mk_condition"
 mk_condition_mod = error "mk_condition_mod"

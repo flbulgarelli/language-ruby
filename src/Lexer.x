@@ -134,6 +134,7 @@ tokens :-
 <0> "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
 <0> "@" $ident_letter($ident_letter|$digit)*  { token TIVAR id }
 <0> "@@" $ident_letter($ident_letter|$digit)*  { token TCVAR id }
+<0> "?" $short_str_char { token TCHARACTER last }
 
 {
 data Token =
@@ -275,7 +276,7 @@ data Token =
   | TSEMI
   | TLAMBDA
   | TLAMBEG
-  | TCHARACTER
+  | TCHARACTER Char
   | TRATIONAL
   | TIMAGINARY Double
   | TLABEL_END
