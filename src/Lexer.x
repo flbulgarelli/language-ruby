@@ -128,7 +128,7 @@ tokens :-
     \;    { symbolToken TSEMI }
 }
 
-<0> ":" $ident_letter($ident_letter|$digit)*  { token TSYMBOL id }
+<0> ":" $ident_letter($ident_letter|$digit)*  { mkSymbol }
 <0> $lower_letter($ident_letter|$digit)*  { keywordOrIdent }
 <0> $upper_letter($ident_letter|$digit)*  { token TCONSTANT id }
 <0> "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
@@ -337,9 +337,11 @@ token mkToken read str = return $ mkToken (read str)
 symbolToken :: Token -> Action
 symbolToken t _ = return t
 
-
 mkString :: Action
 mkString = token TSTRING (\str -> drop 1 . take (length str - 1) $ str)
+
+mkSymbol :: Action
+mkSymbol = token TSYMBOL (drop 1)
 
 -------------
 
