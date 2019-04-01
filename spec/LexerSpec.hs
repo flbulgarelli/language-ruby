@@ -13,6 +13,12 @@ spec = describe "Lexer:" $ do
   it "integers" $ do
     testLex "123"    `shouldBe` (TINTEGER 123)
 
+  it "positive integers" $ do
+    testLex "+123"    `shouldBe` (TINTEGER 123)
+
+  it "negative integers" $ do
+    testLex "-123"    `shouldBe` (TINTEGER (-123))
+
   it "octal integers" $ do
     testLex "037"    `shouldBe` (TINTEGER 037)
 

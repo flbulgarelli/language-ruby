@@ -72,9 +72,9 @@ tokens :-
 }
 
 <0> {
-   @float_number { token TFLOAT readFloat }
-   $non_zero_digit $digit* { token TINTEGER read }
-   (@float_number | @int_part) (j | J) { token TIMAGINARY (readFloat . init) }
+   ("+" | "-")? @float_number { token TFLOAT readFloat }
+   ("+" | "-")? $non_zero_digit $digit* { token TINTEGER readInt }
+   ("+" | "-")? (@float_number | @int_part) (j | J) { token TIMAGINARY (readFloat . init) }
    0+ { token TINTEGER read }
    0 (o | O) $oct_digit+ { token TINTEGER read }
    0 (x | X) $hex_digit+ { token TINTEGER read }
@@ -330,6 +330,10 @@ readFloatRest :: String -> String
 readFloatRest [] = []
 readFloatRest ['.'] = ".0"
 readFloatRest (c:cs) = c : readFloatRest cs
+
+readInt :: String -> Int
+readInt ('+':s) = read s
+readInt s       = read s
 
 token :: (a -> Token) -> (String -> a) -> Action
 token mkToken read str = return $ mkToken (read str)

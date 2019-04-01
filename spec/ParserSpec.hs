@@ -36,8 +36,7 @@ spec = do
 
     test "float" "1.33" (RFloat 1.33)
     test "float" "-1.33" (RFloat $ -1.33)
-
-    test "float" "-1.33" (RFloat $ -1.335)
+    test "float" "-1.335" (RFloat $ -1.335)
 
     test "rational" "42r" (RRational $ 42 % 1)
     test "rational" "42.1r" (RRational $ 421 % 10)
