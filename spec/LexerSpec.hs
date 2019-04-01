@@ -43,6 +43,12 @@ spec = describe "Lexer:" $ do
   it "string double quote" $ do
     testLex "\"dog\""   `shouldBe` (TSTRING "dog")
 
+  it "string single quote with padding" $ do
+    testLex "    'cat'    "  `shouldBe` (TSTRING "cat")
+
+  it "string single quote with spaces" $ do
+    testLex "'the cat'"  `shouldBe` (TSTRING "the cat")
+
   it "string single quote" $ do
     testLex "'cat'"  `shouldBe` (TSTRING "cat")
 
@@ -129,4 +135,4 @@ spec = describe "Lexer:" $ do
 
 
 testLex :: String -> Token
-testLex = either undefined id . evalP (lexer return) . encode
+testLex = either error id . evalP (lexer return) . encode
