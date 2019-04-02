@@ -98,10 +98,11 @@ mk_array = error "mk_array"
 mk_assign = error "mk_assign"
 
 mk_assignable :: Term -> Term
-mk_assignable (Cvar i) = Cvasgn i Nothing
+mk_assignable (Lvar i) = Lvasgn i Nothing
 mk_assignable (Ivar i) = Ivasgn i Nothing
-mk_assignable (Gvar i) = Gvasgn i Nothing -- TODO
-mk_assignable _        = Lvasgn "TODO" Nothing
+mk_assignable (Cvar i) = Cvasgn i Nothing
+mk_assignable (Gvar i) = Gvasgn i Nothing
+mk_assignable (Const parent i) = Casgn parent i Nothing -- TODO
 
 mk_associate = error "mk_associate"
 mk_attr_asgn = error "mk_attr_asgn"
@@ -183,6 +184,11 @@ mk_multi_lhs = error "mk_multi_lhs"
 mk_not_op = error "mk_not_op"
 
 mk_op_assign :: Term -> Term -> Term
+mk_op_assign (Lvasgn i Nothing) val = lvasgn i val
+mk_op_assign (Ivasgn i Nothing) val = ivasgn i val
+mk_op_assign (Cvasgn i Nothing) val = cvasgn i val
+mk_op_assign (Gvasgn i Nothing) val = gvasgn i val
+mk_op_assign (Casgn i parent Nothing) val = casgn i parent val
 mk_op_assign t1 t2 = error ("mk_op_assign" ++ show t1 ++ " " ++ show t2)
 
 mk_optarg = error "mk_optarg"
