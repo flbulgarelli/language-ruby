@@ -229,9 +229,9 @@ StmtOrBegin: Stmt { $1 }
   | klBEGIN BeginBlock { error ("begin_in_method " ++ show $1) }
 
 Stmt :: { Term }
-Stmt: kALIAS Fitem Fitem { error "mk_alias $2 $3" }
-  | kALIAS tGVAR tGVAR { (mk_alias $1 mk_gvar($2) mk_gvar($3)) }
-  | kALIAS tGVAR tBACK_REF { (mk_alias $1 (mk_gvar $2) (mk_back_ref $3)) }
+Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
+  | kALIAS tGVAR tGVAR { mk_alias (mk_gvar $2) (mk_gvar $3) }
+  | kALIAS tGVAR tBACK_REF { mk_alias (mk_gvar $2) (mk_back_ref $3) }
   | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
   | kUNDEF UndefList { (mk_undef_method $1 $2) }
   | Stmt kIF_MOD Expr { error "mk_condition_mod $1 Nil $2 $3" }
@@ -260,6 +260,7 @@ CommandRhs: CommandCall {-=-} tOP_ASGN { $1 }
   | CommandCall kRESCUE_MOD Stmt { error "mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3]" }
   | CommandAsgn { $1 }
 
+Expr :: { Term }
 Expr: CommandCall { $1 }
   | Expr kAND Expr { mkLogicalOp And $1 $2 $3 }
   | Expr kOR Expr { mkLogicalOp Or $1 $2 $3 }
@@ -337,18 +338,21 @@ Lhs: UserVariable { error "mk_assignable $1" }
   | tCOLON3 tCONSTANT { error "mk_assignable((mk_const_global $1 $2))" }
   | Backref { error "mk_assignable $1" }
 
+Cname :: { L.Token }
 Cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
   | tCONSTANT { $1 }
 
+Cpath :: { Term }
 Cpath: tCOLON3 Cname { error "mk_const_global $1 $2" }
   | Cname { error "mk_const $1" }
-  | Primary tCOLON2 Cname { error "mk_const_fetch $1 $2 $3" }
+  | Primary tCOLON2 Cname { mk_const_fetch $1 $3 }
 
-Fname: tIDENTIFIER { undefined }
-  | tCONSTANT { undefined }
-  | tFID { undefined }
-  | Op { undefined }
-  | Reswords { undefined }
+Fname :: { L.Token }
+Fname: tIDENTIFIER { $1 }
+  | tCONSTANT { $1 }
+  | tFID { $1 }
+  | Op { $1 }
+  | Reswords { $1 }
 
 Fsym :: { Term }
 Fsym: Fname { mk_symbol $1 }
@@ -492,7 +496,7 @@ Primary: Literal { $1 }
   | tLPAREN_ARG Stmt Rparen { error "mk_begin $2 $3" }
   | tLPAREN_ARG OptNl tRPAREN { error "mk_begin $2" }
   | tLPAREN Compstmt tRPAREN { error "mk_begin $2" }
-  | Primary tCOLON2 tCONSTANT { error "mk_const_fetch $1" }
+  | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 $3 }
   | tCOLON3 tCONSTANT { error "mk_const_global $1 $2" }
   | tLBRACK ArefArgs tRBRACK { error "mk_array $1 $2 $3" }
   | tLBRACE AssocList tRCURLY KReturn { error "mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1" }
@@ -523,7 +527,7 @@ Primary: Literal { $1 }
   | kCLASS tLSHFT Expr Term Bodystmt kEND { error "mk_def_sclass $3 $4 $5" }
   | kMODULE Cpath Bodystmt kEND { error "mk_def_module $2 $3" }
   | kDEF Fname FArglist Bodystmt kEND { error "mk_def_method $2 $3 $4" }
-  | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { error "mk_def_singleton $2 $3 $4 $5 $6 $7" }
+  | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { mk_def_singleton $2 $4 $5 $6 }
   | kBREAK { error "mk_keyword_cmd Break $1" }
   | kNEXT { error "mk_keyword_cmd Next $1" }
   | kREDO { error "mk_keyword_cmd Redo $1" }
@@ -771,14 +775,15 @@ KeywordVariable : kNIL {Nil}
   | k__LINE__ {Line}
   | k__ENCODING__ {Encoding}
 
+VarRef :: { Term }
 VarRef: UserVariable { mk_accessible $1 [] }
   | KeywordVariable { mk_accessible $1 [] }
 
 VarLhs: UserVariable { error "mk_assignable $1" }
   | KeywordVariable { error "mk_assignable $1" }
 
-Backref: tNTH_REF { error "mk_nth_ref $1" }
-  | tBACK_REF { error "mk_back_ref $1" }
+Backref: tNTH_REF { mk_nth_ref $1 }
+  | tBACK_REF { mk_back_ref $1 }
 
 Superclass: tLT Expr Term { error "[ $1, $3 ]" }
   | {- nothing -} { Nil }
@@ -873,6 +878,7 @@ FBlockArg: BlkargMark tIDENTIFIER { error "mk_blockarg $1 $2" }
 OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
   | {- nothing -} { [] }
 
+Singleton :: { Term }
 Singleton: VarRef { $1 }
   | tLPAREN2 Expr Rparen { $2 }
 

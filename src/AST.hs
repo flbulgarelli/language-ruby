@@ -88,7 +88,9 @@ mk_accessible :: Term -> StaticEnv -> Term
 mk_accessible (Lvar name) env | elem name env = Send Nil name []
 mk_accessible term        _   = term
 
+mk_alias :: Term -> Term -> Term
 mk_alias = error "mk_alias"
+
 mk_arg = error "mk_arg"
 mk_args = error "mk_args"
 mk_array = error "mk_array"
@@ -136,7 +138,9 @@ mk_def_class = error "mk_def_class"
 mk_def_method = error "mk_def_method"
 mk_def_module = error "mk_def_module"
 mk_def_sclass = error "mk_def_sclass"
-mk_def_singleton = error "mk_def_singleton"
+
+mk_def_singleton :: Term -> Token -> args -> body -> Term
+mk_def_singleton singleton fname args body = error ("mk_def_singleton " ++ show singleton ++ " " ++ show fname)
 
 mk_float :: Token -> Term
 mk_float (TFLOAT f) = RFloat f
@@ -176,10 +180,8 @@ mk_shadowarg = error "mk_shadowarg"
 mk_splat = error "mk_splat"
 
 mk_string_compose :: [Term] -> Term
-mk_string_compose [t]                = t
-mk_string_compose (Dstr parts:ts)    = Dstr (parts ++ ts)
-mk_string_compose (Str s1:Str s2:ts) = mk_string_compose (Str (s1 ++ s2):ts)
-mk_string_compose (s:Dstr parts:ts)  = mk_string_compose (Dstr (s:parts):ts)
+mk_string_compose [t]   = t
+mk_string_compose ts    = Dstr ts
 
 mk_string, mk_string_internal :: Token -> Term
 mk_string = mk_string_internal
