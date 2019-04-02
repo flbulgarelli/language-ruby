@@ -188,3 +188,297 @@ spec = do
   --  test "string___FILE__" "__FILE__" (Str "(assert_parses)")
     test "string___FILE__" "__FILE__" File
     test "character" "?a" (Str "a")
+
+
+  --   test "heredoc" "<<HERE\nfoo\nbar\nHERE" (Dstr [Str "foo\n", Str "bar\n"])
+  --   test "heredoc" "<<'HERE'\nfoo\nbar\nHERE" (Dstr [Str "foo\n", Str "bar\n"])
+  --   test "heredoc" "<<`HERE`\nfoo\nbar\nHERE" (Dstr [Str "foo\n", Str "bar\n"])
+  -- test "dedenting_heredoc" "p <<~E\nE" (Send Nil "p" (Dstr [])
+  -- test "dedenting_heredoc" "p <<~E\n  E" (Send Nil "p" (Dstr [])
+  -- test "dedenting_heredoc" "p <<~E\n  x\nE" (Send Nil "p" (Str "x\n")
+  -- test "dedenting_heredoc" "p <<~E\n  x\n    y\nE" (Send Nil "p" (Dstr [Str "x\n", Str "  y\n"]))
+
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "x\n"),
+  --         (Str "y\n"))),
+  --     %Q{p <<~E\n\tx\n    y\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "x\n"),
+  --         (Str "y\n"))),
+  --     %Q{p <<~E\n\tx\n        y\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "x\n"),
+  --         (Str "y\n"))),
+  --     %Q{p <<~E\n    \tx\n        y\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "\tx\n"),
+  --         (Str "y\n"))),
+  --     %Q{p <<~E\n        \tx\n\ty\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "  x\n"),
+  --         (Str "\n"),
+  --         (Str "y\n"))),
+  --     %Q{p <<~E\n  x\n\ny\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "x\n"),
+  --         (Str "  \n"),
+  --         (Str "y\n"))),
+  --     %Q{p <<~E\n  x\n    \n  y\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "  x\n"),
+  --         (Str "  y\n"))),
+  --     %Q{p <<~E\n    x\n  \\  y\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "  x\n"),
+  --         (Str "\ty\n"))),
+  --     %Q{p <<~E\n    x\n  \\\ty\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "  x\n"),
+  --         (Str ""),
+  --         (Begin
+  --           (Lvar :foo)),
+  --         (Str "\n"))),
+  --     %Q{p <<~"E"\n    x\n  \#{foo}\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       s(:xstr,
+  --         (Str "  x\n"),
+  --         (Str ""),
+  --         (Begin
+  --           (Lvar :foo)),
+  --         (Str "\n"))),
+  --     %Q{p <<~`E`\n    x\n  \#{foo}\nE},
+  --     %q{},
+
+  --   assert_parses(
+  --     (Send Nil, :p,
+  --       (Dstr
+  --         (Str "  x\n"),
+  --         (Str ""),
+  --         (Begin
+  --           (Str "  y")),
+  --         (Str "\n"))),
+  --     %Q{p <<~"E"\n    x\n  \#{"  y"}\nE},
+  --     %q{},
+  -- end
+
+  -- # Symbols
+
+  -- test "symbol_plain" ":foo" (Sym :foo)
+  -- test "symbol_plain" ":'foo'" (Sym :foo)
+
+  -- test "symbol_interp"
+  --   assert_parses(
+  --     (Dsym
+  --       (Str 'foo'),
+  --       (Begin (Lvar :bar)),
+  --       (Str 'baz')),
+  --     %q{:"foo#{bar}baz"},
+
+  -- end
+
+  -- # Execute-strings
+
+  -- test "xstring_plain"
+  --   assert_parses(
+  --     s(:xstr, (Str 'foobar')),
+  --     %q{`foobar`},
+  --     %q{^ begin
+  --       |       ^ end
+  --       |~~~~~~~~ expression})
+  -- end
+
+  -- test "xstring_interp"
+  --   assert_parses(
+  --     s(:xstr,
+  --       (Str 'foo'),
+  --       (Begin (Lvar :bar)),
+  --       (Str 'baz')),
+  --     %q{`foo#{bar}baz`},
+
+  -- -- Regexp
+
+  -- test "regex_plain"
+  --   assert_parses(
+  --     s(:regexp, (Str 'source'), s(:regopt, :i, :m)),
+  --     %q{/source/im},
+
+  -- test "regex_interp"
+  --   assert_parses(
+  --     s(:regexp,
+  --       (Str 'foo'),
+  --       (Begin (Lvar :bar)),
+  --       (Str 'baz'),
+  --       s(:regopt)),
+  --     %q{/foo#{bar}baz/},
+
+  -- end
+
+
+  -- -- Arrays
+
+  -- test "array_plain"
+  --   assert_parses(
+  --     s(:array, (RInt 1), (RInt 2)),
+  --     %q{[1, 2]},
+
+  -- test "array_splat"
+  --   assert_parses(
+  --     s(:array,
+  --       (RInt 1),
+  --       s(:splat, (Lvar :foo)),
+  --       (RInt 2)),
+  --     %q{[1, *foo, 2]},
+
+  --   assert_parses(
+  --     s(:array,
+  --       (RInt 1),
+  --       s(:splat, (Lvar :foo))),
+  --     %q{[1, *foo]},
+
+  --   assert_parses(
+  --     s(:array,
+  --       s(:splat, (Lvar :foo))),
+  --     %q{[*foo]})
+  -- end
+
+  -- test "array_assocs"
+  --   assert_parses(
+  --     s(:array,
+  --       (Hash (Pair (RInt 1), (RInt 2)))),
+  --     %q{[ 1 => 2 ]},
+
+  --   assert_parses(
+  --     s(:array,
+  --       (RInt 1),
+  --       (Hash (Pair (RInt 2), (RInt 3)))),
+  --     %q{[ 1, 2 => 3 ]},
+  -- end
+
+  -- test "array_words"
+  --   assert_parses(
+  --     s(:array, (Str 'foo'), (Str 'bar')),
+  --     %q{%w[foo bar]},
+  -- end
+
+  -- test "array_words_interp"
+  --   assert_parses(
+  --     s(:array,
+  --       (Str 'foo'),
+  --       (Dstr (Begin (Lvar :bar)))),
+  --     %q{%W[foo #{bar}]},
+
+  --   assert_parses(
+  --     s(:array,
+  --       (Str 'foo'),
+  --       (Dstr
+  --         (Begin (Lvar :bar)),
+  --         (Str 'foo'),
+  --         s(:ivar, :@baz))),
+  --     %q{%W[foo #{bar}foo#@baz]})
+  -- end
+
+  -- test "array_words_empty"
+  --   assert_parses(
+  --     s(:array),
+  --     %q{%w[]},
+
+  --   assert_parses(
+  --     s(:array),
+  -- end
+
+  -- test "array_symbols"
+  --   assert_parses(
+  --     s(:array, (Sym :foo), (Sym :bar)),
+  --     %q{%i[foo bar]},
+
+  -- test "array_symbols_interp"
+  --   assert_parses(
+  --     s(:array,
+  --       (Sym :foo),
+  --       (Dsym (Begin (Lvar :bar)))),
+  --     %q{%I[foo #{bar}]},
+
+  --   assert_parses(
+  --     s(:array,
+  --       (Dsym
+  --         (Str 'foo'),
+  --         (Begin (Lvar :bar)))),
+  --     %q{%I[foo#{bar}]},
+  -- end
+
+  -- test "array_symbols_empty"
+  --   assert_parses(
+  --     s(:array),
+  --     %q{%i[]},
+
+  --   assert_parses(
+  --     s(:array),
+  --     %q{%I()},
+
+  -- -- Hashes
+
+  -- test "hash_empty" "{ }" (Hash [])
+  -- test "hash_hashrocket" "{ 1 => 2 }" (Hash [Pair (RInt 1) (RInt 2)])
+  -- test "hash_hashrocket" "{ 1 => 2, :foo => "bar" }" (Hash [Pair (RInt 1) (RInt 2), Pair (Sym "foo") (Str "bar")]
+
+  -- test "hash_label" "{ foo: 2 }" (Hash (Pair (Sym :foo), (RInt 2)))
+
+  -- test "hash_label_end" "{ 'foo': 2 }"
+  --     (Hash (Pair (Sym :foo), (RInt 2))),
+
+  -- test "hash_label_end" "{ 'foo': 2, 'bar': {}}"
+  --     (Hash
+  --       (Pair (Sym :foo) (RInt 2)),
+  --       (Pair (Sym :bar) (Hash))),
+
+  -- test "hash_label_end" "f(a ? "a":1)" (Send Nil :f (If (Send Nil :a) (Str "a") (RInt 1)))
+
+  -- test "hash_kwsplat" "{ foo: 2, **bar }" (Hash (Pair (Sym :foo) (RInt 2)) (Kwsplat (Lvar :bar)))
+
+  -- -- Range
+
+  -- test "range_inclusive" "1..2" (Irange (RInt 1) (RInt 2))
+
+  -- test "range_exclusive" "1...2"  (Erange (RInt 1) (RInt 2))
+
+  -- test "range_endless" "1.." (Irange (RInt 1), Nil)
+
+  -- test "range_endless" "1..." (Erange (RInt 1), Nil)
