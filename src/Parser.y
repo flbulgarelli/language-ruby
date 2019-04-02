@@ -410,7 +410,7 @@ Arg: Lhs tEQL ArgRhs { error "mk_assign $1 $2 $3" }
   | Arg tRSHFT Arg { (mk_binary_op $1 $2 $3) }
   | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
   | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
-  | kDEFINED OptNl Arg { error "(mk_keyword_cmd Defined $1 Nil [ $3 ] Nil" }
+  | kDEFINED OptNl Arg { mk_keyword_cmd Defined [$3] }
   | Arg tEH Arg OptNl tCOLON Arg { error "mk_ternary $1 $2 $3 $5 $6" }
   | Primary { $1 }
 
@@ -441,12 +441,14 @@ OptCallArgs: {- nothing -} { [] }
   | Args tCOMMA Assocs tCOMMA { undefined } -- { $1 ++ [mk_associate Nil $3 Nil] }
   | Assocs tCOMMA { undefined } -- { [ mk_associate Nil $1 Nil ] }
 
+CallArgs :: { [Term] }
 CallArgs: Command { [ $1 ] }
   | Args OptBlockArg { $1 ++ $2 }
   | Assocs OptBlockArg { [ mk_associate Nil $1 Nil ] ++ $2  }
   | Args tCOMMA Assocs OptBlockArg { $1 ++ [mk_associate Nil $3 Nil] ++ $4 }
   | BlockArg { [ $1 ] }
 
+CommandArgs :: { [Term] }
 CommandArgs: CallArgs { $1 }
 
 BlockArg: tAMPER Arg { error "mk_block_pass $1 $2" }
@@ -486,10 +488,10 @@ Primary: Literal { $1 }
   | tCOLON3 tCONSTANT { error "mk_const_global $1 $2" }
   | tLBRACK ArefArgs tRBRACK { error "mk_array $1 $2 $3" }
   | tLBRACE AssocList tRCURLY KReturn { error "mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1" }
-  |  kYIELD tLPAREN2 CallArgs Rparen { error "mk_keyword_cmd Yield $1 $2 $3 $4" }
-  | kYIELD tLPAREN2 Rparen { error "mk_keyword_cmd Yield $1 $2 [] $3" }
-  | kYIELD { error "mk_keyword_cmd Yield $1" }
-  | kDEFINED OptNl tLPAREN2 Expr Rparen { error "mk_keyword_cmd Defined $1 $3 [$4] $5" }
+  | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $3 }
+  | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield [] }
+  | kYIELD { mk_keyword_cmd Yield [] }
+  | kDEFINED OptNl tLPAREN2 Expr Rparen { mk_keyword_cmd Defined [$4] }
   | kNOT tLPAREN2 Expr Rparen { error "mk_not_op $1 $2 $3 $4" }
   | kNOT tLPAREN2 Rparen { error "mk_not_op $1 $2 Nil $3" }
   | Operation BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in mk_block (mk_call_method Nil Nil $1) begin_t Args body end_t" }
@@ -514,10 +516,10 @@ Primary: Literal { $1 }
   | kMODULE Cpath Bodystmt kEND { error "mk_def_module $2 $3" }
   | kDEF Fname FArglist Bodystmt kEND { mk_def_method $2 $3 $4 }
   | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { mk_def_singleton $2 $4 $5 $6 }
-  | kBREAK { error "mk_keyword_cmd Break $1" }
-  | kNEXT { error "mk_keyword_cmd Next $1" }
-  | kREDO { error "mk_keyword_cmd Redo $1" }
-  | kRETRY { error "mk_keyword_cmd Retry $1" }
+  | kBREAK { mk_keyword_cmd Break [] }
+  | kNEXT { mk_keyword_cmd Next [] }
+  | kREDO { mk_keyword_cmd Redo [] }
+  | kRETRY { mk_keyword_cmd Retry [] }
   | Primary tMETHREF Operation2 { undefined }
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
@@ -627,7 +629,7 @@ MethodCall: Operation ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in 
   | Primary CallOp ParenArgs { error "let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t" }
   | Primary tCOLON2 ParenArgs { error "let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t" }
   | kSUPER ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in mk_keyword_cmd Super $1 lparen_t Args rparen_t" }
-  | kSUPER { error "mk_keyword_cmd Zsuper $1" }
+  | kSUPER { mk_keyword_cmd Zsuper [] }
   | Primary tLBRACK2 OptCallArgs RBracket { error "(mk_index $1, $2 $3 $4" }
 
 BraceBlock: tLCURLY BraceBody tRCURLY { undefined }

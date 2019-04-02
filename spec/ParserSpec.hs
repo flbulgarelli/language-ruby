@@ -63,9 +63,9 @@ spec = do
     test "const_unscoped" "Foo" (Const Nil "Foo")
     test "const__ENCODING__" "__ENCODING__" Encoding
 
-    test "defined?" "defined? foo" (Defined (Lvar "foo"))
-    test "defined?" "defined?(foo)" (Defined (Lvar "foo"))
-    test "defined?" "defined? @foo" (Defined (Ivar "@foo"))
+    test "defined?" "defined? foo" (Defined [Lvar "foo"])
+    test "defined?" "defined?(foo)" (Defined [Lvar "foo"])
+    test "defined?" "defined? @foo" (Defined [Ivar "@foo"])
 
     test "lvasgn" "var = 10; var" (Begin [lvasgn "var" (RInt 10), Lvar "var"])
     test "ivasgn" "@var = 10"  (ivasgn "@var" (RInt 10))

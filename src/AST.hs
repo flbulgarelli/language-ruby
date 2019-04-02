@@ -8,58 +8,59 @@ import Lexer (Token (..))
 
 data Term
        = Begin [Term]
-       | KWBegin [Term]
-       | Nil
-       | RTrue
-       | RFalse
-       | RInt Int
-       | RFloat Double
-       | RRational Rational
        -- | RComplex (forall a. Num a => Complex (a))
-       | RComplex (Complex Double)
-       | Str String
-       | Self
-       | And
-       | Or
-       | Until
-       | While
-       | Anddot
-       | Dot
-       | Cbase
        | Alias Term Term
-       | RArray [Term]
+       | And
+       | Anddot
+       | BackRef String
+       | Break [Term]
+       | Casgn Term String (Maybe Term) -- constants
+       | Cbase
+       | Const Term String
+       | Cvar String
+       | Cvasgn String (Maybe Term) -- class variable
+       | Def String Args Term
+       | Defined [Term]
+       | Defs Term String Args Term
+       | Dot
+       | Dstr [Term]
+       | Dsym Term Term
+       | Encoding
+       | File
+       | Gvar String
+       | Gvasgn String (Maybe Term) -- global variables
+       | Ivar String
+       | Ivasgn String (Maybe Term) -- instance variables
+       | KWBegin [Term]
+       | Line
+       | Lvar String
+       | Lvasgn String (Maybe Term) -- variables
        | Masgn Mlhs Term
+       | Next [Term]
+       | Nil
+       | NthRef Int
+       | Or
+       | RArray [Term]
+       | RComplex (Complex Double)
+       | Redo [Term]
+       | Retry [Term]
+       | Return [Term]
+       | RFalse
+       | RFloat Double
+       | RInt Int
+       | RRational Rational
+       | RTrue
+       | Self
        | Send Term String [Term]
        | Splat (Maybe Term)
-       | Lvasgn String (Maybe Term) -- variables
-       | Lvar String
-       | Ivasgn String (Maybe Term) -- instance variables
-       | Ivar String
-       | Cvasgn String (Maybe Term) -- class variable
-       | Cvar String
-       | Gvasgn String (Maybe Term) -- global variables
-       | Gvar String
-       | Casgn Term String (Maybe Term) -- constants
-       | Const Term String
-       | Defined Term
-       | Encoding
-       | Line
-       | NthRef Int
-       | BackRef String
-       | Defs Term String Args Term
-       | Def String Args Term
+       | Str String
+       | Super [Term]
        | Sym String
-       | Dsym Term Term
        | Undef Term Term Term
-       | Break
-       | Next
-       | Redo
-       | Retry
-       | Dstr [Term]
-       | File
-       | Yield
-       | Super
-       | Return
+       | Until
+       | While
+       | Yield [Term]
+       | Zsuper [Term]
        deriving (Eq, Show)
 
 data Mlhs = Mlhs [Term] deriving (Eq, Show)
@@ -106,10 +107,12 @@ mk_nth_ref  (TNTH_REF i)  = NthRef i
 mk_begin = error "mk_begin"
 
 mk_begin_body :: Term -> [Term] -> Term -> Term -> Term
-mk_begin_body stmt rescues els ensure = Begin [stmt] -- TODO
+mk_begin_body Nil rescues els ensure = Begin [] -- TODO
 
 mk_begin_keyword :: Term -> Term
-mk_begin_keyword term = KWBegin [term] -- TODO
+mk_begin_keyword Nil        = KWBegin []
+mk_begin_keyword (Begin ts) = KWBegin ts
+mk_begin_keyword t          = KWBegin [t]
 
 mk_binary_op = error "mk_binary_op"
 mk_block = error "mk_block"
@@ -160,8 +163,8 @@ mk_integer :: Token -> Term
 mk_integer (TINTEGER i) = RInt i
 
 
-mk_keyword_cmd :: Term -> a -> Term
-mk_keyword_cmd term args = error ("mk_keyword_cmd" ++ show term)
+mk_keyword_cmd :: ([Term] -> Term) -> [Term] -> Term
+mk_keyword_cmd f args = f args -- TODO check for yield with block
 
 mk_kwarg = error "mk_kwarg"
 mk_kwoptarg = error "mk_kwoptarg"
