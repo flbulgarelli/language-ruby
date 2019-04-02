@@ -79,6 +79,9 @@ spec = describe "Lexer:" $ do
   test "assign" "$var = 10" [TGVAR "$var", TOP_ASGN, TINTEGER 10]
   test "assign" "var = 10" [TIDENTIFIER "var", TOP_ASGN, TINTEGER 10]
 
+  test "masgn with splat" "@foo, @@bar = *foo" [TIVAR "@foo", TCOMMA, TCVAR "@@bar",TOP_ASGN, TSTAR, TIDENTIFIER "foo"]
+  test "masgn with splat" "* = foo" [TSTAR, TOP_ASGN, TIDENTIFIER "foo"]
+
   -- test "strings with escape chars"     tokens "'\t'"  "[StringToken '\t']]
   --     tokens "'\\n'" "[StringToken '\\n']]
   --     tokens "'\\\\n'"  "[StringToken '\\\\n']]
