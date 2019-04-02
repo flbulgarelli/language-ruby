@@ -96,7 +96,13 @@ mk_arg = error "mk_arg"
 mk_args = error "mk_args"
 mk_array = error "mk_array"
 mk_assign = error "mk_assign"
-mk_assignable = error "mk_assignable"
+
+mk_assignable :: Term -> Term
+mk_assignable (Cvar i) = Cvasgn i Nothing
+mk_assignable (Ivar i) = Ivasgn i Nothing
+mk_assignable (Gvar i) = Gvasgn i Nothing -- TODO
+mk_assignable _        = Lvasgn "TODO" Nothing
+
 mk_associate = error "mk_associate"
 mk_attr_asgn = error "mk_attr_asgn"
 
@@ -175,7 +181,10 @@ mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"
 mk_multi_lhs = error "mk_multi_lhs"
 mk_not_op = error "mk_not_op"
-mk_op_assign = error "mk_op_assign"
+
+mk_op_assign :: Term -> Term -> Term
+mk_op_assign t1 t2 = error ("mk_op_assign" ++ show t1 ++ " " ++ show t2)
+
 mk_optarg = error "mk_optarg"
 mk_pair = error "mk_pair"
 mk_pair_keyword = error "mk_pair_keyword"

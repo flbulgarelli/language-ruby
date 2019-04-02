@@ -233,16 +233,17 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Expr { $1 }
 
 CommandAsgn :: { Term }
-CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
-  | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $2 $3) }
-  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $5 $6) }
-  | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { error "mk_op_assign (mk_call_method $1 $2 $3) $4 $5" }
-  | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { error "mk_op_assign  (mk_call_method  $1 $2 $3) $4 $5" }
-  | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { error "mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $2 $3)) $4 $5" }
-  | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { error "mk_op_assign (mk_call_method $1 $2 $3) $4 $5" }
-  | Backref tOP_ASGN CommandRhs { error "mk_op_assign $1 $2 $3" }
+CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $3) }
+  | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $3) }
+  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { mk_op_assign (mk_index $1 $2 $3 $4) $6 }
+  | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $5 }
+  | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { mk_op_assign  (mk_call_method $1 $2 $3) $5 }
+  | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $5 }
+  | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $5 }
+  | Backref tOP_ASGN CommandRhs { mk_op_assign $1 $3 }
 
-CommandRhs: CommandCall {-=-} tOP_ASGN { $1 }
+CommandRhs :: { Term }
+CommandRhs: CommandCall %prec tOP_ASGN { $1 }
   | CommandCall kRESCUE_MOD Stmt { error "mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil" }
   | CommandAsgn { $1 }
 
@@ -257,6 +258,7 @@ Expr: CommandCall { $1 }
 ExprValueDo: --  { @lexer.cond.push(true) }
   Expr Do { undefined } -- { @lexer.cond.pop; [ $2, $3 ] }
 
+CommandCall :: { Term }
 CommandCall: Command { $1 }
   | BlockCommand { $1 }
 
@@ -266,11 +268,11 @@ BlockCommand: BlockCall { $1 }
 CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
 
 Command :: { Term }
-Command: Operation CommandArgs {-=-}tLOWEST { error "mk_call_method Nil Nil $1 Nil $2 Nil" }
+Command: Operation CommandArgs %prec tLOWEST { error "mk_call_method Nil Nil $1 Nil $2 Nil" }
   | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
-  | Primary CallOp Operation2 CommandArgs {-=-}tLOWEST { error "mk_call_method $1 $2 $3 $4" }
+  | Primary CallOp Operation2 CommandArgs %prec tLOWEST { error "mk_call_method $1 $2 $3 $4" }
   | Primary CallOp Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $2 $3 $4 $5" }
-  | Primary tCOLON2 Operation2 CommandArgs {-=-}tLOWEST { error "mk_call_method $1 $3 $4" }
+  | Primary tCOLON2 Operation2 CommandArgs %prec tLOWEST { error "mk_call_method $1 $3 $4" }
   | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $3 $4 $5" }
   | kSUPER CommandArgs { mk_keyword_cmd Super $2 }
   | kYIELD CommandArgs { mk_keyword_cmd Yield $2 }
@@ -304,25 +306,25 @@ MlhsHead: MlhsItem tCOMMA { [ $1 ] }
 MlhsPost: MlhsItem { [ $1 ] }
   | MlhsPost tCOMMA MlhsItem { $1 ++ [$3] }
 
-MlhsNode: UserVariable { error "mk_assignable $1 " }
-  | KeywordVariable { error "mk_assignable $1" }
+MlhsNode: UserVariable { mk_assignable $1 }
+  | KeywordVariable { mk_assignable $1 }
   | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
   | Primary CallOp tIDENTIFIER { error "mk_attr_asgn $1 $2 $3" }
   | Primary tCOLON2 tIDENTIFIER { error "mk_attr_asgn $1 $2 $3" }
   | Primary CallOp tCONSTANT { error "mk_attr_asgn $1 $2 $3" }
-  | Primary tCOLON2 tCONSTANT { error "mk_assignable (mk_const_fetch $1 $2 $3)" }
-  | tCOLON3 tCONSTANT { error "mk_assignable (mk_const_global $1 $2)" }
-  | Backref { error "mk_assignable $1" }
+  | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $3) }
+  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
+  | Backref { mk_assignable $1 }
 
-Lhs: UserVariable { error "mk_assignable $1" }
-  | KeywordVariable { error "mk_assignable $1" }
+Lhs: UserVariable { mk_assignable $1 }
+  | KeywordVariable { mk_assignable $1 }
   | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
   | Primary CallOp tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary tCOLON2 tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary CallOp tCONSTANT { (mk_attr_asgn $1 $2 $3) }
-  | Primary tCOLON2 tCONSTANT { error "mk_assignable((mk_const_fetch $1 $2 $3))" }
-  | tCOLON3 tCONSTANT { error "mk_assignable((mk_const_global $1 $2))" }
-  | Backref { error "mk_assignable $1" }
+  | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $3) }
+  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
+  | Backref { mk_assignable $1 }
 
 Cname :: { L.Token }
 Cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
@@ -369,18 +371,16 @@ Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | 
 
 Arg :: { Term }
 Arg: Lhs tEQL ArgRhs { error "mk_assign $1 $2 $3" }
-  | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $2 $3) }
-  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $5 $6) }
-  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $4 $5) }
-  | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $4 $5) }
-  | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $4 $5) }
+  | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $3) }
+  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $6) }
+  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $5) }
+  | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $5) }
+  | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $5) }
   | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs { undefined }
- --       const  = mk_const_op_assignable( (mk_const_fetch $1 $2 $3))
- --       (mk_op_assign const $4 $5) }
+ --       (mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $4 $5) }
   | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { undefined }
- --       const  = mk_const_op_assignable((mk_const_global $1 $2))
- --       (mk_op_assign const $3 $4) }
-  | Backref tOP_ASGN ArgRhs { error "mk_op_assign $1 $2 $3" }
+ --       (mk_op_assign (mk_const_op_assignable (mk_const_global $1 $2)) $3 $4) }
+  | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $3 }
   | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
   | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
   | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
@@ -398,7 +398,7 @@ Arg: Lhs tEQL ArgRhs { error "mk_assign $1 $2 $3" }
   | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
   | Arg tAMPER2 Arg { (mk_binary_op $1 $2 $3) }
   | Arg tCMP Arg { (mk_binary_op $1 $2 $3) }
-  | RelExpr {-=-} tCMP { undefined }
+  | RelExpr %prec tCMP { undefined }
   | Arg tEQ Arg { (mk_binary_op $1 $2 $3) }
   | Arg tEQQ Arg { (mk_binary_op $1 $2 $3) }
   | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
@@ -419,15 +419,15 @@ Relop: tGT { $1 }
   | tGEQ { $1 }
   | tLEQ { $1 }
 
-RelExpr: Arg Relop Arg {-=-} tGT { error "mk_binary_op $1 $2 $3" }
-  | RelExpr Relop Arg {-=-} tGT { error "mk_binary_op $1 $2 $3" }
+RelExpr: Arg Relop Arg %prec tGT { error "mk_binary_op $1 $2 $3" }
+  | RelExpr Relop Arg %prec tGT { error "mk_binary_op $1 $2 $3" }
 
 ArefArgs: None { undefined }
   | Args Trailer { undefined }
   | Args tCOMMA Assocs Trailer { $1 ++ [mk_associate Nil $3 Nil] }
   | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
 
-ArgRhs: Arg {-=-} tOP_ASGN { $1 }
+ArgRhs: Arg %prec tOP_ASGN { $1 }
   | Arg kRESCUE_MOD Arg { error "mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ] Nil Nil" }
 
 ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
@@ -768,9 +768,11 @@ VarRef :: { Term }
 VarRef: UserVariable { mk_accessible $1 [] }
   | KeywordVariable { mk_accessible $1 [] }
 
-VarLhs: UserVariable { error "mk_assignable $1" }
-  | KeywordVariable { error "mk_assignable $1" }
+VarLhs :: { Term }
+VarLhs: UserVariable { mk_assignable $1 }
+  | KeywordVariable { mk_assignable $1 }
 
+Backref :: { Term }
 Backref: tNTH_REF { mk_nth_ref $1 }
   | tBACK_REF { mk_back_ref $1 }
 
