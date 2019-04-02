@@ -111,6 +111,28 @@ tokens :-
      ":"   { symbolToken TCOLON }
     "::"   { symbolToken TCOLON2 }
     ":::"  { symbolToken TCOLON3 }
+
+    "'"   { symbolToken (TSTRING_BEG False) }
+    "<<'" { symbolToken (TSTRING_BEG False) }
+    "%q"  { symbolToken (TSTRING_BEG False) }
+    """   { symbolToken (TSTRING_BEG True) }
+    "<<"" { symbolToken (TSTRING_BEG True) }
+    "%"   { symbolToken (TSTRING_BEG True) }
+    "%Q"  { symbolToken (TSTRING_BEG True) }
+    "%w"  { symbolToken (TQWORDS_BEG False) }
+    "%W"  { symbolToken (TWORDS_BEG True)  }
+    "%i"  { symbolToken (TQSYMBOLS_BEG False) }
+    "%I"  { symbolToken (TSYMBOLS_BEG True)  }
+    ":""  { symbolToken (TSYMBEG False) }
+    "%s"  { symbolToken (TSYMBEG False) }
+    ":""  { symbolToken (TSYMBEG True)  }
+    "/"   { symbolToken (TREGEXP_BEG True)  }
+    "%r"  { symbolToken (TREGEXP_BEG True)  }
+    "%x"  { symbolToken (TXSTRING_BEG True)  }
+    "`"   { symbolToken (TXSTRING_BEG True)  }
+    "<<`" { symbolToken (TXSTRING_BEG True)  }
+
+
   -- "="   { symbolToken AssignToken }
   -- "+="  { symbolToken PlusAssignToken }
   -- "-="  { symbolToken MinusAssignToken }
@@ -253,15 +275,15 @@ data Token =
   | TLCURLY
   | TRCURLY
   | TBACK_REF2
-  | TSYMBEG
-  | TSTRING_BEG
-  | TXSTRING_BEG
-  | TREGEXP_BEG
+  | TSYMBEG Bool
+  | TSTRING_BEG Bool
+  | TXSTRING_BEG Bool
+  | TREGEXP_BEG Bool
   | TREGEXP_OPT
-  | TWORDS_BEG
-  | TQWORDS_BEG
-  | TSYMBOLS_BEG
-  | TQSYMBOLS_BEG
+  | TWORDS_BEG Bool
+  | TQWORDS_BEG Bool
+  | TSYMBOLS_BEG Bool
+  | TQSYMBOLS_BEG Bool
   | TSTRING_DBEG
   | TSTRING_DVAR
   | TSTRING_END
