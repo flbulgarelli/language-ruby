@@ -126,15 +126,15 @@ tokens :-
     ","   { symbolToken TCOMMA }
     \;    { symbolToken TSEMI }
 
-  ":" $ident_letter($ident_letter|$digit)*  { mkSymbol }
-  $lower_letter($ident_letter|$digit)*      { keywordOrIdent }
-  $upper_letter($ident_letter|$digit)*      { token TCONSTANT id }
-  "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
-  "$" ($digit | $non_zero_digit($digit)*)   { token TNTH_REF (read . drop 1) }
-  "$" ("&" | "`" | "'" | "+" )              { token TBACK_REF id }
-  "@" $ident_letter($ident_letter|$digit)*  { token TIVAR id }
-  "@@" $ident_letter($ident_letter|$digit)* { token TCVAR id }
-  "?" $short_str_char                       { token TCHARACTER last }
+  ":" $ident_letter($ident_letter|$digit)*            { mkSymbol }
+  $lower_letter($ident_letter|$digit)*("?"|"!"|"=")?  { keywordOrIdent } -- FIXME not true for Lvars
+  $upper_letter($ident_letter|$digit)*                { token TCONSTANT id }
+  "$" $ident_letter($ident_letter|$digit)*            { token TGVAR id }
+  "$" ($digit | $non_zero_digit($digit)*)             { token TNTH_REF (read . drop 1) }
+  "$" ("&" | "`" | "'" | "+" )                        { token TBACK_REF id }
+  "@" $ident_letter($ident_letter|$digit)*            { token TIVAR id }
+  "@@" $ident_letter($ident_letter|$digit)*           { token TCVAR id }
+  "?" $short_str_char                                 { token TCHARACTER last }
 
 {
 data Token =
