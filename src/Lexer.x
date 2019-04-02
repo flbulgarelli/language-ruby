@@ -108,6 +108,7 @@ tokens :-
     "|"   { symbolToken TPIPE }
     "&&"  { symbolToken TAMPER2 }
     "&"   { symbolToken TAMPER }
+    "&."  { symbolToken TANDDOT }
   -- "||"  { symbolToken OrToken }
      ":"   { symbolToken TCOLON }
     "::"   { symbolToken TCOLON2 }

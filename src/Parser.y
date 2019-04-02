@@ -228,7 +228,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | klEND tLCURLY Compstmt tRCURLY { error "mk_postexe $3" }
   | CommandAsgn { $1 }
   | Mlhs tEQL CommandCall { error "mk_multiassign $1 $2 $3" }
-  | Lhs tEQL Mrhs { undefined } -- { error "mk_assign $1 $2 mk_array Nil $3 Nil" }
+  | Lhs tEQL Mrhs { error "mk_assign $1 $2 mk_array Nil $3 Nil" }
   | Mlhs tEQL MrhsArg { error "mk_multiassign $1 $2 $3" }
   | Expr { $1 }
 
@@ -236,10 +236,10 @@ CommandAsgn :: { Term }
 CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $3) }
   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $3) }
   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { mk_op_assign (mk_index $1 $2 $3 $4) $6 }
-  | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $5 }
-  | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { mk_op_assign  (mk_call_method $1 $2 $3) $5 }
+  | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3 []) $5 }
+  | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { mk_op_assign  (mk_call_method $1 $2 $3 []) $5 }
   | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $5 }
-  | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3) $5 }
+  | Primary tCOLON2 tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3 []) $5 }
   | Backref tOP_ASGN CommandRhs { mk_op_assign $1 $3 }
 
 CommandRhs :: { Term }
@@ -262,14 +262,15 @@ CommandCall :: { Term }
 CommandCall: Command { $1 }
   | BlockCommand { $1 }
 
+BlockCommand :: { Term }
 BlockCommand: BlockCall { $1 }
-  | BlockCall DotOrColon Operation2 CommandArgs { error "mk_call_method $1 $2 $3 Nil $4 Nil" }
+  | BlockCall DotOrColon Operation2 CommandArgs { mk_call_method $1 $2 $3 $4 }
 
-CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { undefined }
+CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { error "CmdBraceBlock" }
 
 Command :: { Term }
-Command: Operation CommandArgs %prec tLOWEST { error "mk_call_method Nil Nil $1 Nil $2 Nil" }
-  | Operation CommandArgs CmdBraceBlock { undefined }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
+Command: Operation CommandArgs %prec tLOWEST { mk_call_method Nil L.KNIL $1 $2 }
+  | Operation CommandArgs CmdBraceBlock { error "Command" }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
   | Primary CallOp Operation2 CommandArgs %prec tLOWEST { error "mk_call_method $1 $2 $3 $4" }
   | Primary CallOp Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $2 $3 $4 $5" }
   | Primary tCOLON2 Operation2 CommandArgs %prec tLOWEST { error "mk_call_method $1 $3 $4" }
@@ -373,13 +374,11 @@ Arg :: { Term }
 Arg: Lhs tEQL ArgRhs { error "mk_assign $1 $2 $3" }
   | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $3) }
   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $6) }
-  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $5) }
-  | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $5) }
-  | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3) $5) }
-  | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs { undefined }
- --       (mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $4 $5) }
-  | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { undefined }
- --       (mk_op_assign (mk_const_op_assignable (mk_const_global $1 $2)) $3 $4) }
+  | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
+  | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
+  | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
+  | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $5 }
+  | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_global $1 $2)) $4 }
   | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $3 }
   | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
   | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
@@ -625,7 +624,7 @@ BlockCall: Command DoBlock { error "let (begin_t, block_args, body, end_t) = $2 
 MethodCall: Operation ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in mk_call_method Nil Nil $1 lparen_t Args rparen_t" }
   | Primary CallOp Operation2 OptParenArgs { error "let let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1, $2, $3, lparen_t, Args, rparen_t" }
   | Primary tCOLON2 Operation2 ParenArgs { error "let (lparen_t, Args, rparen_t) = $4 in mk_call_method $1 $2 $3 lparen_t Args rparen_t" }
-  | Primary tCOLON2 operation3 { error "mk_call_method $1 $2 $3" }
+  | Primary tCOLON2 Operation3 { mk_call_method $1 $2 $3 [] }
   | Primary CallOp ParenArgs { error "let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t" }
   | Primary tCOLON2 ParenArgs { error "let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t" }
   | kSUPER ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in mk_keyword_cmd Super $1 lparen_t Args rparen_t" }
@@ -884,24 +883,29 @@ Assoc: Arg tASSOC Arg { error "mk_pair $1 $2 $3" }
    | tSTRING_BEG StringContents tLABEL_END Arg { error "mk_pair_quoted $1 $2 $3 $4" }
    | tDSTAR Arg { error "mk_kwsplat $1 $2" }
 
+Operation :: { L.Token }
 Operation: tIDENTIFIER { $1 }
   | tCONSTANT { $1 }
   | tFID { $1 }
 
+Operation2 :: { L.Token }
 Operation2: tIDENTIFIER { $1 }
   | tCONSTANT { $1 }
   | tFID { $1 }
   | Op { $1 }
 
-operation3: tIDENTIFIER { $1 }
+Operation3 :: { L.Token }
+Operation3: tIDENTIFIER { $1 }
   | tFID { $1 }
   | Op { $1 }
 
+DotOrColon :: { L.Token }
 DotOrColon: CallOp { $1 }
   | tCOLON2 { $1 }
 
-CallOp: tDOT { error "CallOp" } -- [Dot, ($1 !! 2)]
-  | tANDDOT { error "CallOp" } -- [Anddot, ($1 !! 2)]
+CallOp :: { L.Token }
+CallOp: tDOT { $1 }
+  | tANDDOT { $1 }
 
 OptTerms: { undefined }
   | Terms { undefined }

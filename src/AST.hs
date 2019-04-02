@@ -52,6 +52,7 @@ data Term
        | RTrue
        | Self
        | Send Term String [Term]
+       | Csend Term String [Term]
        | Splat (Maybe Term)
        | Str String
        | Super [Term]
@@ -102,7 +103,7 @@ mk_assignable (Lvar i) = Lvasgn i Nothing
 mk_assignable (Ivar i) = Ivasgn i Nothing
 mk_assignable (Cvar i) = Cvasgn i Nothing
 mk_assignable (Gvar i) = Gvasgn i Nothing
-mk_assignable (Const parent i) = Casgn parent i Nothing -- TODO
+mk_assignable (Const parent i) = Casgn parent i Nothing
 
 mk_associate = error "mk_associate"
 mk_attr_asgn = error "mk_attr_asgn"
@@ -126,7 +127,11 @@ mk_block = error "mk_block"
 mk_block_pass = error "mk_block_pass"
 mk_blockarg = error "mk_blockarg"
 mk_call_lambda = error "mk_call_lambda"
-mk_call_method = error "mk_call_method"
+
+mk_call_method :: Term -> Token -> Token -> [Term] -> Term
+mk_call_method receiver TANDDOT selector args = Csend receiver (mk_selector selector) args
+mk_call_method receiver _       selector args = Send receiver (mk_selector selector) args
+
 mk_case = error "mk_case"
 
 mk_character :: Token -> Term
@@ -140,7 +145,9 @@ mk_const_fetch :: Term -> Token -> Term
 mk_const_fetch first (TCONSTANT second) = Const first second
 
 mk_const_global = error "mk_const_global"
-mk_const_op_assignable = error "mk_const_op_assignable"
+
+mk_const_op_assignable :: Term -> Term
+mk_const_op_assignable (Const parent i) = Casgn parent i Nothing
 
 mk_cvar, mk_gvar, mk_ivar, mk_const, mk_ident :: Token -> Term
 mk_cvar (TCVAR i)        = Cvar i
@@ -242,3 +249,8 @@ mk_block' = error "mk_block"
 value :: Token -> String
 value (TIDENTIFIER i) = i
 value (TCONSTANT i)   = i
+value other           = error (show other)
+
+mk_selector :: Token -> String
+mk_selector KNIL = "call"
+mk_selector s   = value s
