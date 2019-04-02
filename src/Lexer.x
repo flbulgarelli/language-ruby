@@ -1,9 +1,9 @@
 {
-module Lexer (Token(..),P,evalP,lexer) where
+module Lexer (Token(..),P,evalP,lexer, tokens) where
 import Control.Monad.State
 import Control.Monad.Error
 import Data.Word
-import Codec.Binary.UTF8.String as UTF8 (decode)
+import Codec.Binary.UTF8.String as UTF8 (encode, decode)
 
 import qualified Data.Map as Map
 import Control.Monad (liftM)
@@ -101,7 +101,8 @@ tokens :-
     "<="  { symbolToken TLEQ }
     ">"   { symbolToken TGT }
     ">="  { symbolToken TGEQ }
-    "=="  { symbolToken TEQQ }
+    "=="  { symbolToken TEQ }
+    "==="  { symbolToken TEQQ }
     "!="  { symbolToken TNEQ }
     "^"   { symbolToken TCARET }
     "|"   { symbolToken TPIPE }
@@ -133,18 +134,7 @@ tokens :-
     "<<`" { symbolToken (TXSTRING_BEG True)  }
 
 
-  -- "="   { symbolToken AssignToken }
-  -- "+="  { symbolToken PlusAssignToken }
-  -- "-="  { symbolToken MinusAssignToken }
-  -- "*="  { symbolToken MultAssignToken }
-  -- "/="  { symbolToken DivAssignToken }
-  -- "%="  { symbolToken ModAssignToken }
-  -- "**=" { symbolToken PowAssignToken }
-  -- "&="  { symbolToken BinAndAssignToken }
-  -- "|="  { symbolToken BinOrAssignToken }
-  -- "^="  { symbolToken BinXorAssignToken }
-  -- "<<=" { symbolToken LeftShiftAssignToken }
-  -- ">>=" { symbolToken RightShiftAssignToken }
+    "="   { symbolToken TOP_ASGN }
     ","   { symbolToken TCOMMA }
     \;    { symbolToken TSEMI }
 
@@ -340,6 +330,14 @@ readToken = do
 lexer::(Token -> P a)->P a
 lexer cont = readToken >>= cont
 
+tokens :: String -> [Token]
+tokens = loop . encode
+  where
+    run = runStateT (lexer return)
+    loop input = case run input of
+                  Right (TEOF, _) -> []
+                  Right (t, tail) -> t : loop tail
+                  _               -> []
 
 ----------
 

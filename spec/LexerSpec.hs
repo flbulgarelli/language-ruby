@@ -5,137 +5,102 @@ import Data.List (intercalate)
 import Lexer
 import Codec.Binary.UTF8.String (encode)
 
+test title code ts = it (title ++ " [ " ++ code ++ " ]") $ do
+  tokens code `shouldBe` ts
+
 spec :: Spec
 spec = describe "Lexer:" $ do
-  -- it "comments" $ do
-  --   testLex "# abcdef " `shouldBe` "[CommentToken]"
+  test "integers" "123" [TINTEGER 123]
 
-  it "integers" $ do
-    testLex "123"    `shouldBe` (TINTEGER 123)
+  test "positive integers" "+123" [TINTEGER 123]
 
-  it "positive integers" $ do
-    testLex "+123"    `shouldBe` (TINTEGER 123)
+  test "negative integers" "-123" [TINTEGER (-123)]
 
-  it "negative integers" $ do
-    testLex "-123"    `shouldBe` (TINTEGER (-123))
+  test "octal integers" "037" [TINTEGER 037]
 
-  it "octal integers" $ do
-    testLex "037"    `shouldBe` (TINTEGER 037)
+  test "hex integers" "0xab"  [TINTEGER 0xab]
 
-  it "hex integers" $ do
-    testLex "0xab"   `shouldBe` (TINTEGER 0xab)
+  -- test "rationals"   tokens "123r" [TRATIONAL 123]
 
-  -- it "rationals" $ do
-  --   testLex "123r"    `shouldBe` (TRATIONAL 123)
+  -- test "complex"   tokens "123i" [TCOMPLEX 123]
 
-  -- it "complex" $ do
-  --   testLex "123i"    `shouldBe` (TCOMPLEX 123)
+  test "floats" "0.5" [TFLOAT 0.5]
 
-  it "floats" $ do
-    testLex "0.5" `shouldBe` (TFLOAT 0.5)
+  test "char" "?c" [TCHARACTER 'c']
 
-  it "char" $ do
-    testLex "?c"  `shouldBe` (TCHARACTER 'c')
+  test "symbol" ":cat" [TSYMBOL "cat"]
 
-  it "symbol" $ do
-    testLex ":cat"  `shouldBe` (TSYMBOL "cat")
+  test "string double quote" "\"dog\""  [TSTRING "dog"]
 
-  it "string double quote" $ do
-    testLex "\"dog\""   `shouldBe` (TSTRING "dog")
+  test "string single quote with padding" "    'cat'    " [TSTRING "cat"]
 
-  it "string single quote with padding" $ do
-    testLex "    'cat'    "  `shouldBe` (TSTRING "cat")
+  test "string single quote with spaces" "'the cat'" [TSTRING "the cat"]
 
-  it "string single quote with spaces" $ do
-    testLex "'the cat'"  `shouldBe` (TSTRING "the cat")
+  test "string single quote" "'cat'" [TSTRING "cat"]
 
-  it "string single quote" $ do
-    testLex "'cat'"  `shouldBe` (TSTRING "cat")
+  test "identifier" "var" [TIDENTIFIER "var"]
 
-  it "identifier" $ do
-    testLex "var"  `shouldBe` (TIDENTIFIER "var")
+  test "gvar" "$var" [TGVAR "$var"]
 
-  it "gvar" $ do
-    testLex "$var"  `shouldBe` (TGVAR "$var")
+  test "backref" "$+" [TBACK_REF "$+"]
+  test "backref" "$`" [TBACK_REF "$`"]
+  test "backref" "$&" [TBACK_REF "$&"]
 
-  it "backref" $ do
-    testLex "$+"  `shouldBe` (TBACK_REF "$+")
-  it "backref" $ do
-    testLex "$`"  `shouldBe` (TBACK_REF "$`")
-  it "backref" $ do
-    testLex "$&"  `shouldBe` (TBACK_REF "$&")
+  test "nthref" "$1" [TNTH_REF 1]
 
-  it "nthref" $ do
-    testLex "$1"  `shouldBe` (TNTH_REF 1)
+  test "nthref" "$10"[TNTH_REF 10]
 
-  it "nthref" $ do
-    testLex "$10" `shouldBe` (TNTH_REF 10)
+  test "nthref" "$0" [TNTH_REF 0]
 
-  it "nthref" $ do
-    testLex "$0"  `shouldBe` (TNTH_REF 0)
+  test "ivar" "@var" [TIVAR "@var"]
 
-  it "ivar" $ do
-    testLex "@var"  `shouldBe` (TIVAR "@var")
+  test "tconstant" "Var" [TCONSTANT "Var"]
 
-  it "tconstant" $ do
-    testLex "Var"  `shouldBe` (TCONSTANT "Var")
+  test "tcvar" "@@var" [TCVAR "@@var"]
 
-  it "tcvar" $ do
-    testLex "@@var"  `shouldBe` (TCVAR "@@var")
+  test "KSELF" "self" [KSELF]
 
-  it "KSELF" $ do
-    testLex "self"  `shouldBe` KSELF
+  test "KTRUE" "true" [KTRUE]
 
-  it "KTRUE" $ do
-    testLex "true"  `shouldBe` KTRUE
+  test "KNIL" "nil" [KNIL]
 
-  it "KNIL" $ do
-    testLex "nil"  `shouldBe` KNIL
+  test "KDEF" "def" [KDEF]
 
-  it "KDEF" $ do
-    testLex "def"  `shouldBe` KDEF
+  test "KIF" "if" [KIF]
 
-  it "KIF" $ do
-    testLex "if"  `shouldBe` KIF
+  test "KDEFINED" "defined?" [KDEFINED]
+  test "KDEFINED" "defined? a" [KDEFINED, TIDENTIFIER "a"]
+  test "KDEFINED" "defined?(a)" [KDEFINED, TIDENTIFIER "a"]
+  test "KDEFINED" "defined?(@a)" [KDEFINED, TIDENTIFIER "a"]
 
-  it "KDEFINED" $ do
-    testLex "defined?"  `shouldBe` KDEFINED
+  test "KUNDEF" "undef" [KUNDEF]
 
-  it "KUNDEF" $ do
-    testLex "undef"  `shouldBe` KDEFINED
+  test "assign" "$var = 10" [TGVAR "$var", TOP_ASGN, TINTEGER 10]
+  test "assign" "var = 10" [TIDENTIFIER "var", TOP_ASGN, TINTEGER 10]
 
-  -- it "strings with escape chars" $ do
-  --     testLex "'\t'"   `shouldBe` "[StringToken '\t']"
-  --     testLex "'\\n'"  `shouldBe` "[StringToken '\\n']"
-  --     testLex "'\\\\n'"   `shouldBe` "[StringToken '\\\\n']"
-  --     testLex "'\\\\'" `shouldBe` "[StringToken '\\\\']"
-  --     testLex "'\\0'"  `shouldBe` "[StringToken '\\0']"
-  --     testLex "'\\12'" `shouldBe` "[StringToken '\\12']"
-  --     testLex "'\\s'"   `shouldBe` "[StringToken '\\s']"
-  --     testLex "'\\-'"   `shouldBe` "[StringToken '\\-']"
+  -- test "strings with escape chars"     tokens "'\t'"  "[StringToken '\t']]
+  --     tokens "'\\n'" "[StringToken '\\n']]
+  --     tokens "'\\\\n'"  "[StringToken '\\\\n']]
+  --     tokens "'\\\\'""[StringToken '\\\\']]
+  --     tokens "'\\0'" "[StringToken '\\0']]
+  --     tokens "'\\12'""[StringToken '\\12']]
+  --     tokens "'\\s'"  "[StringToken '\\s']]
+  --     tokens "'\\-'"  "[StringToken '\\-']]
 
-  -- it "strings with non-escaped chars" $
-  --     testLex "'\\/'"  `shouldBe` "[StringToken '\\/']"
+  -- test "strings with non-escaped     tokens "'\\/'" "[StringToken '\\/']]
 
-  -- it "strings with escaped quotes" $ do
-  --     testLex "'\"'"   `shouldBe` "[StringToken '\"']"
-  --     testLex "\"\\\"\""  `shouldBe` "[StringToken \"\\\\\"\"]"
-  --     testLex "'\\\''" `shouldBe` "[StringToken '\\\\'']"
-  --     testLex "'\"'"   `shouldBe` "[StringToken '\"']"
-  --     testLex "\"\\'\""   `shouldBe` "[StringToken \"\\'\"]"
+  -- test "strings with escaped quotes"     tokens "'\"'"  "[StringToken '\"']]
+  --     tokens "\"\\\"\"" "[StringToken \"\\\\\"\"]]
+  --     tokens "'\\\''""[StringToken '\\\\'']]
+  --     tokens "'\"'"  "[StringToken '\"']]
+  --     tokens "\"\\'\""  "[StringToken \"\\'\"]]
 
-  -- it "spread token" $ do
-  --     testLex "...a" `shouldBe` "[SpreadToken,IdentifierToken 'a']"
+  -- test "spread token"     tokens "...a""[SpreadToken,IdentifierToken 'a']]
 
-  -- it "assignment" $ do
-  --     testLex "x=1"    `shouldBe` "[IdentifierToken 'x',SimpleAssignToken,DecimalToken 1]"
-  --     testLex "x=1\ny=2"  `shouldBe` "[IdentifierToken 'x',SimpleAssignToken,DecimalToken 1,WsToken,IdentifierToken 'y',SimpleAssignToken,DecimalToken 2]"
+  -- test "assignment"     tokens "x=1" "[IdentifierToken 'x',SimpleAssignToken,DecimalToken 1]]
+  --     tokens "x=1\ny=2" "[IdentifierToken 'x',SimpleAssignToken,DecimalToken 1,WsToken,IdentifierToken 'y',SimpleAssignToken,DecimalToken 2]]
 
-  -- it "break/continue/return" $ do
-  --     testLex "break\nx=1"  `shouldBe` "[BreakToken,WsToken,IdentifierToken 'x',SimpleAssignToken,DecimalToken 1]"
-  --     testLex "continue\nx=1"  `shouldBe` "[ContinueToken,WsToken,IdentifierToken 'x',SimpleAssignToken,DecimalToken 1]"
-  --     testLex "return\nx=1" `shouldBe` "[ReturnToken,WsToken,IdentifierToken 'x',SimpleAssignToken,DecimalToken 1]"
+  test "return" "return 1" [KRETURN, TINTEGER 1]
 
+  test "yield" "yield 1" [KYIELD, TINTEGER 1]
 
-testLex :: String -> Token
-testLex = either error id . evalP (lexer return) . encode
