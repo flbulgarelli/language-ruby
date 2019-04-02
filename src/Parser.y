@@ -202,21 +202,7 @@ TopStmt: Stmt { $1 } | klBEGIN BeginBlock { error "mk_preexe $2" }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
-Bodystmt: Compstmt OptRescue OptElse OptEnsure { error "Bodystmt"  }
--- {-  {
---             rescue_bodies     = $2;
---             else_t,   else_   = $3;
---             ensure_t, ensure_ = $4;
-
---             if rescue_bodies.empty? && !else_.Nil?
---               error ":useless_else, Nil, else_t"
---             end
-
---             mk_begin_body($1,
---                         rescue_bodies,
---                         else_t,   else_,
---                         ensure_t, ensure_) }
--- -}
+Bodystmt: Compstmt OptRescue OptElse OptEnsure { mk_begin_body $1 $2 $3 $4  }
 
 Compstmt: Stmts OptTerms { mkExpression $1 }
 Stmts :: { [Term] }
@@ -238,7 +224,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Stmt kUNLESS_MOD Expr { error "mk_condition_mod Nil $1 $2 $3" }
   | Stmt kWHILE_MOD Expr { error "mk_loop_mod While $1 $2 $3" }
   | Stmt kUNTIL_MOD Expr { error "mk_loop_mod Until $1 $2 $3" }
-  | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] }
+  | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil }
   | klEND tLCURLY Compstmt tRCURLY { error "mk_postexe $3" }
   | CommandAsgn { $1 }
   | Mlhs tEQL CommandCall { error "mk_multiassign $1 $2 $3" }
@@ -257,7 +243,7 @@ CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $2 $3) }
   | Backref tOP_ASGN CommandRhs { error "mk_op_assign $1 $2 $3" }
 
 CommandRhs: CommandCall {-=-} tOP_ASGN { $1 }
-  | CommandCall kRESCUE_MOD Stmt { error "mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3]" }
+  | CommandCall kRESCUE_MOD Stmt { error "mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil" }
   | CommandAsgn { $1 }
 
 Expr :: { Term }
@@ -286,11 +272,11 @@ Command: Operation CommandArgs {-=-}tLOWEST { error "mk_call_method Nil Nil $1 N
   | Primary CallOp Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $2 $3 $4 $5" }
   | Primary tCOLON2 Operation2 CommandArgs {-=-}tLOWEST { error "mk_call_method $1 $3 $4" }
   | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $3 $4 $5" }
-  | kSUPER CommandArgs { error "mk_keyword_cmd Super $1 Nil $2 Nil" }
-  | kYIELD CommandArgs { error "mk_keyword_cmd Yield $1 Nil $2 Nil" }
-  | KReturn CallArgs { error "mk_keyword_cmd Return $1 Nil $2 Nil" }
-  | kBREAK CallArgs { error "mk_keyword_cmd Break $1 Nil $2 Nil" }
-  | kNEXT CallArgs { error "mk_keyword_cmd Next $1 Nil $2 Nil" }
+  | kSUPER CommandArgs { mk_keyword_cmd Super $2 }
+  | kYIELD CommandArgs { mk_keyword_cmd Yield $2 }
+  | KReturn CallArgs { mk_keyword_cmd Return $2 }
+  | kBREAK CallArgs { mk_keyword_cmd Break $2 }
+  | kNEXT CallArgs { mk_keyword_cmd Next $2 }
 
 Mlhs: MlhsBasic { error "mk_multi_lhs Nil $1 Nil" }
   | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
@@ -442,7 +428,7 @@ ArefArgs: None { undefined }
   | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
 
 ArgRhs: Arg {-=-} tOP_ASGN { $1 }
-  | Arg kRESCUE_MOD Arg { error "mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ]" }
+  | Arg kRESCUE_MOD Arg { error "mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ] Nil Nil" }
 
 ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 
@@ -492,7 +478,7 @@ Primary: Literal { $1 }
   | VarRef { $1 }
   | Backref { $1 }
   | tFID { error "mk_call_method $1" }
-  | kBEGIN Bodystmt kEND { error "mk_begin_keyword $2" }
+  | kBEGIN Bodystmt kEND { mk_begin_keyword $2 }
   | tLPAREN_ARG Stmt Rparen { error "mk_begin $2 $3" }
   | tLPAREN_ARG OptNl tRPAREN { error "mk_begin $2" }
   | tLPAREN Compstmt tRPAREN { error "mk_begin $2" }
@@ -526,7 +512,7 @@ Primary: Literal { $1 }
   | kCLASS Cpath Superclass Bodystmt kEND { error "let (lt_t, Superclass) = $3 in (mk_def_class $1 $2 lt_t Superclass $5 $6)" }
   | kCLASS tLSHFT Expr Term Bodystmt kEND { error "mk_def_sclass $3 $4 $5" }
   | kMODULE Cpath Bodystmt kEND { error "mk_def_module $2 $3" }
-  | kDEF Fname FArglist Bodystmt kEND { error "mk_def_method $2 $3 $4" }
+  | kDEF Fname FArglist Bodystmt kEND { mk_def_method $2 $3 $4 }
   | kDEF Singleton DotOrColon Fname FArglist Bodystmt kEND { mk_def_singleton $2 $4 $5 $6 }
   | kBREAK { error "mk_keyword_cmd Break $1" }
   | kNEXT { error "mk_keyword_cmd Next $1" }
@@ -656,7 +642,8 @@ CaseBody: kWHEN Args Then Compstmt Cases { undefined } -- { [mk_when $1 $2 $3 $4
 Cases: OptElse { undefined } -- { [ $1 ] }
  | CaseBody { undefined } -- { $1 }
 
-OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { undefined } {-
+OptRescue :: { [Term] }
+OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { error "mk_rescue_body" } {-
             assoc_t, ExcVar = $3
             if $2
               ExcList = (mk_array Nil $2 Nil)

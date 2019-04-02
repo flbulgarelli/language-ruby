@@ -74,7 +74,7 @@ tokens :-
   ("+" | "-")? @float_number { token TFLOAT readFloat }
   ("+" | "-")? $non_zero_digit $digit* { token TINTEGER readInt }
   ("+" | "-")? (@float_number | @int_part) (j | J) { token TIMAGINARY (readFloat . init) }
-  0+ { token TINTEGER read }
+  0+ $digit* { token TINTEGER read }
   0 (o | O) $oct_digit+ { token TINTEGER read }
   0 (x | X) $hex_digit+ { token TINTEGER read }
 

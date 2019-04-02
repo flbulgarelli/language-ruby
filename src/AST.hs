@@ -89,7 +89,7 @@ mk_accessible (Lvar name) env | elem name env = Send Nil name []
 mk_accessible term        _   = term
 
 mk_alias :: Term -> Term -> Term
-mk_alias = error "mk_alias"
+mk_alias = Alias
 
 mk_arg = error "mk_arg"
 mk_args = error "mk_args"
@@ -104,7 +104,10 @@ mk_back_ref (TBACK_REF s) = BackRef s
 mk_nth_ref  (TNTH_REF i)  = NthRef i
 
 mk_begin = error "mk_begin"
-mk_begin_body = error "mk_begin_body"
+
+mk_begin_body :: Term -> [Term] -> Term -> Term -> Term
+mk_begin_body stms rescues els ensure = error "mk_begin_body"
+
 mk_begin_keyword = error "mk_begin_keyword"
 mk_binary_op = error "mk_binary_op"
 mk_block = error "mk_block"
@@ -122,7 +125,7 @@ mk_condition = error "mk_condition"
 mk_condition_mod = error "mk_condition_mod"
 
 mk_const_fetch :: Term -> Token -> Term
-mk_const_fetch first second = error ("mk_const_fetch " ++ show first ++ " " ++ show second)
+mk_const_fetch first (TCONSTANT second) = Const first second
 
 mk_const_global = error "mk_const_global"
 mk_const_op_assignable = error "mk_const_op_assignable"
@@ -135,12 +138,14 @@ mk_const (TCONSTANT i)   = Const Nil i
 mk_ident (TIDENTIFIER i) = Lvar i
 
 mk_def_class = error "mk_def_class"
-mk_def_method = error "mk_def_method"
 mk_def_module = error "mk_def_module"
 mk_def_sclass = error "mk_def_sclass"
 
 mk_def_singleton :: Term -> Token -> args -> body -> Term
 mk_def_singleton singleton fname args body = error ("mk_def_singleton " ++ show singleton ++ " " ++ show fname)
+
+mk_def_method :: Token -> args -> body -> Term
+mk_def_method fname args body = error ("mk_def_method " ++ show fname)
 
 mk_float :: Token -> Term
 mk_float (TFLOAT f) = RFloat f
@@ -152,7 +157,10 @@ mk_index_asgn = error "mk_index_asgn"
 mk_integer :: Token -> Term
 mk_integer (TINTEGER i) = RInt i
 
-mk_keyword_cmd = error "mk_keyword_cmd"
+
+mk_keyword_cmd :: Term -> a -> Term
+mk_keyword_cmd term args = error ("mk_keyword_cmd" ++ show term)
+
 mk_kwarg = error "mk_kwarg"
 mk_kwoptarg = error "mk_kwoptarg"
 mk_kwrestarg = error "mk_kwrestarg"
