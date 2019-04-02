@@ -75,6 +75,7 @@ spec = describe "Lexer:" $ do
 
   test "KUNDEF" "undef" [KUNDEF]
 
+  test "assign" "@var = 10" [TIVAR "@var", TOP_ASGN, TINTEGER 10]
   test "assign" "$var = 10" [TGVAR "$var", TOP_ASGN, TINTEGER 10]
   test "assign" "var = 10" [TIDENTIFIER "var", TOP_ASGN, TINTEGER 10]
 
