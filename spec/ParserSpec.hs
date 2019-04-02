@@ -10,7 +10,7 @@ import Data.Complex (Complex((:+)))
 run :: String -> Term
 run = either error id . parseRuby
 
-test title code term = it title $ do
+test title code term = it (title ++ " [ " ++ code ++ " ]") $ do
                           run code `shouldBe` term
 
 spec :: Spec
@@ -21,7 +21,7 @@ spec = do
     test "nil" "nil" Nil
 
     test "nil_expression" "()" (Begin [])
-    test "nil_expression" "begin end" KWBegin
+    test "nil_expression" "begin end" (KWBegin [])
 
     test "true" "true" RTrue
 

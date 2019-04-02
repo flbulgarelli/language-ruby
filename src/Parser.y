@@ -202,6 +202,7 @@ TopStmt: Stmt { $1 } | klBEGIN BeginBlock { error "mk_preexe $2" }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
+Bodystmt :: { Term }
 Bodystmt: Compstmt OptRescue OptElse OptEnsure { mk_begin_body $1 $2 $3 $4  }
 
 Compstmt: Stmts OptTerms { mkExpression $1 }

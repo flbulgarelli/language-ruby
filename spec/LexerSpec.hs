@@ -101,6 +101,9 @@ spec = describe "Lexer:" $ do
   it "KDEFINED" $ do
     testLex "defined?"  `shouldBe` KDEFINED
 
+  it "KUNDEF" $ do
+    testLex "undef"  `shouldBe` KDEFINED
+
   -- it "strings with escape chars" $ do
   --     testLex "'\t'"   `shouldBe` "[StringToken '\t']"
   --     testLex "'\\n'"  `shouldBe` "[StringToken '\\n']"

@@ -8,7 +8,7 @@ import Lexer (Token (..))
 
 data Term
        = Begin [Term]
-       | KWBegin
+       | KWBegin [Term]
        | Nil
        | RTrue
        | RFalse
@@ -106,9 +106,11 @@ mk_nth_ref  (TNTH_REF i)  = NthRef i
 mk_begin = error "mk_begin"
 
 mk_begin_body :: Term -> [Term] -> Term -> Term -> Term
-mk_begin_body stms rescues els ensure = error "mk_begin_body"
+mk_begin_body stmt rescues els ensure = Begin [stmt] -- TODO
 
-mk_begin_keyword = error "mk_begin_keyword"
+mk_begin_keyword :: Term -> Term
+mk_begin_keyword term = KWBegin [term] -- TODO
+
 mk_binary_op = error "mk_binary_op"
 mk_block = error "mk_block"
 mk_block_pass = error "mk_block_pass"
@@ -142,10 +144,10 @@ mk_def_module = error "mk_def_module"
 mk_def_sclass = error "mk_def_sclass"
 
 mk_def_singleton :: Term -> Token -> args -> body -> Term
-mk_def_singleton singleton fname args body = error ("mk_def_singleton " ++ show singleton ++ " " ++ show fname)
+mk_def_singleton singleton fname args body = Defs singleton (value fname) (Args []) Nil
 
 mk_def_method :: Token -> args -> body -> Term
-mk_def_method fname args body = error ("mk_def_method " ++ show fname)
+mk_def_method fname args body = Def (value fname) (Args []) Nil
 
 mk_float :: Token -> Term
 mk_float (TFLOAT f) = RFloat f
@@ -200,7 +202,8 @@ mk_symbol_compose = error "mk_symbol_compose"
 
 mk_symbol, mk_symbol_internal :: Token -> Term
 mk_symbol = mk_symbol_internal
-mk_symbol_internal = error "mk_symbol_internal"
+mk_symbol_internal (TSYMBOL s) = Sym s
+mk_symbol_internal (TIDENTIFIER s) = Sym s
 
 mk_symbols_compose = error "mk_symbols_compose"
 mk_ternary = error "mk_ternary"
@@ -214,3 +217,10 @@ mk_xstring_compose = error "mk_xstring_compose"
 
 -- mk_block' (begin_t, args, body, end_t) = mk_block (mk_call_method $1 $2 $3 $4) begin_t Args body end_t
 mk_block' = error "mk_block"
+
+
+--- private
+
+value :: Token -> String
+value (TIDENTIFIER i) = i
+value (TCONSTANT i)   = i
