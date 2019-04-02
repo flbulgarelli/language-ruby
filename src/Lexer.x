@@ -66,21 +66,18 @@ $not_double_quote = [. \n] # \"
 
 tokens :-
 
-<0> {
-   ' @short_str_item_single* ' { mkString }
-   \" @short_str_item_double* \" { mkString }
-}
+  $white+  ;  -- skip whitespace
 
-<0> {
-   ("+" | "-")? @float_number { token TFLOAT readFloat }
-   ("+" | "-")? $non_zero_digit $digit* { token TINTEGER readInt }
-   ("+" | "-")? (@float_number | @int_part) (j | J) { token TIMAGINARY (readFloat . init) }
-   0+ { token TINTEGER read }
-   0 (o | O) $oct_digit+ { token TINTEGER read }
-   0 (x | X) $hex_digit+ { token TINTEGER read }
-}
+  ' @short_str_item_single* ' { mkString }
+  \" @short_str_item_double* \" { mkString }
 
-<0> {
+  ("+" | "-")? @float_number { token TFLOAT readFloat }
+  ("+" | "-")? $non_zero_digit $digit* { token TINTEGER readInt }
+  ("+" | "-")? (@float_number | @int_part) (j | J) { token TIMAGINARY (readFloat . init) }
+  0+ { token TINTEGER read }
+  0 (o | O) $oct_digit+ { token TINTEGER read }
+  0 (x | X) $hex_digit+ { token TINTEGER read }
+
 --    "("   { openParen TLPAREN }
 --    ")"   { closeParen TRPAREN }
 --    "["   { openParen TLBRACK }
@@ -128,17 +125,16 @@ tokens :-
   -- ">>=" { symbolToken RightShiftAssignToken }
     ","   { symbolToken TCOMMA }
     \;    { symbolToken TSEMI }
-}
 
-<0> ":" $ident_letter($ident_letter|$digit)*  { mkSymbol }
-<0> $lower_letter($ident_letter|$digit)*      { keywordOrIdent }
-<0> $upper_letter($ident_letter|$digit)*      { token TCONSTANT id }
-<0> "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
-<0> "$" ($digit | $non_zero_digit($digit)*)   { token TNTH_REF (read . drop 1) }
-<0> "$" ("&" | "`" | "'" | "+" )              { token TBACK_REF id }
-<0> "@" $ident_letter($ident_letter|$digit)*  { token TIVAR id }
-<0> "@@" $ident_letter($ident_letter|$digit)* { token TCVAR id }
-<0> "?" $short_str_char                       { token TCHARACTER last }
+  ":" $ident_letter($ident_letter|$digit)*  { mkSymbol }
+  $lower_letter($ident_letter|$digit)*      { keywordOrIdent }
+  $upper_letter($ident_letter|$digit)*      { token TCONSTANT id }
+  "$" $ident_letter($ident_letter|$digit)*  { token TGVAR id }
+  "$" ($digit | $non_zero_digit($digit)*)   { token TNTH_REF (read . drop 1) }
+  "$" ("&" | "`" | "'" | "+" )              { token TBACK_REF id }
+  "@" $ident_letter($ident_letter|$digit)*  { token TIVAR id }
+  "@@" $ident_letter($ident_letter|$digit)* { token TCVAR id }
+  "?" $short_str_char                       { token TCHARACTER last }
 
 {
 data Token =
@@ -298,7 +294,6 @@ alexGetByte []    = Nothing
 alexInputPrevChar :: AlexInput -> Char
 alexInputPrevChar = undefined
 
-
 -- Our Parser monad
 type P a = StateT AlexInput (Either String) a
 
@@ -315,9 +310,9 @@ readToken = do
       AlexSkip inp' _ -> do
         put inp'
         readToken
-      AlexToken inp' _ action -> do
+      AlexToken inp' len action -> do
         put inp'
-        (action (decode s))
+        (action (take len (decode s)))
 
 -- The lexer function to be passed to Happy
 lexer::(Token -> P a)->P a

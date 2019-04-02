@@ -184,6 +184,7 @@ spec = do
     test "string_dvar" "\"#@a #@@a #$a\"" (Dstr [Ivar "@a", Str " ", Cvar "@@a", Str " ", Gvar "$a"])
     test "string_concat" "\"foo#@a\" \"bar\"" (Dstr [Dstr [Str "foo", Ivar "@a"], Str "bar"])
     test "string_concat" "'aaa' 'bbb'" (Dstr [Str "aaa", Str "bbb"])
+    test "string_concat" "\"aaa\" \"bbb\"" (Dstr [Str "aaa", Str "bbb"])
   --  test "string___FILE__" "__FILE__" (Str "(assert_parses)")
     test "string___FILE__" "__FILE__" File
     test "character" "?a" (Str "a")
