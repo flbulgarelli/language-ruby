@@ -75,12 +75,14 @@ spec = describe "Lexer:" $ do
 
   test "KUNDEF" "undef" [KUNDEF]
 
-  test "assign" "@var = 10" [TIVAR "@var", TOP_ASGN, TINTEGER 10]
-  test "assign" "$var = 10" [TGVAR "$var", TOP_ASGN, TINTEGER 10]
-  test "assign" "var = 10" [TIDENTIFIER "var", TOP_ASGN, TINTEGER 10]
+  test "assign" "@var = 10" [TIVAR "@var", TEQL, TINTEGER 10]
+  test "assign" "$var = 10" [TGVAR "$var", TEQL, TINTEGER 10]
+  test "assign" "var = 10" [TIDENTIFIER "var", TEQL, TINTEGER 10]
 
-  test "masgn with splat" "@foo, @@bar = *foo" [TIVAR "@foo", TCOMMA, TCVAR "@@bar",TOP_ASGN, TSTAR, TIDENTIFIER "foo"]
-  test "masgn with splat" "* = foo" [TSTAR, TOP_ASGN, TIDENTIFIER "foo"]
+  test "masgn with splat" "@foo, @@bar = *foo" [TIVAR "@foo", TCOMMA, TCVAR "@@bar",TEQL, TSTAR, TIDENTIFIER "foo"]
+  test "masgn with splat" "* = foo" [TSTAR, TEQL, TIDENTIFIER "foo"]
+
+  test "op_asign" "x += foo" [TIDENTIFIER "x", TPLUS, TOP_ASGN, TIDENTIFIER "x"]
 
   -- test "strings with escape chars"     tokens "'\t'"  "[StringToken '\t']]
   --     tokens "'\\n'" "[StringToken '\\n']]

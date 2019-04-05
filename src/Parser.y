@@ -98,7 +98,8 @@ import Control.Monad.Error
     tRSHFT {L.TRSHFT}
     tCOLON2 {L.TCOLON2}
     tCOLON3 {L.TCOLON3}
-    tOP_ASGN {L.TOP_ASGN}
+    -- tOP_ASGN {L.TOP_ASGN} FIXME lexer should produce different tokens
+    tOP_ASGN {L.TEQL}
     tASSOC {L.TASSOC}
     tLPAREN {L.TLPAREN}
     tLPAREN2 {L.TLPAREN2}
@@ -227,13 +228,13 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil }
   | klEND tLCURLY Compstmt tRCURLY { error "mk_postexe $3" }
   | CommandAsgn { $1 }
-  | Mlhs tEQL CommandCall { error "mk_multiassign $1 $2 $3" }
-  | Lhs tEQL Mrhs { error "mk_assign $1 $2 mk_array Nil $3 Nil" }
-  | Mlhs tEQL MrhsArg { error "mk_multiassign $1 $2 $3" }
+  | Mlhs tEQL CommandCall { mk_multiassign $1 $3 }
+  | Lhs tEQL Mrhs { mk_assign $1 (mk_array Nil $3 Nil) }
+  | Mlhs tEQL MrhsArg { mk_multiassign $1 $3 }
   | Expr { $1 }
 
 CommandAsgn :: { Term }
-CommandAsgn: Lhs tEQL CommandRhs { (mk_assign $1 $3) }
+CommandAsgn: Lhs tEQL CommandRhs { mk_assign $1 $3 }
   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $3) }
   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { mk_op_assign (mk_index $1 $2 $3 $4) $6 }
   | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3 []) $5 }
@@ -281,12 +282,15 @@ Command: Operation CommandArgs %prec tLOWEST { mk_call_method Nil L.KNIL $1 $2 }
   | kBREAK CallArgs { mk_keyword_cmd Break $2 }
   | kNEXT CallArgs { mk_keyword_cmd Next $2 }
 
-Mlhs: MlhsBasic { error "mk_multi_lhs Nil $1 Nil" }
+Mlhs :: { Term }
+Mlhs: MlhsBasic { mk_multi_lhs $1 }
   | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
 
-MlhsInner: MlhsBasic { error "mk_multi_lhs Nil $1 Nil" }
-  | tLPAREN MlhsInner Rparen { error "mk_multi_lhs $1 $2 $3" }
+MlhsInner :: { Term }
+MlhsInner: MlhsBasic { mk_multi_lhs $1 }
+  | tLPAREN MlhsInner Rparen { mk_multi_lhs [$2] }
 
+MlhsBasic :: { [Term] }
 MlhsBasic: MlhsHead { $1 }
   | MlhsHead MlhsItem { error "$1. push($2)" }
   | MlhsHead tSTAR MlhsNode { error " $1. push((mk_splat $2 $3)) " }
@@ -301,6 +305,7 @@ MlhsBasic: MlhsHead { $1 }
 MlhsItem: MlhsNode { $1 }
       | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
 
+MlhsHead :: { [Term] }
 MlhsHead: MlhsItem tCOMMA { [ $1 ] }
   | MlhsHead MlhsItem tCOMMA { $1 ++ [$2] }
 
@@ -317,6 +322,7 @@ MlhsNode: UserVariable { mk_assignable $1 }
   | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
   | Backref { mk_assignable $1 }
 
+Lhs :: { Term }
 Lhs: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
   | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
@@ -371,7 +377,7 @@ Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | 
     | kUNTIL    {$1}
 
 Arg :: { Term }
-Arg: Lhs tEQL ArgRhs { error "mk_assign $1 $2 $3" }
+Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $3) }
   | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $6) }
   | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
@@ -460,8 +466,9 @@ Args: Arg { [ $1 ] }
   | Args tCOMMA Arg { $1 ++ [$3] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
 
+MrhsArg :: { Term }
 MrhsArg: Mrhs { error "mk_array Nil $1 Nil" }
-  | Arg { undefined }
+  | Arg { $1 }
 
 Mrhs: Args tCOMMA Arg { $1 ++ [$3] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
@@ -536,8 +543,9 @@ IfTail: OptElse { undefined }
 OptElse: None { undefined } -- { $1 }
   | kELSE Compstmt { undefined } --{ $2 }
 
+FMarg :: { Term }
 FMarg: FNormArg { error "mk_arg $1" }
-  | tLPAREN FMargs Rparen { error "mk_multi_lhs $1 $2 $3" }
+  | tLPAREN FMargs Rparen { mk_multi_lhs $2 }
 
 FMargList :: { [Term] }
 FMargList: FMarg { [ $1 ] }
@@ -816,8 +824,9 @@ FNormArg: FBadArg { $1 }
 
 FArgAsgn: FNormArg { $1 }
 
+FArgItem :: { Term }
 FArgItem: FArgAsgn { error "mk_arg $1" }
-  | tLPAREN FMargs Rparen { error "mk_multi_lhs $1 $2 $3" }
+  | tLPAREN FMargs Rparen { mk_multi_lhs $2 }
 
 FArg: FArgItem { [ $1 ] }
   | FArg tCOMMA FArgItem { $1 ++ [$3] }

@@ -135,7 +135,7 @@ tokens :-
     "<<`" { symbolToken (TXSTRING_BEG True)  }
 
 
-    "="   { symbolToken TOP_ASGN }
+    "="   { symbolToken TEQL }
     ","   { symbolToken TCOMMA }
     \;    { symbolToken TSEMI }
 

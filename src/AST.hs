@@ -83,7 +83,9 @@ mkExpression []  = Nil
 mkExpression [e] = e
 mkExpression xs  = Begin xs
 
-mk_multiassign = error "mk_multiassign"
+mk_multiassign :: Term -> Term -> Term
+mk_multiassign mlhs rhs = error ("mk_multiassign" ++ show mlhs ++ " " ++ show rhs)
+
 mk_postexe = error "mk_postexe"
 
 mk_accessible :: Term -> StaticEnv -> Term
@@ -96,7 +98,9 @@ mk_alias = Alias
 mk_arg = error "mk_arg"
 mk_args = error "mk_args"
 mk_array = error "mk_array"
-mk_assign = error "mk_assign"
+
+mk_assign :: Term -> Term -> Term
+mk_assign = mk_op_assign -- FIXME maybe mk_op_assign should be removed. Maybe also the corresponding grammar rules should be dropped
 
 mk_assignable :: Term -> Term
 mk_assignable (Lvar i) = Lvasgn i Nothing
@@ -187,7 +191,10 @@ mk_kwsplat = error "mk_kwsplat"
 mk_loop = error "mk_loop"
 mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"
-mk_multi_lhs = error "mk_multi_lhs"
+
+mk_multi_lhs :: [Term] -> Term
+mk_multi_lhs terms = error ("mk_multi_lhs " ++ show terms)
+
 mk_not_op = error "mk_not_op"
 
 mk_op_assign :: Term -> Term -> Term
