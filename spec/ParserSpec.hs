@@ -79,9 +79,9 @@ spec = do
     test "casgn_scoped" "Bar::Foo = 10" (casgn (Const Nil "Bar") "Foo"  (RInt 10))
     test "casgn_unscoped" "Foo = 10" (casgn Nil "Foo" (RInt 10))
 
-    test "masgn" "foo, bar = 1, 2"   (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
-    test "masgn" "(foo, bar) = 1, 2" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
-    test "masgn" "foo, bar, baz = 1, 2" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing, Lvasgn "baz" Nothing]) (RArray [RInt 1, RInt 2]))
+    test "masgn" "foo, bar = 1, 2"          (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
+    test "masgn" "(foo, bar) = 1, 2"        (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (RArray [RInt 1, RInt 2]))
+    test "masgn" "foo, bar, baz = 1, 2"     (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing, Lvasgn "baz" Nothing]) (RArray [RInt 1, RInt 2]))
 
     test "masgn_splat" "@foo, @@bar = *foo" (Masgn (Mlhs [Ivasgn "@foo" Nothing, Cvasgn "@@bar" Nothing]) (RArray [Splat (Just (Lvar "foo"))]))
     test "masgn_splat" "a, b = *foo, bar"   (Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (RArray [Splat (Just (Lvar "foo")), Lvar "bar"]))
@@ -154,9 +154,9 @@ spec = do
 
     test "masgn_cmd" "foo, bar = m foo" (Masgn (Mlhs [Lvasgn "foo" Nothing, Lvasgn "bar" Nothing]) (Send Nil "m" [Lvar "foo"]))
 
-    test "asgn_mrhs" "foo = bar, 1" (Lvasgn "foo" (Just (RArray [Lvar "bar", RInt 1])))
-    test "asgn_mrhs" "foo = *bar" (Lvasgn "foo" (Just (RArray [Splat (Just(Lvar "bar"))])))
-    test "asgn_mrhs" "foo = baz, *bar" (Lvasgn "foo" (Just (RArray [Lvar "baz", Splat (Just (Lvar "bar"))])))
+    test "asgn_mrhs" "foo = bar, 1"     (Lvasgn "foo" (Just (RArray [Lvar "bar", RInt 1])))
+    test "asgn_mrhs" "foo = *bar"       (Lvasgn "foo" (Just (RArray [Splat (Just (Lvar "bar"))])))
+    test "asgn_mrhs" "foo = baz, *bar"  (Lvasgn "foo" (Just (RArray [Lvar "baz", Splat (Just (Lvar "bar"))])))
 
 
     test "def" "def foo; end" (Def "foo" (Args []) Nil)
