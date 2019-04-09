@@ -35,7 +35,8 @@ data Term
        | Line
        | Lvar String
        | Lvasgn String (Maybe Term) -- variables
-       | Masgn Mlhs Term
+       | Masgn Term Term
+       | Mlhs [Term]
        | Next [Term]
        | Nil
        | NthRef Int
@@ -64,7 +65,6 @@ data Term
        | Zsuper [Term]
        deriving (Eq, Show)
 
-data Mlhs = Mlhs [Term] deriving (Eq, Show)
 data Args = Args [Term] deriving (Eq, Show)
 
 
@@ -84,7 +84,7 @@ mkExpression [e] = e
 mkExpression xs  = Begin xs
 
 mk_multiassign :: Term -> Term -> Term
-mk_multiassign mlhs rhs = error ("mk_multiassign" ++ show mlhs ++ " " ++ show rhs)
+mk_multiassign = Masgn
 
 mk_postexe = error "mk_postexe"
 
@@ -97,7 +97,9 @@ mk_alias = Alias
 
 mk_arg = error "mk_arg"
 mk_args = error "mk_args"
-mk_array = error "mk_array"
+
+mk_array :: [Term] -> Term
+mk_array = RArray
 
 mk_assign :: Term -> Term -> Term
 mk_assign = mk_op_assign -- FIXME maybe mk_op_assign should be removed. Maybe also the corresponding grammar rules should be dropped
@@ -193,7 +195,7 @@ mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"
 
 mk_multi_lhs :: [Term] -> Term
-mk_multi_lhs terms = error ("mk_multi_lhs " ++ show terms)
+mk_multi_lhs = Mlhs
 
 mk_not_op = error "mk_not_op"
 
@@ -219,7 +221,10 @@ mk_regexp_options = error "mk_regexp_options"
 mk_rescue_body = error "mk_rescue_body"
 mk_restarg = error "mk_restarg"
 mk_shadowarg = error "mk_shadowarg"
-mk_splat = error "mk_splat"
+
+mk_splat :: Term -> Term
+mk_splat Nil  = Splat Nothing
+mk_splat term = Splat . Just $ term
 
 mk_string_compose :: [Term] -> Term
 mk_string_compose [t]   = t
