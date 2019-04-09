@@ -228,9 +228,9 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil }
   | klEND tLCURLY Compstmt tRCURLY { error "mk_postexe $3" }
   | CommandAsgn { $1 }
-  | Mlhs tEQL CommandCall { mk_multiassign $1 $3 }
+  | Mlhs tEQL CommandCall { error "mk_multiassign $1 $3" } -- mk_multiassign $1 $3
   | Lhs tEQL Mrhs { mk_assign $1 (mk_array Nil $3 Nil) }
-  | Mlhs tEQL MrhsArg { mk_multiassign $1 $3 }
+  | Mlhs tEQL MrhsArg { Masgn $1 $3 }
   | Expr { $1 }
 
 CommandAsgn :: { Term }
@@ -282,8 +282,8 @@ Command: Operation CommandArgs %prec tLOWEST { mk_call_method Nil L.KNIL $1 $2 }
   | kBREAK CallArgs { mk_keyword_cmd Break $2 }
   | kNEXT CallArgs { mk_keyword_cmd Next $2 }
 
-Mlhs :: { Term }
-Mlhs: MlhsBasic { mk_multi_lhs $1 }
+Mlhs :: { Mlhs }
+Mlhs: MlhsBasic { Mlhs $1 }
   | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
 
 MlhsInner :: { Term }
@@ -292,16 +292,17 @@ MlhsInner: MlhsBasic { mk_multi_lhs $1 }
 
 MlhsBasic :: { [Term] }
 MlhsBasic: MlhsHead { $1 }
-  | MlhsHead MlhsItem { error "$1. push($2)" }
-  | MlhsHead tSTAR MlhsNode { error " $1. push((mk_splat $2 $3)) " }
-  | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { error " $1. push((mk_splat $2 $3)). concat($5) " }
-  | MlhsHead tSTAR { error " $1. push(mk_splat($2)) " }
-  | MlhsHead tSTAR tCOMMA MlhsPost { error " $1. push(mk_splat($2)). concat($4) " }
-  | tSTAR MlhsNode { error " [ mk_splat $1 $2 ] " }
-  | tSTAR MlhsNode tCOMMA MlhsPost { error " [ (mk_splat $1 $2), *$4 ] " }
-  | tSTAR { error " [ mk_splat $1 ] " }
-  | tSTAR tCOMMA MlhsPost { error " [ mk_splat $1 *$3 ] " }
+  | MlhsHead MlhsItem { $1 ++ [$2] }
+  | MlhsHead tSTAR MlhsNode { $1 ++ [Splat $ Just $3] }
+  | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { $1 ++ (Splat $ Just $3) : $5 }
+  | MlhsHead tSTAR { $1 ++ [Splat Nothing] }
+  | MlhsHead tSTAR tCOMMA MlhsPost { $1 ++ Splat Nothing : $4 }
+  | tSTAR MlhsNode { [Splat $ Just $2] }
+  | tSTAR MlhsNode tCOMMA MlhsPost { (Splat $ Just $2) : $4 }
+  | tSTAR { [Splat Nothing] }
+  | tSTAR tCOMMA MlhsPost { Splat Nothing : $3 }
 
+MlhsItem :: { Term }
 MlhsItem: MlhsNode { $1 }
       | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
 
@@ -309,9 +310,11 @@ MlhsHead :: { [Term] }
 MlhsHead: MlhsItem tCOMMA { [ $1 ] }
   | MlhsHead MlhsItem tCOMMA { $1 ++ [$2] }
 
+MlhsPost :: { [Term] }
 MlhsPost: MlhsItem { [ $1 ] }
   | MlhsPost tCOMMA MlhsItem { $1 ++ [$3] }
 
+MlhsNode :: { Term }
 MlhsNode: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
   | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
@@ -467,12 +470,13 @@ Args: Arg { [ $1 ] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
 
 MrhsArg :: { Term }
-MrhsArg: Mrhs { error "mk_array Nil $1 Nil" }
+MrhsArg: Mrhs { RArray $1 }
   | Arg { $1 }
 
+Mrhs :: { [Term] }
 Mrhs: Args tCOMMA Arg { $1 ++ [$3] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
-  | tSTAR Arg { undefined } -- { [ mk_splat $1 $2 ] }
+  | tSTAR Arg { [Splat $ Just $2] } -- { [ mk_splat $1 $2 ] }
 
 Primary :: { Term }
 Primary: Literal { $1 }
