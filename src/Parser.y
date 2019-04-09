@@ -293,14 +293,14 @@ MlhsInner: MlhsBasic { mk_multi_lhs $1 }
 MlhsBasic :: { [Term] }
 MlhsBasic: MlhsHead { $1 }
   | MlhsHead MlhsItem { $1 ++ [$2] }
-  | MlhsHead tSTAR MlhsNode { $1 ++ [Splat $ Just $3] }
-  | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { $1 ++ (Splat $ Just $3) : $5 }
-  | MlhsHead tSTAR { $1 ++ [Splat Nothing] }
-  | MlhsHead tSTAR tCOMMA MlhsPost { $1 ++ Splat Nothing : $4 }
-  | tSTAR MlhsNode { [Splat $ Just $2] }
-  | tSTAR MlhsNode tCOMMA MlhsPost { (Splat $ Just $2) : $4 }
-  | tSTAR { [Splat Nothing] }
-  | tSTAR tCOMMA MlhsPost { Splat Nothing : $3 }
+  | MlhsHead tSTAR MlhsNode { $1 ++ [mk_splat $3] }
+  | MlhsHead tSTAR MlhsNode tCOMMA MlhsPost { $1 ++ mk_splat $3 : $5 }
+  | MlhsHead tSTAR { $1 ++ [mk_splat Nil] }
+  | MlhsHead tSTAR tCOMMA MlhsPost { $1 ++ mk_splat Nil : $4 }
+  | tSTAR MlhsNode { [mk_splat $2] }
+  | tSTAR MlhsNode tCOMMA MlhsPost { mk_splat $2 : $4 }
+  | tSTAR { [mk_splat Nil] }
+  | tSTAR tCOMMA MlhsPost { mk_splat Nil : $3 }
 
 MlhsItem :: { Term }
 MlhsItem: MlhsNode { $1 }
@@ -465,9 +465,9 @@ OptBlockArg: tCOMMA BlockArg { [ $2 ] }
 
 Args :: { [Term] }
 Args: Arg { [ $1 ] }
-  | tSTAR Arg { [mk_splat $1 $2] }
+  | tSTAR Arg { [mk_splat $2] }
   | Args tCOMMA Arg { $1 ++ [$3] }
-  | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
+  | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $4] }
 
 MrhsArg :: { Term }
 MrhsArg: Mrhs { RArray $1 }
@@ -475,8 +475,8 @@ MrhsArg: Mrhs { RArray $1 }
 
 Mrhs :: { [Term] }
 Mrhs: Args tCOMMA Arg { $1 ++ [$3] }
-  | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $3 $4] }
-  | tSTAR Arg { [Splat $ Just $2] } -- { [ mk_splat $1 $2 ] }
+  | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $4] }
+  | tSTAR Arg { [mk_splat $2] }
 
 Primary :: { Term }
 Primary: Literal { $1 }

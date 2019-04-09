@@ -219,7 +219,10 @@ mk_regexp_options = error "mk_regexp_options"
 mk_rescue_body = error "mk_rescue_body"
 mk_restarg = error "mk_restarg"
 mk_shadowarg = error "mk_shadowarg"
-mk_splat = error "mk_splat"
+
+mk_splat :: Term -> Term
+mk_splat Nil  = Splat Nothing
+mk_splat term = Splat . Just $ term
 
 mk_string_compose :: [Term] -> Term
 mk_string_compose [t]   = t
