@@ -83,8 +83,8 @@ mkExpression []  = Nil
 mkExpression [e] = e
 mkExpression xs  = Begin xs
 
-mk_multiassign :: Term -> Term -> Term
-mk_multiassign mlhs rhs = error ("mk_multiassign" ++ show mlhs ++ " " ++ show rhs)
+mk_multiassign :: Mlhs -> Term -> Term
+mk_multiassign = Masgn
 
 mk_postexe = error "mk_postexe"
 

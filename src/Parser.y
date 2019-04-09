@@ -228,9 +228,9 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil }
   | klEND tLCURLY Compstmt tRCURLY { error "mk_postexe $3" }
   | CommandAsgn { $1 }
-  | Mlhs tEQL CommandCall { error "mk_multiassign $1 $3" } -- mk_multiassign $1 $3
+  | Mlhs tEQL CommandCall { mk_multiassign $1 $3 }
   | Lhs tEQL Mrhs { mk_assign $1 (mk_array $3) }
-  | Mlhs tEQL MrhsArg { Masgn $1 $3 }
+  | Mlhs tEQL MrhsArg { mk_multiassign $1 $3 }
   | Expr { $1 }
 
 CommandAsgn :: { Term }
