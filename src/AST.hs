@@ -97,7 +97,9 @@ mk_alias = Alias
 
 mk_arg = error "mk_arg"
 mk_args = error "mk_args"
-mk_array = error "mk_array"
+
+mk_array :: [Term] -> Term
+mk_array = RArray
 
 mk_assign :: Term -> Term -> Term
 mk_assign = mk_op_assign -- FIXME maybe mk_op_assign should be removed. Maybe also the corresponding grammar rules should be dropped

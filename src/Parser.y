@@ -229,7 +229,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | klEND tLCURLY Compstmt tRCURLY { error "mk_postexe $3" }
   | CommandAsgn { $1 }
   | Mlhs tEQL CommandCall { error "mk_multiassign $1 $3" } -- mk_multiassign $1 $3
-  | Lhs tEQL Mrhs { mk_assign $1 (mk_array Nil $3 Nil) }
+  | Lhs tEQL Mrhs { mk_assign $1 (mk_array $3) }
   | Mlhs tEQL MrhsArg { Masgn $1 $3 }
   | Expr { $1 }
 
@@ -470,7 +470,7 @@ Args: Arg { [ $1 ] }
   | Args tCOMMA tSTAR Arg { $1 ++ [mk_splat $4] }
 
 MrhsArg :: { Term }
-MrhsArg: Mrhs { RArray $1 }
+MrhsArg: Mrhs { mk_array $1 }
   | Arg { $1 }
 
 Mrhs :: { [Term] }
@@ -496,7 +496,7 @@ Primary: Literal { $1 }
   | tLPAREN Compstmt tRPAREN { error "mk_begin $2" }
   | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 $3 }
   | tCOLON3 tCONSTANT { error "mk_const_global $1 $2" }
-  | tLBRACK ArefArgs tRBRACK { error "mk_array $1 $2 $3" }
+  | tLBRACK ArefArgs tRBRACK { error "mk_array $2" }
   | tLBRACE AssocList tRCURLY KReturn { error "mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1" }
   | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $3 }
   | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield [] }
@@ -659,7 +659,7 @@ OptRescue :: { [Term] }
 OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { error "mk_rescue_body" } {-
             assoc_t, ExcVar = $3
             if $2
-              ExcList = (mk_array Nil $2 Nil)
+              ExcList = (mk_array $2)
             end
             [ mk_rescue_body $1, ExcList, assoc_t, ExcVar, $4, $5), *$6 ] -}
   | {- nothing -} { [] }
