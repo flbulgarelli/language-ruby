@@ -282,8 +282,8 @@ Command: Operation CommandArgs %prec tLOWEST { mk_call_method Nil L.KNIL $1 $2 }
   | kBREAK CallArgs { mk_keyword_cmd Break $2 }
   | kNEXT CallArgs { mk_keyword_cmd Next $2 }
 
-Mlhs :: { Mlhs }
-Mlhs: MlhsBasic { Mlhs $1 }
+Mlhs :: { Term }
+Mlhs: MlhsBasic { mk_multi_lhs $1 }
   | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
 
 MlhsInner :: { Term }

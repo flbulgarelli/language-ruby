@@ -35,7 +35,8 @@ data Term
        | Line
        | Lvar String
        | Lvasgn String (Maybe Term) -- variables
-       | Masgn Mlhs Term
+       | Masgn Term Term
+       | Mlhs [Term]
        | Next [Term]
        | Nil
        | NthRef Int
@@ -64,7 +65,6 @@ data Term
        | Zsuper [Term]
        deriving (Eq, Show)
 
-data Mlhs = Mlhs [Term] deriving (Eq, Show)
 data Args = Args [Term] deriving (Eq, Show)
 
 
@@ -83,7 +83,7 @@ mkExpression []  = Nil
 mkExpression [e] = e
 mkExpression xs  = Begin xs
 
-mk_multiassign :: Mlhs -> Term -> Term
+mk_multiassign :: Term -> Term -> Term
 mk_multiassign = Masgn
 
 mk_postexe = error "mk_postexe"
@@ -195,7 +195,7 @@ mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"
 
 mk_multi_lhs :: [Term] -> Term
-mk_multi_lhs terms = error ("mk_multi_lhs " ++ show terms)
+mk_multi_lhs = Mlhs
 
 mk_not_op = error "mk_not_op"
 
