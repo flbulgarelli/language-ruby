@@ -58,7 +58,7 @@ data Term
        | Str String
        | Super [Term]
        | Sym String
-       | Undef Term Term Term
+       | Undef [Term]
        | Until
        | While
        | Yield [Term]
@@ -246,7 +246,10 @@ mk_symbols_compose = error "mk_symbols_compose"
 mk_ternary = error "mk_ternary"
 mk_unary_num = error "mk_unary_num"
 mk_unary_op = error "mk_unary_op"
-mk_undef_method = error "mk_undef_method"
+
+mk_undef_method :: [Term] -> Term
+mk_undef_method = Undef
+
 mk_when = error "mk_when"
 mk_word = error "mk_word"
 mk_words_compose = error "mk_words_compose"

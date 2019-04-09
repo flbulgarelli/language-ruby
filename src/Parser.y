@@ -220,7 +220,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | kALIAS tGVAR tGVAR { mk_alias (mk_gvar $2) (mk_gvar $3) }
   | kALIAS tGVAR tBACK_REF { mk_alias (mk_gvar $2) (mk_back_ref $3) }
   | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
-  | kUNDEF UndefList { (mk_undef_method $1 $2) }
+  | kUNDEF UndefList { (mk_undef_method $2) }
   | Stmt kIF_MOD Expr { error "mk_condition_mod $1 Nil $2 $3" }
   | Stmt kUNLESS_MOD Expr { error "mk_condition_mod Nil $1 $2 $3" }
   | Stmt kWHILE_MOD Expr { error "mk_loop_mod While $1 $2 $3" }

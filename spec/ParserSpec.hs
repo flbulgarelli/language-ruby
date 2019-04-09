@@ -172,7 +172,8 @@ spec = do
     test "defs" "def String.foo; end" (Defs (Const Nil "String") "foo" (Args []) Nil)
     test "defs" "def String::foo; end" (Defs (Const Nil "String") "foo" (Args []) Nil)
 
-    test "undef" "undef foo, :bar, :\"foo#{1}\"" (Undef (Sym "foo") (Sym "bar") (Dsym (Str "foo") (Begin [RInt 1])))
+    test "undef" "undef foo" (Undef [Sym "foo"])
+    test "undef" "undef foo, :bar, :\"foo#{1}\"" (Undef [Sym "foo", Sym "bar", Dsym (Str "foo") (Begin [RInt 1])])
 
 
     test "alias" "alias :foo bar" (Alias (Sym "foo") (Sym "bar"))
