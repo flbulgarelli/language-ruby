@@ -391,3 +391,7 @@ spec = do
     test "if" "if foo then bar else baz end"                        (If (Send Nil "foo" []) (Send Nil "bar" []) (Send Nil "baz" []))
     test "if" "if foo then bar elsif baz then foobar end"           (If (Send Nil "foo" []) (Send Nil "bar" []) (If (Send Nil "foo" []) (Send Nil "bar" []) Nil))
     test "if" "if foo then bar elsif baz then foobar else bat end"  (If (Send Nil "foo" []) (Send Nil "bar" []) (If (Send Nil "foo" []) (Send Nil "bar" []) (Send Nil "bat" [])))
+
+    test "unless" "unless foo then bar end"          (If (Send Nil "foo" []) Nil (Send Nil "bar" []))
+    test "unless" "unless foo;  bar;end"             (If (Send Nil "foo" []) Nil (Send Nil "bar" []))
+    test "unless" "unless foo then bar else baz end" (If (Send Nil "foo" []) (Send Nil "baz" []) (Send Nil "bar" []))
