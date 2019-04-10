@@ -385,3 +385,9 @@ spec = do
 
   -- test "range_endless" "1.." (Irange (RInt 1), Nil)
   -- test "range_endless" "1..." (Erange (RInt 1), Nil)
+
+    test "if" "if foo then bar end"                                 (If (Send Nil "foo" []) (Send Nil "bar" []) Nil)
+    test "if" "if foo;  bar;end"                                    (If (Send Nil "foo" []) (Send Nil "bar" []) Nil)
+    test "if" "if foo then bar else baz end"                        (If (Send Nil "foo" []) (Send Nil "bar" []) (Send Nil "baz" []))
+    test "if" "if foo then bar elsif baz then foobar end"           (If (Send Nil "foo" []) (Send Nil "bar" []) (If (Send Nil "foo" []) (Send Nil "bar" []) Nil))
+    test "if" "if foo then bar elsif baz then foobar else bat end"  (If (Send Nil "foo" []) (Send Nil "bar" []) (If (Send Nil "foo" []) (Send Nil "bar" []) (Send Nil "bat" [])))
