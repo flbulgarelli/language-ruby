@@ -215,7 +215,11 @@ mk_match_op = error "mk_match_op"
 mk_multi_lhs :: [Term] -> Term
 mk_multi_lhs = Mlhs
 
-mk_not_op = error "mk_not_op"
+mk_not_op :: Term -> Term
+mk_not_op Nil   = Send (Begin []) "!" []
+mk_not_op expr  = Send (check_condition expr) "!" []
+
+
 
 mk_op_assign :: Term -> Term -> Term
 mk_op_assign (Lvasgn i Nothing) val = lvasgn i val

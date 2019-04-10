@@ -253,8 +253,8 @@ Expr :: { Term }
 Expr: CommandCall { $1 }
   | Expr kAND Expr { mkLogicalOp And $1 $2 $3 }
   | Expr kOR Expr { mkLogicalOp Or $1 $2 $3 }
-  | kNOT OptNl Expr { error "mk_not_op $2 $3" }
-  | tBANG CommandCall{ error "mk_not_op $1 Nil $2 Nil" }
+  | kNOT OptNl Expr { mk_not_op $3 }
+  | tBANG CommandCall { mk_not_op $2 }
   | Arg { $1 }
 
 ExprValueDo: --  { @lexer.cond.push(true) }
@@ -413,7 +413,7 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
   | Arg tMATCH Arg { (mk_match_op $1 $2 $3) }
   | Arg tNMATCH Arg { (mk_binary_op $1 $2 $3) }
-  | tBANG Arg { (mk_not_op $1 Nil $2 Nil) }
+  | tBANG Arg { (mk_not_op $2) }
   | tTILDE Arg { (mk_unary_op $1 $2) }
   | Arg tLSHFT Arg { (mk_binary_op $1 $2 $3) }
   | Arg tRSHFT Arg { (mk_binary_op $1 $2 $3) }
@@ -503,8 +503,8 @@ Primary: Literal { $1 }
   | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield [] }
   | kYIELD { mk_keyword_cmd Yield [] }
   | kDEFINED OptNl tLPAREN2 Expr Rparen { mk_keyword_cmd Defined [$4] }
-  | kNOT tLPAREN2 Expr Rparen { error "mk_not_op $1 $2 $3 $4" }
-  | kNOT tLPAREN2 Rparen { error "mk_not_op $1 $2 Nil $3" }
+  | kNOT tLPAREN2 Expr Rparen { mk_not_op $3 }
+  | kNOT tLPAREN2 Rparen { mk_not_op Nil }
   | Operation BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in mk_block (mk_call_method Nil Nil $1) begin_t Args body end_t" }
   | MethodCall { $1 }
   | MethodCall BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in (mk_block $1 begin_t Args body end_t)" }

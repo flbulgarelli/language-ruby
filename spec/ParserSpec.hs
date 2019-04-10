@@ -386,12 +386,12 @@ spec = do
     test "range_endless" "1.." (IRange (RInt 1) Nil)
     test "range_endless" "1..." (ERange (RInt 1) Nil)
 
-    test "test_if" "if foo then bar; end" (If (Lvar "foo") (Lvar "bar") Nil)
-    test "test_if" "if foo; bar; end" (If (Lvar "foo") (Lvar "bar") Nil)
+    test "if" "if foo then bar; end" (If (Lvar "foo") (Lvar "bar") Nil)
+    test "if" "if foo; bar; end" (If (Lvar "foo") (Lvar "bar") Nil)
 
-    test "test_if_nl_then" "if foo\nthen bar end" (If (Lvar "foo") (Lvar "bar") Nil)
+    test "if_nl_then" "if foo\nthen bar end" (If (Lvar "foo") (Lvar "bar") Nil)
 
-    test "test_if_mod" "bar if foo" (If (Lvar "foo") (Lvar "bar") Nil)
+    test "if_mod" "bar if foo" (If (Lvar "foo") (Lvar "bar") Nil)
  
     test "unless" "unless foo then bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
     test "unless" "unless foo; bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
@@ -429,3 +429,9 @@ spec = do
     --test "cond_match_current_line" "if /wat/; end" (If (MatchCurrentLine (Regexp (Str "wat") (Regopt))) Nil Nil)
  
     --test "cond_match_current_line" "!/wat/" (Send (MatchCurrentLine (Regexp (Str "wat") (Regopt))) "!")
+
+    test "not" "not foo" (Send (Lvar "foo") "!" [])
+    test "not" "not(foo)" (Send (Lvar "foo") "!" [])
+    test "not" "not()" (Send (Begin []) "!" [])
+
+    test "not_cmd" "not m foo" (Send (Send Nil "m" [Lvar "foo"]) "!" [])
