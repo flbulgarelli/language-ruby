@@ -157,7 +157,6 @@ import Control.Monad.Error
     tIMAGINARY {L.TIMAGINARY {}}
     tLABEL_END {L.TLABEL_END}
     tANDDOT {L.TANDDOT}
-    tMETHREF {L.TMETHREF}
 
 
 %right    tBANG tTILDE tUPLUS
@@ -532,7 +531,6 @@ Primary: Literal { $1 }
   | kNEXT { mk_keyword_cmd Next [] }
   | kREDO { mk_keyword_cmd Redo [] }
   | kRETRY { mk_keyword_cmd Retry [] }
-  | Primary tMETHREF Operation2 { undefined }
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
 
