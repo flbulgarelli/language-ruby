@@ -10,7 +10,7 @@ data Term
        = Begin [Term]
        -- | RComplex (forall a. Num a => Complex (a))
        | Alias Term Term
-       | And
+       | And Term Term
        | Anddot
        | BackRef String
        | Break [Term]
@@ -26,9 +26,14 @@ data Term
        | Dstr [Term]
        | Dsym Term Term
        | Encoding
+       | EFlipFlop Term Term
+       | ERange Term Term
        | File
        | Gvar String
        | Gvasgn String (Maybe Term) -- global variables
+       | If Term Term Term
+       | IFlipFlop Term Term
+       | IRange Term Term
        | Ivar String
        | Ivasgn String (Maybe Term) -- instance variables
        | KWBegin [Term]
@@ -40,7 +45,7 @@ data Term
        | Next [Term]
        | Nil
        | NthRef Int
-       | Or
+       | Or Term Term
        | RArray [Term]
        | RComplex (Complex Double)
        | Redo [Term]
@@ -144,7 +149,19 @@ mk_character :: Token -> Term
 mk_character (TCHARACTER c)  = Str [c]
 
 mk_complex = error "mk_complex"
-mk_condition = error "mk_condition"
+
+mk_condition :: Term -> Term -> Term -> Term
+mk_condition = If . check_condition
+
+check_condition :: Term -> Term
+check_condition (Begin [term])    = Begin [check_condition term]
+check_condition (And lhs rhs)     = And (check_condition lhs) (check_condition rhs)
+check_condition (Or lhs rhs)      = Or (check_condition lhs) (check_condition rhs)
+check_condition (IRange lhs rhs)  = IFlipFlop (check_condition lhs) (check_condition rhs)
+check_condition (ERange lhs rhs)  = EFlipFlop (check_condition lhs) (check_condition rhs)
+--check_condition (Regexp)        = 
+check_condition condition         = condition
+
 mk_condition_mod = error "mk_condition_mod"
 
 mk_const_fetch :: Term -> Token -> Term

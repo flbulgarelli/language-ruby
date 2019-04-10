@@ -205,7 +205,9 @@ BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 Bodystmt :: { Term }
 Bodystmt: Compstmt OptRescue OptElse OptEnsure { mk_begin_body $1 $2 $3 $4  }
 
+Compstmt :: { Term }
 Compstmt: Stmts OptTerms { mkExpression $1 }
+
 Stmts :: { [Term] }
 Stmts: {- nothing -} { [] }
   | StmtOrBegin { [ $1 ] }
@@ -508,7 +510,7 @@ Primary: Literal { $1 }
   | MethodCall { $1 }
   | MethodCall BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in (mk_block $1 begin_t Args body end_t)" }
   | tLAMBDA Lambda { error "let (args, (begin_t, body, end_t)) = $2 in (mk_block (mk_call_lambda $1) begin_t args body end_t)" }
-  | kIF Expr Then Compstmt IfTail kEND { error "let (else_t, else_) = $5 in (mk_condition $1 $2 $3 $4 else_t else_  $6)" }
+  | kIF Expr Then Compstmt IfTail kEND { mk_condition $2 $4 $5 }
   | kUNLESS Expr Then Compstmt OptElse kEND { error "let (else_t, else_) = $5 in (mk_condition $1 $2 $3 else_  else_t $4 $6)" }
   | kWHILE ExprValueDo Compstmt kEND  { (mk_loop While $1 $2 $3 $4)  }
   | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
@@ -541,11 +543,13 @@ Then: Term { $1 }
 Do: Term { undefined }
   | kDO_COND { undefined }
 
-IfTail: OptElse { undefined }
-  | kELSIF Expr Then Compstmt IfTail { error "else_t, else_ = $5 [ $1, mk_condition($1, $2, $3, $4, else_t, else_,  Nil) ]" }
+IfTail :: { Term }
+IfTail: OptElse { $1 }
+  | kELSIF Expr Then Compstmt IfTail { mk_condition $2 $4 $5 }
 
-OptElse: None { undefined } -- { $1 }
-  | kELSE Compstmt { undefined } --{ $2 }
+OptElse :: { Term }
+OptElse: None { $1 }
+  | kELSE Compstmt { $2 }
 
 FMarg :: { Term }
 FMarg: FNormArg { error "mk_arg $1" }
@@ -939,7 +943,7 @@ Term: tSEMI { undefined }
 Terms: Term { undefined }
   | Terms tSEMI { undefined }
 
-None: { undefined } -- { Nil }
+None: { Nil } -- { Nil }
 
 {
 parseError _ = throwError "!Parse Error"
