@@ -511,7 +511,7 @@ Primary: Literal { $1 }
   | MethodCall BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in (mk_block $1 begin_t Args body end_t)" }
   | tLAMBDA Lambda { error "let (args, (begin_t, body, end_t)) = $2 in (mk_block (mk_call_lambda $1) begin_t args body end_t)" }
   | kIF Expr Then Compstmt IfTail kEND { mk_condition $2 $4 $5 }
-  | kUNLESS Expr Then Compstmt OptElse kEND { error "let (else_t, else_) = $5 in (mk_condition $1 $2 $3 else_  else_t $4 $6)" }
+  | kUNLESS Expr Then Compstmt OptElse kEND { mk_condition $2 $5 $4 }
   | kWHILE ExprValueDo Compstmt kEND  { (mk_loop While $1 $2 $3 $4)  }
   | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
   | kCASE Expr OptTerms CaseBody kEND { undefined }
