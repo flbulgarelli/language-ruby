@@ -380,11 +380,11 @@ spec = do
 
   -- -- Range
 
-  -- test "range_inclusive" "1..2" (Irange (RInt 1) (RInt 2))
-  -- test "range_exclusive" "1...2"  (Erange (RInt 1) (RInt 2))
+    test "range_inclusive" "1..2" (IRange (RInt 1) (RInt 2))
+    test "range_exclusive" "1...2"  (ERange (RInt 1) (RInt 2))
 
-  -- test "range_endless" "1.." (Irange (RInt 1), Nil)
-  -- test "range_endless" "1..." (Erange (RInt 1), Nil)
+    test "range_endless" "1.." (IRange (RInt 1) Nil)
+    test "range_endless" "1..." (ERange (RInt 1) Nil)
 
     test "test_if" "if foo then bar; end" (If (Lvar "foo") (Lvar "bar") Nil)
     test "test_if" "if foo; bar; end" (If (Lvar "foo") (Lvar "bar") Nil)

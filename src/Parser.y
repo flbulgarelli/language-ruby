@@ -391,10 +391,10 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $5 }
   | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_global $1 $2)) $4 }
   | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $3 }
-  | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
-  | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
-  | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
-  | Arg tDOT3 { (mk_range_exclusive $1 $2 Nil) }
+  | Arg tDOT2 Arg { (mk_range_inclusive $1 $3) }
+  | Arg tDOT3 Arg { (mk_range_exclusive $1 $3) }
+  | Arg tDOT2 { (mk_range_inclusive $1 Nil) }
+  | Arg tDOT3 { (mk_range_exclusive $1 Nil) }
   | Arg tPLUS Arg { (mk_binary_op $1 $2 $3) }
   | Arg tMINUS Arg { (mk_binary_op $1 $2 $3) }
   | Arg tSTAR2 Arg { (mk_binary_op $1 $2 $3) }

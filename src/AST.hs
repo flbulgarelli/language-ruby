@@ -231,8 +231,13 @@ mk_pair_keyword = error "mk_pair_keyword"
 mk_pair_quoted = error "mk_pair_quoted"
 mk_preexe = error "mk_preexe"
 mk_procarg0 = error "mk_procarg0"
-mk_range_exclusive = error "mk_range_exclusive"
-mk_range_inclusive = error "mk_range_inclusive"
+
+mk_range_exclusive :: Term -> Term -> Term
+mk_range_exclusive = ERange
+
+mk_range_inclusive :: Term -> Term -> Term
+mk_range_inclusive = IRange
+
 mk_rational = error "mk_rational"
 mk_regexp_compose = error "mk_regexp_compose"
 mk_regexp_options = error "mk_regexp_options"
