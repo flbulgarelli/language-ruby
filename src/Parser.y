@@ -421,7 +421,7 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
   | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
   | kDEFINED OptNl Arg { mk_keyword_cmd Defined [$3] }
-  | Arg tEH Arg OptNl tCOLON Arg { error "mk_ternary $1 $2 $3 $5 $6" }
+  | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $3 $6 }
   | Primary { $1 }
 
 Relop: tGT { $1 }

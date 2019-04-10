@@ -261,7 +261,10 @@ mk_symbol_internal (TSYMBOL s) = Sym s
 mk_symbol_internal (TIDENTIFIER s) = Sym s
 
 mk_symbols_compose = error "mk_symbols_compose"
-mk_ternary = error "mk_ternary"
+
+mk_ternary :: Term -> Term -> Term -> Term
+mk_ternary = mk_condition
+
 mk_unary_num = error "mk_unary_num"
 mk_unary_op = error "mk_unary_op"
 
