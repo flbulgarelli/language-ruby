@@ -223,8 +223,8 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | kALIAS tGVAR tBACK_REF { mk_alias (mk_gvar $2) (mk_back_ref $3) }
   | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
   | kUNDEF UndefList { (mk_undef_method $2) }
-  | Stmt kIF_MOD Expr { error "mk_condition_mod $1 Nil $2 $3" }
-  | Stmt kUNLESS_MOD Expr { error "mk_condition_mod Nil $1 $2 $3" }
+  | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $3 }
+  | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $3}
   | Stmt kWHILE_MOD Expr { error "mk_loop_mod While $1 $2 $3" }
   | Stmt kUNTIL_MOD Expr { error "mk_loop_mod Until $1 $2 $3" }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil }

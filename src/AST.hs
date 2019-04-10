@@ -162,7 +162,8 @@ check_condition (ERange lhs rhs)  = Eflipflop (check_condition lhs) (check_condi
 --check_condition (Regexp)        = 
 check_condition condition         = condition
 
-mk_condition_mod = error "mk_condition_mod"
+mk_condition_mod :: Term -> Term -> Term -> Term
+mk_condition_mod ifTrue ifFalse cond = If (check_condition cond) ifTrue ifFalse
 
 mk_const_fetch :: Term -> Token -> Term
 mk_const_fetch first (TCONSTANT second) = Const first second
