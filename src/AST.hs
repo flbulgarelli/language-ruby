@@ -10,7 +10,7 @@ data Term
        = Begin [Term]
        -- | RComplex (forall a. Num a => Complex (a))
        | Alias Term Term
-       | And
+       | And Term Term
        | Anddot
        | BackRef String
        | Break [Term]
@@ -26,9 +26,14 @@ data Term
        | Dstr [Term]
        | Dsym Term Term
        | Encoding
+       | Eflipflop Term Term
+       | ERange Term Term
        | File
        | Gvar String
        | Gvasgn String (Maybe Term) -- global variables
+       | If Term Term Term
+       | Iflipflop Term Term
+       | IRange Term Term
        | Ivar String
        | Ivasgn String (Maybe Term) -- instance variables
        | KWBegin [Term]
@@ -40,7 +45,7 @@ data Term
        | Next [Term]
        | Nil
        | NthRef Int
-       | Or
+       | Or Term Term
        | RArray [Term]
        | RComplex (Complex Double)
        | Redo [Term]
@@ -58,7 +63,7 @@ data Term
        | Str String
        | Super [Term]
        | Sym String
-       | Undef Term Term Term
+       | Undef [Term]
        | Until
        | While
        | Yield [Term]
@@ -128,7 +133,9 @@ mk_begin_keyword Nil        = KWBegin []
 mk_begin_keyword (Begin ts) = KWBegin ts
 mk_begin_keyword t          = KWBegin [t]
 
-mk_binary_op = error "mk_binary_op"
+mk_binary_op :: Term -> String -> Term -> Term
+mk_binary_op receiver op arg = Send receiver op [arg]
+
 mk_block = error "mk_block"
 mk_block_pass = error "mk_block_pass"
 mk_blockarg = error "mk_blockarg"
@@ -144,8 +151,21 @@ mk_character :: Token -> Term
 mk_character (TCHARACTER c)  = Str [c]
 
 mk_complex = error "mk_complex"
-mk_condition = error "mk_condition"
-mk_condition_mod = error "mk_condition_mod"
+
+mk_condition :: Term -> Term -> Term -> Term
+mk_condition = If . check_condition
+
+check_condition :: Term -> Term
+check_condition (Begin [term])    = Begin [check_condition term]
+check_condition (And lhs rhs)     = And (check_condition lhs) (check_condition rhs)
+check_condition (Or lhs rhs)      = Or (check_condition lhs) (check_condition rhs)
+check_condition (IRange lhs rhs)  = Iflipflop (check_condition lhs) (check_condition rhs)
+check_condition (ERange lhs rhs)  = Eflipflop (check_condition lhs) (check_condition rhs)
+--check_condition (Regexp)        = 
+check_condition condition         = condition
+
+mk_condition_mod :: Term -> Term -> Term -> Term
+mk_condition_mod ifTrue ifFalse cond = If (check_condition cond) ifTrue ifFalse
 
 mk_const_fetch :: Term -> Token -> Term
 mk_const_fetch first (TCONSTANT second) = Const first second
@@ -197,7 +217,11 @@ mk_match_op = error "mk_match_op"
 mk_multi_lhs :: [Term] -> Term
 mk_multi_lhs = Mlhs
 
-mk_not_op = error "mk_not_op"
+mk_not_op :: Term -> Term
+mk_not_op Nil   = Send (Begin []) "!" []
+mk_not_op expr  = Send (check_condition expr) "!" []
+
+
 
 mk_op_assign :: Term -> Term -> Term
 mk_op_assign (Lvasgn i Nothing) val = lvasgn i val
@@ -213,8 +237,13 @@ mk_pair_keyword = error "mk_pair_keyword"
 mk_pair_quoted = error "mk_pair_quoted"
 mk_preexe = error "mk_preexe"
 mk_procarg0 = error "mk_procarg0"
-mk_range_exclusive = error "mk_range_exclusive"
-mk_range_inclusive = error "mk_range_inclusive"
+
+mk_range_exclusive :: Term -> Term -> Term
+mk_range_exclusive = ERange
+
+mk_range_inclusive :: Term -> Term -> Term
+mk_range_inclusive = IRange
+
 mk_rational = error "mk_rational"
 mk_regexp_compose = error "mk_regexp_compose"
 mk_regexp_options = error "mk_regexp_options"
@@ -243,10 +272,18 @@ mk_symbol_internal (TSYMBOL s) = Sym s
 mk_symbol_internal (TIDENTIFIER s) = Sym s
 
 mk_symbols_compose = error "mk_symbols_compose"
-mk_ternary = error "mk_ternary"
+
+mk_ternary :: Term -> Term -> Term -> Term
+mk_ternary = mk_condition
+
 mk_unary_num = error "mk_unary_num"
-mk_unary_op = error "mk_unary_op"
-mk_undef_method = error "mk_undef_method"
+
+mk_unary_op :: String -> Term -> Term
+mk_unary_op op receiver = Send receiver op []
+
+mk_undef_method :: [Term] -> Term
+mk_undef_method = Undef
+
 mk_when = error "mk_when"
 mk_word = error "mk_word"
 mk_words_compose = error "mk_words_compose"

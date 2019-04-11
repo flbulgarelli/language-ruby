@@ -157,7 +157,6 @@ import Control.Monad.Error
     tIMAGINARY {L.TIMAGINARY {}}
     tLABEL_END {L.TLABEL_END}
     tANDDOT {L.TANDDOT}
-    tMETHREF {L.TMETHREF}
 
 
 %right    tBANG tTILDE tUPLUS
@@ -205,7 +204,9 @@ BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 Bodystmt :: { Term }
 Bodystmt: Compstmt OptRescue OptElse OptEnsure { mk_begin_body $1 $2 $3 $4  }
 
+Compstmt :: { Term }
 Compstmt: Stmts OptTerms { mkExpression $1 }
+
 Stmts :: { [Term] }
 Stmts: {- nothing -} { [] }
   | StmtOrBegin { [ $1 ] }
@@ -220,9 +221,9 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | kALIAS tGVAR tGVAR { mk_alias (mk_gvar $2) (mk_gvar $3) }
   | kALIAS tGVAR tBACK_REF { mk_alias (mk_gvar $2) (mk_back_ref $3) }
   | kALIAS tGVAR tNTH_REF { error ":nth_ref_alias, Nil, $3" }
-  | kUNDEF UndefList { (mk_undef_method $1 $2) }
-  | Stmt kIF_MOD Expr { error "mk_condition_mod $1 Nil $2 $3" }
-  | Stmt kUNLESS_MOD Expr { error "mk_condition_mod Nil $1 $2 $3" }
+  | kUNDEF UndefList { (mk_undef_method $2) }
+  | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $3 }
+  | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $3}
   | Stmt kWHILE_MOD Expr { error "mk_loop_mod While $1 $2 $3" }
   | Stmt kUNTIL_MOD Expr { error "mk_loop_mod Until $1 $2 $3" }
   | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil }
@@ -252,8 +253,8 @@ Expr :: { Term }
 Expr: CommandCall { $1 }
   | Expr kAND Expr { mkLogicalOp And $1 $2 $3 }
   | Expr kOR Expr { mkLogicalOp Or $1 $2 $3 }
-  | kNOT OptNl Expr { error "mk_not_op $2 $3" }
-  | tBANG CommandCall{ error "mk_not_op $1 Nil $2 Nil" }
+  | kNOT OptNl Expr { mk_not_op $3 }
+  | tBANG CommandCall { mk_not_op $2 }
   | Arg { $1 }
 
 ExprValueDo: --  { @lexer.cond.push(true) }
@@ -389,46 +390,48 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $5 }
   | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_global $1 $2)) $4 }
   | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $3 }
-  | Arg tDOT2 Arg { (mk_range_inclusive $1 $2 $3) }
-  | Arg tDOT3 Arg { (mk_range_exclusive $1 $2 $3) }
-  | Arg tDOT2 { (mk_range_inclusive $1 $2 Nil) }
-  | Arg tDOT3 { (mk_range_exclusive $1 $2 Nil) }
-  | Arg tPLUS Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tMINUS Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tSTAR2 Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tDIVIDE Arg { error "divide" }
-  | Arg tPERCENT Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tPOW Arg { (mk_binary_op $1 $2 $3) }
-  | tUNARY_NUM SimpleNumeric tPOW Arg { (mk_unary_op $1 (mk_binary_op $2 $3 $4)) }
-  | tUPLUS Arg { (mk_unary_op $1 $2) }
-  | tUMINUS Arg { (mk_unary_op $1 $2) }
-  | Arg tPIPE Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tAMPER2 Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tCMP Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tDOT2 Arg { (mk_range_inclusive $1 $3) }
+  | Arg tDOT3 Arg { (mk_range_exclusive $1 $3) }
+  | Arg tDOT2 { (mk_range_inclusive $1 Nil) }
+  | Arg tDOT3 { (mk_range_exclusive $1 Nil) }
+  | Arg tPLUS Arg { mk_binary_op $1 "+" $3 }
+  | Arg tMINUS Arg { mk_binary_op $1 "-" $3 }
+  | Arg tSTAR2 Arg { mk_binary_op $1 "**" $3 }
+  | Arg tDIVIDE Arg { mk_binary_op $1 "/" $3 }
+  | Arg tPERCENT Arg { mk_binary_op $1 "%" $3 }
+  | Arg tPOW Arg { error "mk_binary_op $1 $2 $3" }
+  | tUNARY_NUM SimpleNumeric tPOW Arg { error "mk_unary_op $1 (mk_binary_op $2 $3 $4)" }
+  | tUPLUS Arg { (mk_unary_op "+@" $2) }
+  | tUMINUS Arg { (mk_unary_op "-@" $2) }
+  | Arg tPIPE Arg { mk_binary_op $1 "|" $3 }
+  | Arg tCARET Arg { mk_binary_op $1 "^" $3 }
+  | Arg tAMPER2 Arg { mk_binary_op $1 "&&" $3 }
+  | Arg tCMP Arg { error "mk_binary_op $1 $2 $3" }
   | RelExpr %prec tCMP { undefined }
-  | Arg tEQ Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tEQQ Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tEQ Arg { mk_binary_op $1 "==" $3 }
+  | Arg tEQQ Arg { mk_binary_op $1 "===" $3 }
+  | Arg tNEQ Arg { mk_binary_op $1 "!=" $3 }
   | Arg tMATCH Arg { (mk_match_op $1 $2 $3) }
-  | Arg tNMATCH Arg { (mk_binary_op $1 $2 $3) }
-  | tBANG Arg { (mk_not_op $1 Nil $2 Nil) }
-  | tTILDE Arg { (mk_unary_op $1 $2) }
-  | Arg tLSHFT Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tRSHFT Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tNMATCH Arg { error "mk_binary_op $1 $2 $3" }
+  | tBANG Arg { (mk_not_op $2) }
+  | tTILDE Arg { (mk_unary_op "~" $2) }
+  | Arg tLSHFT Arg { mk_binary_op $1 "<<" $3 }
+  | Arg tRSHFT Arg { mk_binary_op $1 ">>" $3 }
   | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
   | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
   | kDEFINED OptNl Arg { mk_keyword_cmd Defined [$3] }
-  | Arg tEH Arg OptNl tCOLON Arg { error "mk_ternary $1 $2 $3 $5 $6" }
+  | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $3 $6 }
   | Primary { $1 }
 
-Relop: tGT { $1 }
-  | tLT { $1 }
-  | tGEQ { $1 }
-  | tLEQ { $1 }
+Relop :: { String }
+Relop: tGT { ">" }
+  | tLT { "<" }
+  | tGEQ { ">=" }
+  | tLEQ { "<=" }
 
-RelExpr: Arg Relop Arg %prec tGT { error "mk_binary_op $1 $2 $3" }
-  | RelExpr Relop Arg %prec tGT { error "mk_binary_op $1 $2 $3" }
+RelExpr :: { Term }
+RelExpr: Arg Relop Arg %prec tGT { mk_binary_op $1 $2 $3 }
+  | RelExpr Relop Arg %prec tGT { mk_binary_op $1 $2 $3 }
 
 ArefArgs: None { undefined }
   | Args Trailer { undefined }
@@ -502,14 +505,14 @@ Primary: Literal { $1 }
   | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield [] }
   | kYIELD { mk_keyword_cmd Yield [] }
   | kDEFINED OptNl tLPAREN2 Expr Rparen { mk_keyword_cmd Defined [$4] }
-  | kNOT tLPAREN2 Expr Rparen { error "mk_not_op $1 $2 $3 $4" }
-  | kNOT tLPAREN2 Rparen { error "mk_not_op $1 $2 Nil $3" }
+  | kNOT tLPAREN2 Expr Rparen { mk_not_op $3 }
+  | kNOT tLPAREN2 Rparen { mk_not_op Nil }
   | Operation BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in mk_block (mk_call_method Nil Nil $1) begin_t Args body end_t" }
   | MethodCall { $1 }
   | MethodCall BraceBlock { error "let (begin_t, Args, body, end_t) = $2 in (mk_block $1 begin_t Args body end_t)" }
   | tLAMBDA Lambda { error "let (args, (begin_t, body, end_t)) = $2 in (mk_block (mk_call_lambda $1) begin_t args body end_t)" }
-  | kIF Expr Then Compstmt IfTail kEND { error "let (else_t, else_) = $5 in (mk_condition $1 $2 $3 $4 else_t else_  $6)" }
-  | kUNLESS Expr Then Compstmt OptElse kEND { error "let (else_t, else_) = $5 in (mk_condition $1 $2 $3 else_  else_t $4 $6)" }
+  | kIF Expr Then Compstmt IfTail kEND { mk_condition $2 $4 $5 }
+  | kUNLESS Expr Then Compstmt OptElse kEND { mk_condition $2 $5 $4 }
   | kWHILE ExprValueDo Compstmt kEND  { (mk_loop While $1 $2 $3 $4)  }
   | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
   | kCASE Expr OptTerms CaseBody kEND { undefined }
@@ -530,7 +533,6 @@ Primary: Literal { $1 }
   | kNEXT { mk_keyword_cmd Next [] }
   | kREDO { mk_keyword_cmd Redo [] }
   | kRETRY { mk_keyword_cmd Retry [] }
-  | Primary tMETHREF Operation2 { undefined }
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
 
@@ -541,11 +543,13 @@ Then: Term { $1 }
 Do: Term { undefined }
   | kDO_COND { undefined }
 
-IfTail: OptElse { undefined }
-  | kELSIF Expr Then Compstmt IfTail { error "else_t, else_ = $5 [ $1, mk_condition($1, $2, $3, $4, else_t, else_,  Nil) ]" }
+IfTail :: { Term }
+IfTail: OptElse { $1 }
+  | kELSIF Expr Then Compstmt IfTail { mk_condition $2 $4 $5 }
 
-OptElse: None { undefined } -- { $1 }
-  | kELSE Compstmt { undefined } --{ $2 }
+OptElse :: { Term }
+OptElse: None { $1 }
+  | kELSE Compstmt { $2 }
 
 FMarg :: { Term }
 FMarg: FNormArg { error "mk_arg $1" }
@@ -939,7 +943,7 @@ Term: tSEMI { undefined }
 Terms: Term { undefined }
   | Terms tSEMI { undefined }
 
-None: { undefined } -- { Nil }
+None: { Nil } -- { Nil }
 
 {
 parseError _ = throwError "!Parse Error"

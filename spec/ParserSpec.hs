@@ -172,7 +172,8 @@ spec = do
     test "defs" "def String.foo; end" (Defs (Const Nil "String") "foo" (Args []) Nil)
     test "defs" "def String::foo; end" (Defs (Const Nil "String") "foo" (Args []) Nil)
 
-    test "undef" "undef foo, :bar, :\"foo#{1}\"" (Undef (Sym "foo") (Sym "bar") (Dsym (Str "foo") (Begin [RInt 1])))
+    test "undef" "undef foo" (Undef [Sym "foo"])
+    test "undef" "undef foo, :bar, :\"foo#{1}\"" (Undef [Sym "foo", Sym "bar", Dsym (Str "foo") (Begin [RInt 1])])
 
 
     test "alias" "alias :foo bar" (Alias (Sym "foo") (Sym "bar"))
@@ -379,8 +380,88 @@ spec = do
 
   -- -- Range
 
-  -- test "range_inclusive" "1..2" (Irange (RInt 1) (RInt 2))
-  -- test "range_exclusive" "1...2"  (Erange (RInt 1) (RInt 2))
+    test "range_inclusive" "1..2" (IRange (RInt 1) (RInt 2))
+    test "range_inclusive" "1 .. 2" (IRange (RInt 1) (RInt 2))
+    test "range_exclusive" "1...2"  (ERange (RInt 1) (RInt 2))
+    test "range_exclusive" "1 ... 2"  (ERange (RInt 1) (RInt 2))
 
-  -- test "range_endless" "1.." (Irange (RInt 1), Nil)
-  -- test "range_endless" "1..." (Erange (RInt 1), Nil)
+    test "range_endless" "1.." (IRange (RInt 1) Nil)
+    test "range_endless" "1 .. " (IRange (RInt 1) Nil)
+    test "range_endless" "1..." (ERange (RInt 1) Nil)
+    test "range_endless" "1 ... " (ERange (RInt 1) Nil)
+
+    test "if" "if foo then bar; end" (If (Lvar "foo") (Lvar "bar") Nil)
+    test "if" "if foo; bar; end" (If (Lvar "foo") (Lvar "bar") Nil)
+
+    test "if_nl_then" "if foo\nthen bar end" (If (Lvar "foo") (Lvar "bar") Nil)
+
+    test "if_mod" "bar if foo" (If (Lvar "foo") (Lvar "bar") Nil)
+ 
+    test "unless" "unless foo then bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
+    test "unless" "unless foo; bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
+ 
+    test "unless_mod" "bar unless foo" (If (Lvar "foo") Nil (Lvar "bar"))
+ 
+    test "if_else" "if foo then bar; else baz; end" (If (Lvar "foo") (Lvar "bar") (Lvar "baz"))
+    test "if_else" "if foo; bar; else baz; end" (If (Lvar "foo") (Lvar "bar") (Lvar "baz"))
+
+    test "unless_else" "unless foo then bar; else baz; end" (If (Lvar "foo") (Lvar "baz") (Lvar "bar"))
+    test "unless_else" "unless foo; bar; else baz; end" (If (Lvar "foo") (Lvar "baz") (Lvar "bar"))
+
+    test "if_elsif" "if foo; bar; elsif baz; 1; else 2; end" (If (Lvar "foo") (Lvar "bar") (If (Lvar "baz") (RInt 1) (RInt 2)))
+ 
+    test "ternary" "foo ? 1 : 2" (If (Lvar "foo") (RInt 1) (RInt 2))
+ 
+    test "ternary_ambiguous_symbol" "t=1;(foo)?t:T" (Begin [Lvasgn "t" (Just $ RInt 1), If (Begin [Lvar "foo"]) (Lvar "t") (Const Nil "T")])
+ 
+    test "if_masgn__24" "if (a, b = foo); end" (If (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) Nil Nil)
+ 
+    test "not_masgn__24" "!(a, b = foo)" (Send (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) "!" [])
+ 
+    test "cond_begin" "if (bar); foo; end" (If (Begin [Lvar "bar"]) (Lvar "foo") Nil)
+ 
+    test "cond_begin_masgn" "if (bar; a, b = foo); end" (If (Begin [Lvar "bar", Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) Nil Nil)
+ 
+    test "cond_iflipflop" "if foo..bar; end" (If (Iflipflop (Lvar "foo") (Lvar "bar")) Nil Nil)
+
+    test "cond_iflipflop" "!(foo..bar)" (Send (Begin [Iflipflop (Lvar "foo") (Lvar "bar")]) "!" [])
+ 
+    test "cond_eflipflop" "if foo...bar; end" (If (Eflipflop (Lvar "foo") (Lvar "bar")) Nil Nil)
+
+    test "cond_eflipflop" "!(foo...bar)" (Send (Begin [Eflipflop (Lvar "foo") (Lvar "bar")]) "!" [])
+ 
+    --test "cond_match_current_line" "if /wat/; end" (If (MatchCurrentLine (Regexp (Str "wat") (Regopt))) Nil Nil)
+ 
+    --test "cond_match_current_line" "!/wat/" (Send (MatchCurrentLine (Regexp (Str "wat") (Regopt))) "!")
+
+    test "not" "not foo" (Send (Lvar "foo") "!" [])
+    test "not" "not(foo)" (Send (Lvar "foo") "!" [])
+    test "not" "not()" (Send (Begin []) "!" [])
+
+    test "not_cmd" "not m foo" (Send (Send Nil "m" [Lvar "foo"]) "!" [])
+
+    test "send_binary_op" "foo + 1"   (Send (Lvar "foo") "+"    [RInt 1])
+    test "send_binary_op" "foo - 1"   (Send (Lvar "foo") "-"    [RInt 1])
+    test "send_binary_op" "foo * 1"   (Send (Lvar "foo") "*"    [RInt 1])
+    test "send_binary_op" "foo / 1"   (Send (Lvar "foo") "/"    [RInt 1])
+    test "send_binary_op" "foo % 1"   (Send (Lvar "foo") "%"    [RInt 1])
+    test "send_binary_op" "foo ** 1"  (Send (Lvar "foo") "**"   [RInt 1])
+    test "send_binary_op" "foo | 1"   (Send (Lvar "foo") "|"    [RInt 1])
+    test "send_binary_op" "foo ^ 1"   (Send (Lvar "foo") "^"    [RInt 1])
+    test "send_binary_op" "foo & 1"   (Send (Lvar "foo") "&"    [RInt 1])
+    test "send_binary_op" "foo <=> 1" (Send (Lvar "foo") "<=>"  [RInt 1])
+    test "send_binary_op" "foo < 1"   (Send (Lvar "foo") "<"    [RInt 1])
+    test "send_binary_op" "foo <= 1"  (Send (Lvar "foo") "<="   [RInt 1])
+    test "send_binary_op" "foo > 1"   (Send (Lvar "foo") ">"    [RInt 1])
+    test "send_binary_op" "foo >= 1"  (Send (Lvar "foo") ">="   [RInt 1])
+    test "send_binary_op" "foo == 1"  (Send (Lvar "foo") "=="   [RInt 1])
+    test "send_binary_op" "foo != 1"  (Send (Lvar "foo") "!="   [RInt 1])
+    test "send_binary_op" "foo === 1" (Send (Lvar "foo") "==="  [RInt 1])
+    test "send_binary_op" "foo =~ 1"  (Send (Lvar "foo") "=~"   [RInt 1])
+    test "send_binary_op" "foo !~ 1"  (Send (Lvar "foo") "!~"   [RInt 1])
+    test "send_binary_op" "foo << 1"  (Send (Lvar "foo") "<<"   [RInt 1])
+    test "send_binary_op" "foo >> 1"  (Send (Lvar "foo") ">>"   [RInt 1])
+
+    test "send_unary_op" "-foo" (Send (Lvar "foo") "-@" [])
+    test "send_unary_op" "+foo" (Send (Lvar "foo") "+@" [])
+    test "send_unary_op" "~foo" (Send (Lvar "foo") "~" [])
