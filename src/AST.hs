@@ -26,13 +26,11 @@ data Term
        | Dstr [Term]
        | Dsym Term Term
        | Encoding
-       | Eflipflop Term Term
        | ERange Term Term
        | File
        | Gvar String
        | Gvasgn String (Maybe Term) -- global variables
        | If Term Term Term
-       | Iflipflop Term Term
        | IRange Term Term
        | Ivar String
        | Ivasgn String (Maybe Term) -- instance variables
@@ -159,8 +157,6 @@ check_condition :: Term -> Term
 check_condition (Begin [term])    = Begin [check_condition term]
 check_condition (And lhs rhs)     = And (check_condition lhs) (check_condition rhs)
 check_condition (Or lhs rhs)      = Or (check_condition lhs) (check_condition rhs)
-check_condition (IRange lhs rhs)  = Iflipflop (check_condition lhs) (check_condition rhs)
-check_condition (ERange lhs rhs)  = Eflipflop (check_condition lhs) (check_condition rhs)
 --check_condition (Regexp)        = 
 check_condition condition         = condition
 

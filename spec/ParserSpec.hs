@@ -422,14 +422,6 @@ spec = do
  
     test "cond_begin_masgn" "if (bar; a, b = foo); end" (If (Begin [Lvar "bar", Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) Nil Nil)
  
-    test "cond_iflipflop" "if foo..bar; end" (If (Iflipflop (Lvar "foo") (Lvar "bar")) Nil Nil)
-
-    test "cond_iflipflop" "!(foo..bar)" (Send (Begin [Iflipflop (Lvar "foo") (Lvar "bar")]) "!" [])
- 
-    test "cond_eflipflop" "if foo...bar; end" (If (Eflipflop (Lvar "foo") (Lvar "bar")) Nil Nil)
-
-    test "cond_eflipflop" "!(foo...bar)" (Send (Begin [Eflipflop (Lvar "foo") (Lvar "bar")]) "!" [])
- 
     --test "cond_match_current_line" "if /wat/; end" (If (MatchCurrentLine (Regexp (Str "wat") (Regopt))) Nil Nil)
  
     --test "cond_match_current_line" "!/wat/" (Send (MatchCurrentLine (Regexp (Str "wat") (Regopt))) "!")
