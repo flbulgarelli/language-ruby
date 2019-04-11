@@ -251,8 +251,8 @@ CommandRhs: CommandCall %prec tOP_ASGN { $1 }
 
 Expr :: { Term }
 Expr: CommandCall { $1 }
-  | Expr kAND Expr { mkLogicalOp And $1 $2 $3 }
-  | Expr kOR Expr { mkLogicalOp Or $1 $2 $3 }
+  | Expr kAND Expr { mkLogicalOp And $1 $3 }
+  | Expr kOR Expr { mkLogicalOp Or $1 $3 }
   | kNOT OptNl Expr { mk_not_op $3 }
   | tBANG CommandCall { mk_not_op $2 }
   | Arg { $1 }
@@ -417,8 +417,8 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | tTILDE Arg { (mk_unary_op "~" $2) }
   | Arg tLSHFT Arg { mk_binary_op $1 "<<" $3 }
   | Arg tRSHFT Arg { mk_binary_op $1 ">>" $3 }
-  | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
-  | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
+  | Arg tANDOP Arg { mkLogicalOp And $1 $3 }
+  | Arg tOROP Arg { mkLogicalOp Or $1 $3 }
   | kDEFINED OptNl Arg { mk_keyword_cmd Defined [$3] }
   | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $3 $6 }
   | Primary { $1 }

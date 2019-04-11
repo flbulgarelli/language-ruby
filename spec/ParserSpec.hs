@@ -457,3 +457,12 @@ spec = do
     test "send_unary_op" "-foo" (Send (Lvar "foo") "-@" [])
     test "send_unary_op" "+foo" (Send (Lvar "foo") "+@" [])
     test "send_unary_op" "~foo" (Send (Lvar "foo") "~" [])
+
+    test "and" "foo and bar" (And (Lvar "foo") (Lvar "bar"))
+    test "and" "foo && bar" (And (Lvar "foo") (Lvar "bar"))
+
+    test "or" "foo or bar" (Or (Lvar "foo") (Lvar "bar"))
+    test "or" "foo || bar" (Or (Lvar "foo") (Lvar "bar"))
+
+    test "and_or_masgn" "foo && (a, b = bar)" (And (Lvar "foo") (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "bar")]))
+    test "and_or_masgn" "foo || (a, b = bar)" (Or (Lvar "foo") (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "bar")]))

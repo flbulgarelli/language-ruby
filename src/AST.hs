@@ -79,7 +79,8 @@ casgn name parent = Casgn name parent . Just
 
 type StaticEnv = [String]
 
-mkLogicalOp = error "mkLogicalOp"
+mkLogicalOp :: (Term -> Term -> Term) -> Term -> Term -> Term
+mkLogicalOp = id
 
 mkExpression :: [Term] -> Term
 mkExpression []  = Nil
