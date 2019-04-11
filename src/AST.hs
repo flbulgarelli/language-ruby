@@ -133,7 +133,9 @@ mk_begin_keyword Nil        = KWBegin []
 mk_begin_keyword (Begin ts) = KWBegin ts
 mk_begin_keyword t          = KWBegin [t]
 
-mk_binary_op = error "mk_binary_op"
+mk_binary_op :: Term -> String -> Term -> Term
+mk_binary_op receiver op arg = Send receiver op [arg]
+
 mk_block = error "mk_block"
 mk_block_pass = error "mk_block_pass"
 mk_blockarg = error "mk_blockarg"

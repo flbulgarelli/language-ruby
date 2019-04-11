@@ -394,42 +394,44 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Arg tDOT3 Arg { (mk_range_exclusive $1 $3) }
   | Arg tDOT2 { (mk_range_inclusive $1 Nil) }
   | Arg tDOT3 { (mk_range_exclusive $1 Nil) }
-  | Arg tPLUS Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tMINUS Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tSTAR2 Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tDIVIDE Arg { error "divide" }
-  | Arg tPERCENT Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tPOW Arg { (mk_binary_op $1 $2 $3) }
-  | tUNARY_NUM SimpleNumeric tPOW Arg { (mk_unary_op $1 (mk_binary_op $2 $3 $4)) }
+  | Arg tPLUS Arg { mk_binary_op $1 "+" $3 }
+  | Arg tMINUS Arg { mk_binary_op $1 "-" $3 }
+  | Arg tSTAR2 Arg { mk_binary_op $1 "**" $3 }
+  | Arg tDIVIDE Arg { mk_binary_op $1 "/" $3 }
+  | Arg tPERCENT Arg { mk_binary_op $1 "%" $3 }
+  | Arg tPOW Arg { error "mk_binary_op $1 $2 $3" }
+  | tUNARY_NUM SimpleNumeric tPOW Arg { error "mk_unary_op $1 (mk_binary_op $2 $3 $4)" }
   | tUPLUS Arg { (mk_unary_op $1 $2) }
   | tUMINUS Arg { (mk_unary_op $1 $2) }
-  | Arg tPIPE Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tCARET Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tAMPER2 Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tCMP Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tPIPE Arg { mk_binary_op $1 "|" $3 }
+  | Arg tCARET Arg { mk_binary_op $1 "^" $3 }
+  | Arg tAMPER2 Arg { mk_binary_op $1 "&&" $3 }
+  | Arg tCMP Arg { error "mk_binary_op $1 $2 $3" }
   | RelExpr %prec tCMP { undefined }
-  | Arg tEQ Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tEQQ Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tNEQ Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tEQ Arg { mk_binary_op $1 "==" $3 }
+  | Arg tEQQ Arg { mk_binary_op $1 "===" $3 }
+  | Arg tNEQ Arg { mk_binary_op $1 "!=" $3 }
   | Arg tMATCH Arg { (mk_match_op $1 $2 $3) }
-  | Arg tNMATCH Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tNMATCH Arg { error "mk_binary_op $1 $2 $3" }
   | tBANG Arg { (mk_not_op $2) }
   | tTILDE Arg { (mk_unary_op $1 $2) }
-  | Arg tLSHFT Arg { (mk_binary_op $1 $2 $3) }
-  | Arg tRSHFT Arg { (mk_binary_op $1 $2 $3) }
+  | Arg tLSHFT Arg { mk_binary_op $1 "<<" $3 }
+  | Arg tRSHFT Arg { mk_binary_op $1 ">>" $3 }
   | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }
   | Arg tOROP Arg { mkLogicalOp Or $1 $2 $3 }
   | kDEFINED OptNl Arg { mk_keyword_cmd Defined [$3] }
   | Arg tEH Arg OptNl tCOLON Arg { mk_ternary $1 $3 $6 }
   | Primary { $1 }
 
-Relop: tGT { $1 }
-  | tLT { $1 }
-  | tGEQ { $1 }
-  | tLEQ { $1 }
+Relop :: { String }
+Relop: tGT { ">" }
+  | tLT { "<" }
+  | tGEQ { ">=" }
+  | tLEQ { "<=" }
 
-RelExpr: Arg Relop Arg %prec tGT { error "mk_binary_op $1 $2 $3" }
-  | RelExpr Relop Arg %prec tGT { error "mk_binary_op $1 $2 $3" }
+RelExpr :: { Term }
+RelExpr: Arg Relop Arg %prec tGT { mk_binary_op $1 $2 $3 }
+  | RelExpr Relop Arg %prec tGT { mk_binary_op $1 $2 $3 }
 
 ArefArgs: None { undefined }
   | Args Trailer { undefined }
