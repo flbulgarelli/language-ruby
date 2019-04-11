@@ -16,7 +16,7 @@ spec = describe "Lexer:" $ do
 
   test "negative integers" "-123" [TINTEGER (-123)]
 
-  test "octal integers" "037" [TINTEGER 037]
+  test "octal integers" "037" [TINTEGER 0o37]
 
   test "hex integers" "0xab"  [TINTEGER 0xab]
 
