@@ -401,8 +401,8 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Arg tPERCENT Arg { mk_binary_op $1 "%" $3 }
   | Arg tPOW Arg { error "mk_binary_op $1 $2 $3" }
   | tUNARY_NUM SimpleNumeric tPOW Arg { error "mk_unary_op $1 (mk_binary_op $2 $3 $4)" }
-  | tUPLUS Arg { (mk_unary_op $1 $2) }
-  | tUMINUS Arg { (mk_unary_op $1 $2) }
+  | tUPLUS Arg { (mk_unary_op "+@" $2) }
+  | tUMINUS Arg { (mk_unary_op "-@" $2) }
   | Arg tPIPE Arg { mk_binary_op $1 "|" $3 }
   | Arg tCARET Arg { mk_binary_op $1 "^" $3 }
   | Arg tAMPER2 Arg { mk_binary_op $1 "&&" $3 }
@@ -414,7 +414,7 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Arg tMATCH Arg { (mk_match_op $1 $2 $3) }
   | Arg tNMATCH Arg { error "mk_binary_op $1 $2 $3" }
   | tBANG Arg { (mk_not_op $2) }
-  | tTILDE Arg { (mk_unary_op $1 $2) }
+  | tTILDE Arg { (mk_unary_op "~" $2) }
   | Arg tLSHFT Arg { mk_binary_op $1 "<<" $3 }
   | Arg tRSHFT Arg { mk_binary_op $1 ">>" $3 }
   | Arg tANDOP Arg { mkLogicalOp And $1 $2 $3 }

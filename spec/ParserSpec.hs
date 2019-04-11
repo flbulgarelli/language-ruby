@@ -461,3 +461,7 @@ spec = do
     test "send_binary_op" "foo !~ 1"  (Send (Lvar "foo") "!~"   [RInt 1])
     test "send_binary_op" "foo << 1"  (Send (Lvar "foo") "<<"   [RInt 1])
     test "send_binary_op" "foo >> 1"  (Send (Lvar "foo") ">>"   [RInt 1])
+
+    test "send_unary_op" "-foo" (Send (Lvar "foo") "-@" [])
+    test "send_unary_op" "+foo" (Send (Lvar "foo") "+@" [])
+    test "send_unary_op" "~foo" (Send (Lvar "foo") "~" [])

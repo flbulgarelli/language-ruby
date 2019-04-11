@@ -277,7 +277,9 @@ mk_ternary :: Term -> Term -> Term -> Term
 mk_ternary = mk_condition
 
 mk_unary_num = error "mk_unary_num"
-mk_unary_op = error "mk_unary_op"
+
+mk_unary_op :: String -> Term -> Term
+mk_unary_op op receiver = Send receiver op []
 
 mk_undef_method :: [Term] -> Term
 mk_undef_method = Undef
