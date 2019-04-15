@@ -466,3 +466,19 @@ spec = do
 
     test "and_or_masgn" "foo && (a, b = bar)" (And (Lvar "foo") (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "bar")]))
     test "and_or_masgn" "foo || (a, b = bar)" (Or (Lvar "foo") (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "bar")]))
+
+    test "case_expr" "case foo; when 'bar'; bar; end" (Case [Lvar "foo", When [Str "bar", Lvar "bar"], Nil])
+
+    test "case_expr_else" "case foo; when 'bar'; bar; else baz; end" (Case [Lvar "foo", When [Str "bar", Lvar "bar"], Lvar "baz"])
+
+    test "case_cond" "case; when foo; 'foo'; end" (Case [Nil, When [Lvar "foo", Str "foo"], Nil])
+
+    test "case_cond_else" "case; when foo; 'foo'; else 'bar'; end" (Case [Nil, When [Lvar "foo", Str "foo"], Str "bar"])
+
+    test "case_cond_just_else" "case; else 'bar'; end" (Case [Nil, Str "bar"])
+
+    test "when_then" "case foo; when 'bar' then bar; end" (Case [Lvar "foo", When [Str "bar", Lvar "bar"], Nil])
+
+    test "when_multi" "case foo; when 'bar', 'baz'; bar; end" (Case [Lvar "foo", When [Str "bar", Str "baz", Lvar "bar"], Nil])
+
+    test "when_splat" "case foo; when 1, *baz; bar; when *foo; end" (Case [Lvar "foo", When [RInt 1, Splat (Just (Lvar "baz")), Lvar "bar"], When [Splat (Just (Lvar "foo")), Nil], Nil])
