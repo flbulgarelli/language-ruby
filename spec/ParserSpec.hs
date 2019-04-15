@@ -488,3 +488,5 @@ spec = do
     test "for" "for a in foo; p a; end" (For (Lvasgn "a" Nothing) (Lvar "foo") (Send Nil "p" [Lvar "a"]))
 
     test "for_mlhs" "for a, b in foo; p a, b; end" (For (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo") (Send Nil "p" [Lvar "a", Lvar "b"]))
+
+    test "postexe" "END { 1 }" (Postexe (RInt 1))

@@ -45,6 +45,7 @@ data Term
        | Next [Term]
        | Nil
        | NthRef Int
+       | Postexe Term
        | Or Term Term
        | RArray [Term]
        | RComplex (Complex Double)
@@ -93,7 +94,8 @@ mkExpression xs  = Begin xs
 mk_multiassign :: Term -> Term -> Term
 mk_multiassign = Masgn
 
-mk_postexe = error "mk_postexe"
+mk_postexe :: Term -> Term
+mk_postexe = Postexe
 
 mk_accessible :: Term -> StaticEnv -> Term
 mk_accessible (Lvar name) env | elem name env = Send Nil name []
