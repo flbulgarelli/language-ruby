@@ -29,6 +29,7 @@ data Term
        | Encoding
        | ERange Term Term
        | File
+       | For Term Term Term
        | Gvar String
        | Gvasgn String (Maybe Term) -- global variables
        | If Term Term Term
@@ -195,7 +196,9 @@ mk_def_method fname args body = Def (value fname) (Args []) Nil
 mk_float :: Token -> Term
 mk_float (TFLOAT f) = RFloat f
 
-mk_for = error "mk_for"
+mk_for :: Term -> Term -> Term -> Term
+mk_for = For
+
 mk_index = error "mk_index"
 mk_index_asgn = error "mk_index_asgn"
 

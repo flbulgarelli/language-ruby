@@ -517,8 +517,7 @@ Primary: Literal { $1 }
   | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
   | kCASE Expr OptTerms CaseBody kEND { mk_case $2 $4 }
   | kCASE OptTerms CaseBody kEND { mk_case Nil $3 }
-      --       | kFOR for_--var kIN ExprValueDo Compstmt kEND  { (mk_for $1, $2, $3, *$4 $5 $6)
-      --     }
+  | kFOR ForVar kIN ExprValueDo Compstmt kEND  { mk_for $2 $4 $5 }
   | kCLASS Cpath Superclass Bodystmt kEND { error "let (lt_t, Superclass) = $3 in (mk_def_class $1 $2 lt_t Superclass $5 $6)" }
   | kCLASS tLSHFT Expr Term Bodystmt kEND { error "mk_def_sclass $3 $4 $5" }
   | kMODULE Cpath Bodystmt kEND { error "mk_def_module $2 $3" }
@@ -541,6 +540,10 @@ Do: Term { undefined }
 IfTail :: { Term }
 IfTail: OptElse { $1 }
   | kELSIF Expr Then Compstmt IfTail { mk_condition $2 $4 $5 }
+
+ForVar :: { Term }
+ForVar: Lhs { $1 }
+  | Mlhs { $1 }
 
 OptElse :: { Term }
 OptElse: None { $1 }
