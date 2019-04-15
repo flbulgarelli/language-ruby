@@ -482,3 +482,9 @@ spec = do
     test "when_multi" "case foo; when 'bar', 'baz'; bar; end" (Case [Lvar "foo", When [Str "bar", Str "baz", Lvar "bar"], Nil])
 
     test "when_splat" "case foo; when 1, *baz; bar; when *foo; end" (Case [Lvar "foo", When [RInt 1, Splat (Just (Lvar "baz")), Lvar "bar"], When [Splat (Just (Lvar "foo")), Nil], Nil])
+
+    test "for" "for a in foo do p a; end" (For (Lvasgn "a" Nothing) (Lvar "foo") (Send Nil "p" [Lvar "a"]))
+
+    test "for" "for a in foo; p a; end" (For (Lvasgn "a" Nothing) (Lvar "foo") (Send Nil "p" [Lvar "a"]))
+
+    test "for_mlhs" "for a, b in foo; p a, b; end" (For (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo") (Send Nil "p" [Lvar "a", Lvar "b"]))
