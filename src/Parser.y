@@ -515,13 +515,8 @@ Primary: Literal { $1 }
   | kUNLESS Expr Then Compstmt OptElse kEND { mk_condition $2 $5 $4 }
   | kWHILE ExprValueDo Compstmt kEND  { (mk_loop While $1 $2 $3 $4)  }
   | kUNTIL ExprValueDo Compstmt kEND  { (mk_loop Until $1 $2 $3 $4) }
-  | kCASE Expr OptTerms CaseBody kEND { undefined }
-      --     {
-      --       *when_bodies, (else_t, else_body) = *$4
-      --       (mk_case $1 $2 when_bodies else_t else_body $5) }
-      --       | kCASE OptTerms CaseBody kEND {
-      --             *when_bodies, (else_t, else_body) = *$3
-      --             mk_case($1, Nil, when_bodies, else_t, else_body, $4) }
+  | kCASE Expr OptTerms CaseBody kEND { mk_case $2 $4 }
+  | kCASE OptTerms CaseBody kEND { mk_case Nil $3 }
       --       | kFOR for_--var kIN ExprValueDo Compstmt kEND  { (mk_for $1, $2, $3, *$4 $5 $6)
       --     }
   | kCLASS Cpath Superclass Bodystmt kEND { error "let (lt_t, Superclass) = $3 in (mk_def_class $1 $2 lt_t Superclass $5 $6)" }
@@ -654,10 +649,12 @@ BraceBody: OptBlockParam Compstmt { undefined }
 
 DoBody: OptBlockParam Bodystmt { undefined }-- { @static_env.extend_dynamic } { @lexer.cmdarg.push(false) } { result = [ val[2], val[3] ] @static_env.unextend @lexer.cmdarg.pop  }
 
-CaseBody: kWHEN Args Then Compstmt Cases { undefined } -- { [mk_when $1 $2 $3 $4] ++ $5 }
+CaseBody :: { [Term] }
+CaseBody: kWHEN Args Then Compstmt Cases { [mk_when $2 $4] ++ $5 }
 
-Cases: OptElse { undefined } -- { [ $1 ] }
- | CaseBody { undefined } -- { $1 }
+Cases :: { [Term] }
+Cases: OptElse { [$1] }
+ | CaseBody { $1 }
 
 OptRescue :: { [Term] }
 OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { error "mk_rescue_body" } {-

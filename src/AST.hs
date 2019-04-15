@@ -14,6 +14,7 @@ data Term
        | Anddot
        | BackRef String
        | Break [Term]
+       | Case [Term]
        | Casgn Term String (Maybe Term) -- constants
        | Cbase
        | Const Term String
@@ -63,6 +64,7 @@ data Term
        | Sym String
        | Undef [Term]
        | Until
+       | When [Term]
        | While
        | Yield [Term]
        | Zsuper [Term]
@@ -144,7 +146,8 @@ mk_call_method :: Term -> Token -> Token -> [Term] -> Term
 mk_call_method receiver TANDDOT selector args = Csend receiver (mk_selector selector) args
 mk_call_method receiver _       selector args = Send receiver (mk_selector selector) args
 
-mk_case = error "mk_case"
+mk_case :: Term -> [Term] -> Term
+mk_case expr bodies = Case $ expr : bodies
 
 mk_character :: Token -> Term
 mk_character (TCHARACTER c)  = Str [c]
@@ -281,7 +284,9 @@ mk_unary_op op receiver = Send receiver op []
 mk_undef_method :: [Term] -> Term
 mk_undef_method = Undef
 
-mk_when = error "mk_when"
+mk_when :: [Term] -> Term -> Term
+mk_when cases body = When $ cases ++ [body]
+
 mk_word = error "mk_word"
 mk_words_compose = error "mk_words_compose"
 mk_xstring_compose = error "mk_xstring_compose"
