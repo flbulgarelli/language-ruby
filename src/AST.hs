@@ -46,6 +46,7 @@ data Term
        | Next [Term]
        | Nil
        | NthRef Int
+       | Pair Term Term
        | Postexe Term
        | Or Term Term
        | RArray [Term]
@@ -248,9 +249,13 @@ mk_op_assign (Casgn i parent Nothing) val = casgn i parent val
 mk_op_assign t1 t2 = error ("mk_op_assign" ++ show t1 ++ " " ++ show t2)
 
 mk_optarg = error "mk_optarg"
-mk_pair = error "mk_pair"
+
+mk_pair :: Term -> Term -> Term
+mk_pair = Pair
+
 mk_pair_keyword = error "mk_pair_keyword"
 mk_pair_quoted = error "mk_pair_quoted"
+
 mk_preexe = error "mk_preexe"
 mk_procarg0 = error "mk_procarg0"
 
