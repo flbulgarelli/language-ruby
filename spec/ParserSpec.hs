@@ -496,3 +496,11 @@ spec = do
         
     test "until" "until foo do meth end" (Until (Lvar "foo") (Send Nil "meth" []))
     test "until" "until foo; meth end" (Until (Lvar "foo") (Send Nil "meth" []))
+
+    test "while_mod" "meth while foo" (While (Lvar "foo") (Send Nil "meth" []))
+
+    test "until_mod" "meth until foo" (Until (Lvar "foo") (Send Nil "meth" []))
+
+    test "while_post" "begin meth end while foo" (WhilePost (Lvar "foo") (KWBegin [Send Nil "meth" []]))
+        
+    test "until_post" "begin meth end until foo" (UntilPost (Lvar "foo") (KWBegin [Send Nil "meth" []]))

@@ -67,8 +67,10 @@ data Term
        | Sym String
        | Undef [Term]
        | Until Term Term
+       | UntilPost Term Term
        | When [Term]
        | While Term Term
+       | WhilePost Term Term
        | Yield [Term]
        | Zsuper [Term]
        deriving (Eq, Show)
@@ -222,7 +224,12 @@ mk_kwsplat = KWSplat
 mk_loop :: (Term -> Term -> Term) -> Term -> Term -> Term
 mk_loop = id
 
-mk_loop_mod = error "mk_loop_mod"
+mk_loop_mod :: String -> Term -> Term -> Term
+mk_loop_mod "while" body@(KWBegin _) cond = WhilePost (check_condition cond) body
+mk_loop_mod "until" body@(KWBegin _) cond = UntilPost (check_condition cond) body
+mk_loop_mod "while" body             cond = While (check_condition cond) body
+mk_loop_mod "until" body             cond = Until (check_condition cond) body
+
 mk_match_op = error "mk_match_op"
 
 mk_multi_lhs :: [Term] -> Term
@@ -231,8 +238,6 @@ mk_multi_lhs = Mlhs
 mk_not_op :: Term -> Term
 mk_not_op Nil   = Send (Begin []) "!" []
 mk_not_op expr  = Send (check_condition expr) "!" []
-
-
 
 mk_op_assign :: Term -> Term -> Term
 mk_op_assign (Lvasgn i Nothing) val = lvasgn i val
