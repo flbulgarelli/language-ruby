@@ -490,3 +490,9 @@ spec = do
     test "for_mlhs" "for a, b in foo; p a, b; end" (For (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo") (Send Nil "p" [Lvar "a", Lvar "b"]))
 
     test "postexe" "END { 1 }" (Postexe (RInt 1))
+
+    test "while" "while foo do meth end" (While (Lvar "foo") (Send Nil "meth" []))
+    test "while" "while foo; meth end" (While (Lvar "foo") (Send Nil "meth" []))
+        
+    test "until" "until foo do meth end" (Until (Lvar "foo") (Send Nil "meth" []))
+    test "until" "until foo; meth end" (Until (Lvar "foo") (Send Nil "meth" []))
