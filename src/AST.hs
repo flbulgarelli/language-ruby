@@ -37,6 +37,7 @@ data Term
        | Ivar String
        | Ivasgn String (Maybe Term) -- instance variables
        | KWBegin [Term]
+       | KWSplat Term
        | Line
        | Lvar String
        | Lvasgn String (Maybe Term) -- variables
@@ -214,7 +215,10 @@ mk_keyword_cmd f args = f args -- TODO check for yield with block
 mk_kwarg = error "mk_kwarg"
 mk_kwoptarg = error "mk_kwoptarg"
 mk_kwrestarg = error "mk_kwrestarg"
-mk_kwsplat = error "mk_kwsplat"
+
+mk_kwsplat :: Term -> Term
+mk_kwsplat = KWSplat
+
 mk_loop = error "mk_loop"
 mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"

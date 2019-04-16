@@ -892,13 +892,15 @@ Singleton: VarRef { $1 }
 AssocList: {- nothing -} { [] }
   | Assocs Trailer { $1 }
 
+Assocs :: { [Term] }
 Assocs: Assoc { [ $1 ] }
   | Assocs tCOMMA Assoc { $1 ++ [$3] }
 
+Assoc :: { Term }
 Assoc: Arg tASSOC Arg { error "mk_pair $1 $2 $3" }
    | tLABEL Arg { error "mk_pair_keyword $1 $2" }
    | tSTRING_BEG StringContents tLABEL_END Arg { error "mk_pair_quoted $1 $2 $3 $4" }
-   | tDSTAR Arg { error "mk_kwsplat $1 $2" }
+   | tDSTAR Arg { mk_kwsplat $2 }
 
 Operation :: { L.Token }
 Operation: tIDENTIFIER { $1 }
