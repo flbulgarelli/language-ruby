@@ -66,9 +66,9 @@ data Term
        | Super [Term]
        | Sym String
        | Undef [Term]
-       | Until
+       | Until Term Term
        | When [Term]
-       | While
+       | While Term Term
        | Yield [Term]
        | Zsuper [Term]
        deriving (Eq, Show)
@@ -219,7 +219,9 @@ mk_kwrestarg = error "mk_kwrestarg"
 mk_kwsplat :: Term -> Term
 mk_kwsplat = KWSplat
 
-mk_loop = error "mk_loop"
+mk_loop :: (Term -> Term -> Term) -> Term -> Term -> Term
+mk_loop = id
+
 mk_loop_mod = error "mk_loop_mod"
 mk_match_op = error "mk_match_op"
 
