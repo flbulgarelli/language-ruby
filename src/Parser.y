@@ -226,7 +226,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $3}
   | Stmt kWHILE_MOD Expr { error "mk_loop_mod While $1 $2 $3" }
   | Stmt kUNTIL_MOD Expr { error "mk_loop_mod Until $1 $2 $3" }
-  | Stmt kRESCUE_MOD Stmt {  mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil }
+  | Stmt kRESCUE_MOD Stmt { mk_begin_body' $1 [mk_rescue_body Nil Nil $3] }
   | klEND tLCURLY Compstmt tRCURLY { mk_postexe $3 }
   | CommandAsgn { $1 }
   | Mlhs tEQL CommandCall { mk_multiassign $1 $3 }
@@ -246,7 +246,7 @@ CommandAsgn: Lhs tEQL CommandRhs { mk_assign $1 $3 }
 
 CommandRhs :: { Term }
 CommandRhs: CommandCall %prec tOP_ASGN { $1 }
-  | CommandCall kRESCUE_MOD Stmt { error "mk_begin_body $1 [mk_rescue_body $2 Nil Nil Nil Nil $3] Nil Nil" }
+  | CommandCall kRESCUE_MOD Stmt { mk_begin_body' $1 [mk_rescue_body Nil Nil $3] }
   | CommandAsgn { $1 }
 
 Expr :: { Term }
@@ -439,7 +439,7 @@ ArefArgs: None { undefined }
   | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
 
 ArgRhs: Arg %prec tOP_ASGN { $1 }
-  | Arg kRESCUE_MOD Arg { error "mk_begin_body $1 [ (mk_rescue_body $2 Nil Nil Nil Nil $3) ] Nil Nil" }
+  | Arg kRESCUE_MOD Arg { mk_begin_body' $1 [mk_rescue_body Nil Nil $3] }
 
 ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 
@@ -660,20 +660,16 @@ Cases: OptElse { [$1] }
  | CaseBody { $1 }
 
 OptRescue :: { [Term] }
-OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { error "mk_rescue_body" } {-
-            assoc_t, ExcVar = $3
-            if $2
-              ExcList = (mk_array $2)
-            end
-            [ mk_rescue_body $1, ExcList, assoc_t, ExcVar, $4, $5), *$6 ] -}
+OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { mk_rescue_body (mk_array $2) $3 $5 : $6 }
   | {- nothing -} { [] }
 
 ExcList: Arg { undefined } -- { [ $1 ] }
   | Mrhs { undefined } -- { $1 }
   | None { undefined } -- { $1 }
 
-ExcVar: tASSOC Lhs { undefined } --{ [ $1, $2 ] }
-  | None { undefined } -- { $1 }
+ExcVar :: { Term }
+ExcVar: tASSOC Lhs { $2 }
+  | None { $1 }
 
 OptEnsure: kENSURE Compstmt { undefined } -- { undefined }
   | None { undefined } -- { $1 }
@@ -945,6 +941,7 @@ Term: tSEMI { undefined }
 Terms: Term { undefined }
   | Terms tSEMI { undefined }
 
+None :: { Term }
 None: { Nil } -- { Nil }
 
 {

@@ -27,6 +27,7 @@ data Term
        | Dstr [Term]
        | Dsym Term Term
        | Encoding
+       | Ensure Term Term
        | ERange Term Term
        | File
        | For Term Term Term
@@ -62,6 +63,8 @@ data Term
        | Self
        | Send Term String [Term]
        | Csend Term String [Term]
+       | Resbody Term Term Term
+       | Rescue Term [Term]
        | Splat (Maybe Term)
        | Str String
        | Super [Term]
@@ -133,8 +136,17 @@ mk_nth_ref  (TNTH_REF i)  = NthRef i
 
 mk_begin = error "mk_begin"
 
+mk_begin_body' :: Term -> [Term] -> Term
+mk_begin_body' compoundStmt []            = compoundStmt
+mk_begin_body' compoundStmt rescue_bodies = Rescue compoundStmt $ rescue_bodies ++ [Nil]
+
 mk_begin_body :: Term -> [Term] -> Term -> Term -> Term
-mk_begin_body Nil rescues els ensure = Begin [] -- TODO
+mk_begin_body Nil [] els ensure                     = wrap_in_ensure [] els ensure 
+mk_begin_body (Begin terms) [] els ensure           = wrap_in_ensure terms els ensure
+mk_begin_body compoundStmt [] els ensure            = wrap_in_ensure [compoundStmt] els ensure
+mk_begin_body compoundStmt rescue_bodies els ensure = Ensure (Rescue compoundStmt $ rescue_bodies ++ [els]) ensure 
+
+wrap_in_ensure terms els ensure = Ensure (Begin $ terms ++ [Begin [els]]) ensure
 
 mk_begin_keyword :: Term -> Term
 mk_begin_keyword Nil        = KWBegin []
@@ -268,7 +280,10 @@ mk_range_inclusive = IRange
 mk_rational = error "mk_rational"
 mk_regexp_compose = error "mk_regexp_compose"
 mk_regexp_options = error "mk_regexp_options"
-mk_rescue_body = error "mk_rescue_body"
+
+mk_rescue_body :: Term -> Term -> Term -> Term
+mk_rescue_body = Resbody
+
 mk_restarg = error "mk_restarg"
 mk_shadowarg = error "mk_shadowarg"
 
