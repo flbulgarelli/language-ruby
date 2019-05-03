@@ -435,8 +435,8 @@ RelExpr: Arg Relop Arg %prec tGT { mk_binary_op $1 $2 $3 }
 
 ArefArgs: None { undefined }
   | Args Trailer { undefined }
-  | Args tCOMMA Assocs Trailer { $1 ++ [mk_associate Nil $3 Nil] }
-  | Assocs Trailer { [ (mk_associate Nil $1 Nil) ] }
+  | Args tCOMMA Assocs Trailer { $1 ++ [mk_associate $3] }
+  | Assocs Trailer { [ (mk_associate $1) ] }
 
 ArgRhs: Arg %prec tOP_ASGN { $1 }
   | Arg kRESCUE_MOD Arg { mk_begin_body' $1 [mk_rescue_body Nil Nil $3] }
@@ -446,17 +446,18 @@ ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
 OptParenArgs: {- nothing -} { error "[ Nil, [], Nil ]" }
   | ParenArgs { $1 }
 
+OptCallArgs :: { [Term] }
 OptCallArgs: {- nothing -} { [] }
-  | CallArgs { undefined } -- { $1 }
-  | Args tCOMMA { undefined } -- { $1 }
-  | Args tCOMMA Assocs tCOMMA { undefined } -- { $1 ++ [mk_associate Nil $3 Nil] }
-  | Assocs tCOMMA { undefined } -- { [ mk_associate Nil $1 Nil ] }
+  | CallArgs { $1 }
+  | Args tCOMMA { $1 }
+  | Args tCOMMA Assocs tCOMMA { $1 ++ [mk_associate $3] }
+  | Assocs tCOMMA { [mk_associate $1] }
 
 CallArgs :: { [Term] }
 CallArgs: Command { [ $1 ] }
   | Args OptBlockArg { $1 ++ $2 }
-  | Assocs OptBlockArg { [ mk_associate Nil $1 Nil ] ++ $2  }
-  | Args tCOMMA Assocs OptBlockArg { $1 ++ [mk_associate Nil $3 Nil] ++ $4 }
+  | Assocs OptBlockArg { [ mk_associate $1 ] ++ $2  }
+  | Args tCOMMA Assocs OptBlockArg { $1 ++ [mk_associate $3] ++ $4 }
   | BlockArg { [ $1 ] }
 
 CommandArgs :: { [Term] }
@@ -499,8 +500,9 @@ Primary: Literal { $1 }
   | tLPAREN Compstmt tRPAREN { error "mk_begin $2" }
   | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 $3 }
   | tCOLON3 tCONSTANT { error "mk_const_global $1 $2" }
-  | tLBRACK ArefArgs tRBRACK { error "mk_array $2" }
-  | tLBRACE AssocList tRCURLY KReturn { error "mk_associate $1 $2 $3 }  -- { mkeyword_cmd Return $1" }
+  | tLBRACK ArefArgs tRBRACK { mk_array $2 }
+  | tLBRACE AssocList tRCURLY { mk_associate $2 }
+  | KReturn { error "mkeyword_cmd Return $1" }
   | kYIELD tLPAREN2 CallArgs Rparen { mk_keyword_cmd Yield $3 }
   | kYIELD tLPAREN2 Rparen { mk_keyword_cmd Yield [] }
   | kYIELD { mk_keyword_cmd Yield [] }

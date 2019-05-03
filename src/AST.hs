@@ -33,6 +33,7 @@ data Term
        | For Term Term Term
        | Gvar String
        | Gvasgn String (Maybe Term) -- global variables
+       | Hash [Term]
        | If Term Term Term
        | IRange Term Term
        | Ivar String
@@ -127,7 +128,9 @@ mk_assignable (Cvar i) = Cvasgn i Nothing
 mk_assignable (Gvar i) = Gvasgn i Nothing
 mk_assignable (Const parent i) = Casgn parent i Nothing
 
-mk_associate = error "mk_associate"
+mk_associate :: [Term] -> Term
+mk_associate = Hash
+
 mk_attr_asgn = error "mk_attr_asgn"
 
 mk_back_ref, mk_nth_ref :: Token -> Term
