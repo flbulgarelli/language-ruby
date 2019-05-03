@@ -197,7 +197,8 @@ TopStmts: {- nothing -} { [] }
   | error TopStmt { [$2] }
 
 TopStmt :: { Term }
-TopStmt: Stmt { $1 } | klBEGIN BeginBlock { error "mk_preexe $2" }
+TopStmt: Stmt { $1 }
+  | klBEGIN BeginBlock { error "mk_preexe $2" }
 
 BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
 
@@ -224,8 +225,8 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
   | kUNDEF UndefList { (mk_undef_method $2) }
   | Stmt kIF_MOD Expr { mk_condition_mod $1 Nil $3 }
   | Stmt kUNLESS_MOD Expr { mk_condition_mod Nil $1 $3}
-  | Stmt kWHILE_MOD Expr { error "mk_loop_mod While $1 $2 $3" }
-  | Stmt kUNTIL_MOD Expr { error "mk_loop_mod Until $1 $2 $3" }
+  | Stmt kWHILE_MOD Expr { mk_loop_mod $1 $2 $3 }
+  | Stmt kUNTIL_MOD Expr { mk_loop_mod $1 $2 $3 }
   | Stmt kRESCUE_MOD Stmt { mk_begin_body' $1 [mk_rescue_body Nil Nil $3] }
   | klEND tLCURLY Compstmt tRCURLY { mk_postexe $3 }
   | CommandAsgn { $1 }
@@ -802,6 +803,7 @@ Backref: tNTH_REF { mk_nth_ref $1 }
 
 Superclass: tLT Expr Term { error "[ $1, $3 ]" }
   | {- nothing -} { Nil }
+
 
 FArglist: tLPAREN2 FArgs Rparen { (mk_args $1 $2 $3) }
   | FArgs Term { error "mk_args Nil $2 Nil" }

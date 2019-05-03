@@ -240,11 +240,11 @@ mk_kwsplat = KWSplat
 mk_loop :: (Term -> Term -> Term) -> Term -> Term -> Term
 mk_loop = id
 
-mk_loop_mod :: String -> Term -> Term -> Term
-mk_loop_mod "while" body@(KWBegin _) cond = WhilePost (check_condition cond) body
-mk_loop_mod "until" body@(KWBegin _) cond = UntilPost (check_condition cond) body
-mk_loop_mod "while" body             cond = While (check_condition cond) body
-mk_loop_mod "until" body             cond = Until (check_condition cond) body
+mk_loop_mod :: Term -> Token -> Term -> Term
+mk_loop_mod body@(KWBegin _) KWHILE cond = WhilePost (check_condition cond) body
+mk_loop_mod body@(KWBegin _) KUNTIL cond = UntilPost (check_condition cond) body
+mk_loop_mod body             KWHILE cond = While (check_condition cond) body
+mk_loop_mod body             KUNTIL cond = Until (check_condition cond) body
 
 mk_match_op = error "mk_match_op"
 
