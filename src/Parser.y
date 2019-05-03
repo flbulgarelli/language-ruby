@@ -320,9 +320,9 @@ MlhsNode :: { Term }
 MlhsNode: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
   | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
-  | Primary CallOp tIDENTIFIER { error "mk_attr_asgn $1 $2 $3" }
-  | Primary tCOLON2 tIDENTIFIER { error "mk_attr_asgn $1 $2 $3" }
-  | Primary CallOp tCONSTANT { error "mk_attr_asgn $1 $2 $3" }
+  | Primary CallOp tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
+  | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
+  | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
   | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $3) }
   | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
   | Backref { mk_assignable $1 }

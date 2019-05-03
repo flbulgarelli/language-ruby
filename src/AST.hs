@@ -131,7 +131,9 @@ mk_assignable (Const parent i) = Casgn parent i Nothing
 mk_associate :: [Term] -> Term
 mk_associate = Hash
 
-mk_attr_asgn = error "mk_attr_asgn"
+mk_attr_asgn :: Term -> Token -> Token -> Term
+mk_attr_asgn receiver t_dot selector_t = call_type_for_dot t_dot receiver (value selector_t ++ "=") []
+
 
 mk_back_ref, mk_nth_ref :: Token -> Term
 mk_back_ref (TBACK_REF s) = BackRef s
@@ -165,8 +167,7 @@ mk_blockarg = error "mk_blockarg"
 mk_call_lambda = error "mk_call_lambda"
 
 mk_call_method :: Term -> Token -> Token -> [Term] -> Term
-mk_call_method receiver TANDDOT selector args = Csend receiver (mk_selector selector) args
-mk_call_method receiver _       selector args = Send receiver (mk_selector selector) args
+mk_call_method receiver t_dot selector args = call_type_for_dot t_dot receiver (mk_selector selector) args
 
 mk_case :: Term -> [Term] -> Term
 mk_case expr bodies = Case $ expr : bodies
@@ -335,6 +336,10 @@ mk_block' = error "mk_block"
 
 
 --- private
+
+call_type_for_dot :: Token -> (Term -> String -> [Term] -> Term)
+call_type_for_dot TANDDOT = Csend
+call_type_for_dot _ = Send
 
 value :: Token -> String
 value (TIDENTIFIER i) = i
