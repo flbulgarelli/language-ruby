@@ -13,6 +13,7 @@ data Term
        | And Term Term
        | Anddot
        | BackRef String
+       | BlockPass Term
        | Break [Term]
        | Case [Term]
        | Casgn Term String (Maybe Term) -- constants
@@ -162,7 +163,10 @@ mk_binary_op :: Term -> String -> Term -> Term
 mk_binary_op receiver op arg = Send receiver op [arg]
 
 mk_block = error "mk_block"
-mk_block_pass = error "mk_block_pass"
+
+mk_block_pass :: Term -> Term
+mk_block_pass = BlockPass
+
 mk_blockarg = error "mk_blockarg"
 mk_call_lambda = error "mk_call_lambda"
 

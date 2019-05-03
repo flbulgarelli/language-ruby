@@ -468,7 +468,9 @@ CallArgs: Command { [ $1 ] }
 CommandArgs :: { [Term] }
 CommandArgs: CallArgs { $1 }
 
-BlockArg: tAMPER Arg { error "mk_block_pass $1 $2" }
+BlockArg :: { Term }
+BlockArg: tAMPER Arg { mk_block_pass $2 }
+
 OptBlockArg: tCOMMA BlockArg { [ $2 ] }
   | {- nothing -} { [] }
 
