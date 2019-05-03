@@ -407,7 +407,7 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Arg tCARET Arg { mk_binary_op $1 "^" $3 }
   | Arg tAMPER2 Arg { mk_binary_op $1 "&&" $3 }
   | Arg tCMP Arg { error "mk_binary_op $1 $2 $3" }
-  | RelExpr %prec tCMP { undefined }
+  | RelExpr %prec tCMP { $1 }
   | Arg tEQ Arg { mk_binary_op $1 "==" $3 }
   | Arg tEQQ Arg { mk_binary_op $1 "===" $3 }
   | Arg tNEQ Arg { mk_binary_op $1 "!=" $3 }
@@ -433,17 +433,21 @@ RelExpr :: { Term }
 RelExpr: Arg Relop Arg %prec tGT { mk_binary_op $1 $2 $3 }
   | RelExpr Relop Arg %prec tGT { mk_binary_op $1 $2 $3 }
 
-ArefArgs: None { undefined }
-  | Args Trailer { undefined }
+ArefArgs :: { [Term] }
+ArefArgs: None { [] }
+  | Args Trailer { $1 }
   | Args tCOMMA Assocs Trailer { $1 ++ [mk_associate $3] }
   | Assocs Trailer { [ (mk_associate $1) ] }
 
+ArgRhs :: { Term }
 ArgRhs: Arg %prec tOP_ASGN { $1 }
   | Arg kRESCUE_MOD Arg { mk_begin_body' $1 [mk_rescue_body Nil Nil $3] }
 
-ParenArgs: tLPAREN2 OptCallArgs Rparen { $1 }
+ParenArgs :: { [Term] }
+ParenArgs: tLPAREN2 OptCallArgs Rparen { $2 }
 
-OptParenArgs: {- nothing -} { error "[ Nil, [], Nil ]" }
+OptParenArgs :: { [Term] }
+OptParenArgs: {- nothing -} { [] }
   | ParenArgs { $1 }
 
 OptCallArgs :: { [Term] }
@@ -532,12 +536,14 @@ Primary: Literal { $1 }
 
 KReturn: kRETURN { error ":invalid_return, Nil, $1 if @context.in_class?"  }
 
+Then :: { L.Token }
 Then: Term { $1 }
-  | kTHEN { undefined }
-  | Term kTHEN { $1 }
+  | kTHEN { $1 }
+  | Term kTHEN { $2 }
 
-Do: Term { undefined }
-  | kDO_COND { undefined }
+Do :: { L.Token }
+Do: Term { $1 }
+  | kDO_COND { $1 }
 
 IfTail :: { Term }
 IfTail: OptElse { $1 }
@@ -665,16 +671,18 @@ OptRescue :: { [Term] }
 OptRescue: kRESCUE ExcList ExcVar Then Compstmt OptRescue { mk_rescue_body (mk_array $2) $3 $5 : $6 }
   | {- nothing -} { [] }
 
-ExcList: Arg { undefined } -- { [ $1 ] }
-  | Mrhs { undefined } -- { $1 }
-  | None { undefined } -- { $1 }
+ExcList :: { [Term] }
+ExcList: Arg { [$1] }
+  | Mrhs { $1 }
+  | None { [] }
 
 ExcVar :: { Term }
 ExcVar: tASSOC Lhs { $2 }
   | None { $1 }
 
-OptEnsure: kENSURE Compstmt { undefined } -- { undefined }
-  | None { undefined } -- { $1 }
+OptEnsure :: { Term }
+OptEnsure: kENSURE Compstmt { $2 }
+  | None { $1 }
 
 Literal :: { Term }
 Literal: Numeric { $1 }
@@ -688,11 +696,12 @@ String :: { [Term] }
 String: String1 { [ $1 ] }
   | String String1 { $1 ++ [$2] }
 
+String1 :: { Term }
 String1: tSTRING_BEG StringContents tSTRING_END { mk_string_compose $2 }
   | tSTRING { mk_string $1 }
   | tCHARACTER { mk_character $1 }
 
-Xstring :: { Term  }
+Xstring :: { Term }
 Xstring: tXSTRING_BEG XStringContents tSTRING_END { error "mk_xstring_compose $2" }
 
 Regexp: tREGEXP_BEG RegexpContents tSTRING_END tREGEXP_OPT { error "mk_regexp_compose $1 $2 $3 (mk_regexp_options $4)" }
@@ -728,6 +737,7 @@ QsymList :: { [Term] }
 QsymList: {- nothing -} { [] }
   | QsymList tSTRING_CONTENT tSPACE { $1 ++ [mk_symbol_internal $2] }
 
+StringContents :: { [Term] }
 StringContents: {- nothing -} { [] }
   | StringContents StringContent { $1 ++ [$2] }
 
@@ -743,10 +753,11 @@ StringContent: tSTRING_CONTENT { mk_string_internal $1 }
   | tSTRING_DVAR StringDvar { $2 }
   | tSTRING_DBEG Compstmt tSTRING_DEND { error "mk_begin $1 $2 $3" } -- { @lexer.cmdarg.push(false); @lexer.cond.push(false); @lexer.cmdarg.pop @lexer.cond.pop
 
+StringDvar :: { Term }
 StringDvar: tGVAR { mk_gvar $1 }
   | tIVAR { mk_ivar $1 }
   | tCVAR { mk_cvar $1 }
-  | Backref { undefined }
+  | Backref { $1 }
 
 Symbol :: { Term }
 Symbol: tSYMBOL { mk_symbol $1 }
@@ -803,21 +814,22 @@ ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { error "$1.concat($3).concat($4)" 
 OptArgsTail: tCOMMA ArgsTail { $2 }
   | {- nothing -} { [] }
 
-FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $7 ++ $8" }
-  | FArg tCOMMA FOptarg OptArgsTail { error "$1 ++ $3 ++ $4" }
-  | FArg tCOMMA FOptarg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FArg tCOMMA FRestArg OptArgsTail { error "$1 ++ $3 ++ $4" }
-  | FArg tCOMMA FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FArg OptArgsTail { error "$1 ++ $2" }
-  | FOptarg tCOMMA FRestArg OptArgsTail { error "$1 ++ $3 ++ $4" }
-  | FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FOptarg OptArgsTail { error "$1 ++ $2" }
-  | FOptarg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $4" }
-  | FRestArg OptArgsTail { error "$1 ++ $2" }
-  | FRestArg tCOMMA FArg OptArgsTail { error "$1 ++ $3 ++ $4" }
-  | ArgsTail { error "$1" }
-  | {- nothing -} { error "[]" }
+FArgs :: { [Term] }
+FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg tCOMMA FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
+  | FArg tCOMMA FOptarg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FArg tCOMMA FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FArg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg OptArgsTail { $1 ++ $2 }
+  | FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FOptarg tCOMMA FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FOptarg OptArgsTail { $1 ++ $2 }
+  | FOptarg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | FRestArg OptArgsTail { $1 ++ $2 }
+  | FRestArg tCOMMA FArg OptArgsTail { $1 ++ $3 ++ $4 }
+  | ArgsTail { $1 }
+  | {- nothing -} { [] }
 
 
 FBadArg: tCONSTANT { error ":argument_const, Nil, $1" }
@@ -868,15 +880,17 @@ FOptarg :: { [Term] }
 FOptarg: FOpt { [ $1 ] }
   | FOptarg tCOMMA FOpt { $1 ++ [$3] }
 
-RestargMark: tSTAR2 { undefined }
-  | tSTAR { undefined }
+RestargMark :: { L.Token }
+RestargMark: tSTAR2 { $1 }
+  | tSTAR { $1 }
 
 FRestArg :: { [Term] }
 FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $1 $2 ] }
   | RestargMark { [ mk_restarg $1 ] }
 
-BlkargMark: tAMPER2 { undefined }
-  | tAMPER { undefined }
+BlkargMark :: { L.Token }
+BlkargMark: tAMPER2 { $1 }
+  | tAMPER { $1 }
 
 FBlockArg: BlkargMark tIDENTIFIER { error "mk_blockarg $1 $2" }
 
@@ -924,24 +938,32 @@ CallOp :: { L.Token }
 CallOp: tDOT { $1 }
   | tANDDOT { $1 }
 
-OptTerms: { undefined }
-  | Terms { undefined }
+OptTerms :: { L.Token }
+OptTerms: { L.KNIL }
+  | Terms { $1 }
 
-OptNl: { undefined }
-  | tNL { undefined }
-
-Rparen: OptNl tRPAREN { undefined }
-RBracket: OptNl tRBRACK { undefined }
-
-Trailer: { undefined }
-  | tNL { undefined }
-  | tCOMMA { undefined }
-
-Term: tSEMI { undefined }
-  | tNL { undefined }
-
-Terms: Term { undefined }
-  | Terms tSEMI { undefined }
+OptNl :: { L.Token }
+OptNl: { L.KNIL }
+  | tNL { $1 }
+ 
+Rparen :: { L.Token }
+Rparen: OptNl tRPAREN { $2 }
+ 
+RBracket :: { L.Token }
+RBracket: OptNl tRBRACK { $2 }
+ 
+Trailer :: { L.Token }
+Trailer: {- nothing -} { L.KNIL }
+  | tNL { $1 }
+  | tCOMMA { $1 }
+ 
+Term :: { L.Token }
+Term: tSEMI { error "Term: tSEMI" }
+  | tNL { $1 }
+ 
+Terms :: { L.Token }
+Terms: Term { $1 }
+  | Terms tSEMI { $1 }
 
 None :: { Term }
 None: { Nil } -- { Nil }
