@@ -25,7 +25,7 @@ data Term
        | Defs Term String Args Term
        | Dot
        | Dstr [Term]
-       | Dsym Term Term
+       | Dsym [Term]
        | Encoding
        | Ensure Term Term
        | ERange Term Term
