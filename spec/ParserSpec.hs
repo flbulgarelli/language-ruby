@@ -537,3 +537,21 @@ spec = do
     test "resbody_list_var" "begin; meth; rescue foo => ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody (RArray [Lvar "foo"]) (Lvasgn "ex" Nothing) (Lvar "bar"), Nil]])
 
     test "retry" "retry" (Retry [])
+
+    test "hash_empty" "{ }" (Hash [])
+
+    test "hash_hashrocket" "{ 1 => 2 }" (Hash [Pair (RInt 1) (RInt 2)])
+
+    test "hash_hashrocket" "{ 1 => 2, :foo => \"bar\" }]" (Hash [Pair (RInt 1) (RInt 2), Pair (Sym "foo") (Str "bar")])
+
+    test "hash_label" "{ foo: 2 }" (Hash [Pair (Sym "foo") (RInt 2)])
+
+    test "hash_label_end" "{ 'foo': 2 }" (Hash [Pair (Sym "foo") (RInt 2)])
+
+    test "hash_label_end" "{ 'foo': 2, 'bar': {}}" (Hash [Pair (Sym "foo") (RInt 2), Pair (Sym "bar") (Hash [])])
+
+    test "hash_label_end" "f(a ? \"a\":1)" (Send Nil "f" [If (Send Nil "a" []) (Str "a") (RInt 1)])
+
+    test "hash_kwsplat" "{ foo: 2, **bar }" (Hash [Pair (Sym "foo") (RInt 2), KWSplat (Lvar "bar")])
+
+    test "hash_no_hashrocket" "{ 1, 2 }" (Hash [Pair (RInt 1) (RInt 2)])
