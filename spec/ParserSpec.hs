@@ -504,3 +504,36 @@ spec = do
     test "while_post" "begin meth end while foo" (WhilePost (Lvar "foo") (KWBegin [Send Nil "meth" []]))
         
     test "until_post" "begin meth end until foo" (UntilPost (Lvar "foo") (KWBegin [Send Nil "meth" []]))
+
+    test "rescue" "begin; meth; rescue; foo; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "foo"), Nil]])
+
+    test "rescue_else" "begin; meth; rescue; foo; else; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "foo"), (Lvar "bar")]])
+
+    test "ensure" "begin; meth; ensure; bar; end" (KWBegin [Ensure (Send Nil "meth" []) (Lvar "bar")])
+
+    test "ensure_empty" "begin ensure end" (KWBegin [Ensure Nil Nil])
+
+    test "rescue_ensure" "begin; meth; rescue; baz; ensure; bar; end" (KWBegin [Ensure (Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "baz"), Nil]) (Lvar "bar")])
+
+    test "rescue_else_ensure" "begin; meth; rescue; baz; else foo; ensure; bar end" (KWBegin [Ensure (Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "baz"), Lvar "foo"]) (Lvar "bar")])
+
+    test "rescue_mod" "meth rescue bar" (Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "bar"), Nil])
+
+    test "rescue_mod_asgn" "foo = meth rescue bar" (Lvasgn "foo" (Just $ Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "bar"), Nil]))
+
+
+    --test "rescue_mod_op_assign" "foo += meth rescue bar" (Op_asgn (Lvasgn "foo" Nothing), "+", (Rescue (Send Nil "meth" []), (Resbody Nil Nil (Lvar "bar")), Nil))
+
+    --test "rescue_without_begin_end" "meth do; foo; rescue; bar; end" (Block, (Send Nil "meth" []), (Args), (Rescue (Lvar "foo"), (Resbody Nil Nil (Lvar "bar")), Nil))
+
+    test "resbody_list" "begin; meth; rescue Exception; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody (RArray [Const Nil "Exception"]) Nil (Lvar "bar"), Nil]])
+
+    test "resbody_list_mrhs" "begin; meth; rescue Exception, foo; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody (RArray [Const Nil "Exception", Lvar "foo"]) Nil (Lvar "bar"), Nil]])
+
+    test "resbody_var" "begin; meth; rescue => ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil (Lvasgn "ex" Nothing) (Lvar "bar"), Nil]])
+
+    test "resbody_var" "begin; meth; rescue => @ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil (Ivasgn "@ex" Nothing) (Lvar "bar"), Nil]])
+
+    test "resbody_list_var" "begin; meth; rescue foo => ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody (RArray [Lvar "foo"]) (Lvasgn "ex" Nothing) (Lvar "bar"), Nil]])
+
+    test "retry" "retry" (Retry [])
