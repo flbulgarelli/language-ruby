@@ -555,3 +555,41 @@ spec = do
     test "hash_kwsplat" "{ foo: 2, **bar }" (Hash [Pair (Sym "foo") (RInt 2), KWSplat (Lvar "bar")])
 
     test "hash_no_hashrocket" "{ 1, 2 }" (Hash [Pair (RInt 1) (RInt 2)])
+
+    test "args_cmd" "fun(f bar)" (Send Nil "fun" [Send Nil "f" [Lvar "bar"]])
+
+    test "args_args_star" "fun(foo, *bar)" (Send Nil "fun" [Lvar "foo", Splat $ Just (Lvar "bar")])
+
+    test "args_args_star" "fun(foo, *bar, &baz)" (Send Nil "fun" [Lvar "foo", Splat $ Just (Lvar "bar"), BlockPass (Lvar "baz")])
+
+    test "args_star" "fun(*bar)" (Send Nil "fun" [Splat $ Just (Lvar "bar")])
+
+    test "args_star" "fun(*bar, &baz)" (Send Nil "fun" [Splat $ Just (Lvar "bar"), BlockPass (Lvar "baz")])
+
+    test "args_block_pass" "fun(&bar)" (Send Nil "fun" [BlockPass (Lvar "bar")])
+
+    --test "args_args_comma" "foo[bar,]" (Index, (Lvar "foo"), (Lvar "bar"))
+
+    test "args_assocs" "fun(:foo => 1)" (Send Nil "fun" [Hash [Pair (Sym "foo") (RInt 1)]])
+
+    test "args_assocs" "fun(:foo => 1, &baz)" (Send Nil "fun" [Hash [Pair (Sym "foo") (RInt 1)], BlockPass (Lvar "baz")])
+
+    --test "args_assocs_comma" "foo[:baz => 1,]" (Index, (Lvar "foo"), (Hash (Pair, (Sym "baz"), (RInt, 1))))
+
+    test "args_args_assocs" "fun(foo, :foo => 1)" (Send Nil "fun" [Lvar "foo", Hash [Pair (Sym "foo") (RInt 1)]])
+
+    test "args_args_assocs" "fun(foo, :foo => 1, &baz)" (Send Nil "fun" [Lvar "foo", Hash [Pair (Sym "foo") (RInt 1)], BlockPass (Lvar "baz")])
+
+    --test "args_args_assocs_comma" "foo[bar, :baz => 1,]" (Index, (Lvar "foo"), (Lvar "bar"), (Hash (Pair, (Sym "baz"), (RInt, 1))))
+
+    test "space_args_cmd" "fun (f bar)" (Send Nil "fun" [Begin [Send Nil "f" [Lvar "bar"]]])
+
+    test "space_args_arg" "fun (1)" (Send Nil "fun" [Begin [RInt 1]])
+
+    test "space_args_arg_newline" "fun (1\n)" (Send Nil "fun" [Begin [RInt 1]])
+
+    --test "space_args_arg_block" "fun (1) {}" (Block (Send Nil "fun", (Begin (RInt, 1))), (Args), Nil)
+
+    --test "space_args_arg_block" "foo.fun (1) {}" (Block (Send (Lvar "foo"), "fun", (Begin (RInt, 1))), (Args), Nil)
+
+    test "space_args_arg_call" "fun (1).to_i" (Send Nil "fun" [Send (Begin [RInt 1]) "to_i" []])
