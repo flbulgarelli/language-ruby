@@ -286,7 +286,7 @@ Command: Operation CommandArgs %prec tLOWEST { mk_call_method Nil L.KNIL $1 $2 }
 
 Mlhs :: { Term }
 Mlhs: MlhsBasic { mk_multi_lhs $1 }
-  | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
+  | tLPAREN MlhsInner Rparen { mk_begin $2 }
 
 MlhsInner :: { Term }
 MlhsInner: MlhsBasic { mk_multi_lhs $1 }
@@ -306,7 +306,7 @@ MlhsBasic: MlhsHead { $1 }
 
 MlhsItem :: { Term }
 MlhsItem: MlhsNode { $1 }
-      | tLPAREN MlhsInner Rparen { error "mk_begin $1 $2 $3" }
+      | tLPAREN MlhsInner Rparen { mk_begin $2 }
 
 MlhsHead :: { [Term] }
 MlhsHead: MlhsItem tCOMMA { [ $1 ] }
@@ -502,9 +502,9 @@ Primary: Literal { $1 }
   | Backref { $1 }
   | tFID { error "mk_call_method $1" }
   | kBEGIN Bodystmt kEND { mk_begin_keyword $2 }
-  | tLPAREN_ARG Stmt Rparen { error "mk_begin $2 $3" }
-  | tLPAREN_ARG OptNl tRPAREN { error "mk_begin $2" }
-  | tLPAREN Compstmt tRPAREN { error "mk_begin $2" }
+  | tLPAREN_ARG Stmt Rparen { mk_begin $2 }
+  | tLPAREN_ARG OptNl tRPAREN { mk_begin Nil }
+  | tLPAREN Compstmt tRPAREN { mk_begin $2 }
   | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 $3 }
   | tCOLON3 tCONSTANT { error "mk_const_global $1 $2" }
   | tLBRACK ArefArgs tRBRACK { mk_array $2 }

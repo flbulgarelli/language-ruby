@@ -140,7 +140,11 @@ mk_back_ref, mk_nth_ref :: Token -> Term
 mk_back_ref (TBACK_REF s) = BackRef s
 mk_nth_ref  (TNTH_REF i)  = NthRef i
 
-mk_begin = error "mk_begin"
+mk_begin :: Term -> Term
+mk_begin Nil            = Begin []
+mk_begin term@(Mlhs _)  = term
+--mk_begin term@(Begin _) | (body.loc.begin.nil? && body.loc.end.nil?) = term
+mk_begin term           = Begin [term]
 
 mk_begin_body' :: Term -> [Term] -> Term
 mk_begin_body' compoundStmt []            = compoundStmt
