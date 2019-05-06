@@ -324,7 +324,7 @@ MlhsNode: UserVariable { mk_assignable $1 }
   | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
   | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
   | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $3) }
-  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
+  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $2) }
   | Backref { mk_assignable $1 }
 
 Lhs :: { Term }
@@ -335,7 +335,7 @@ Lhs: UserVariable { mk_assignable $1 }
   | Primary tCOLON2 tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary CallOp tCONSTANT { (mk_attr_asgn $1 $2 $3) }
   | Primary tCOLON2 tCONSTANT { mk_assignable (mk_const_fetch $1 $3) }
-  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $1 $2) }
+  | tCOLON3 tCONSTANT { mk_assignable (mk_const_global $2) }
   | Backref { mk_assignable $1 }
 
 Cname :: { L.Token }
@@ -343,8 +343,8 @@ Cname: tIDENTIFIER { error ":module_name_const, Nil, $1" }
   | tCONSTANT { $1 }
 
 Cpath :: { Term }
-Cpath: tCOLON3 Cname { error "mk_const_global $1 $2" }
-  | Cname { error "mk_const $1" }
+Cpath: tCOLON3 Cname { mk_const_global $2 }
+  | Cname { mk_const $1 }
   | Primary tCOLON2 Cname { mk_const_fetch $1 $3 }
 
 Fname :: { L.Token }
@@ -389,7 +389,7 @@ Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
   | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
   | Primary tCOLON2 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $5 }
-  | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_global $1 $2)) $4 }
+  | tCOLON3 tCONSTANT tOP_ASGN ArgRhs { mk_op_assign (mk_const_op_assignable (mk_const_global $2)) $4 }
   | Backref tOP_ASGN ArgRhs { mk_op_assign $1 $3 }
   | Arg tDOT2 Arg { (mk_range_inclusive $1 $3) }
   | Arg tDOT3 Arg { (mk_range_exclusive $1 $3) }
@@ -506,7 +506,7 @@ Primary: Literal { $1 }
   | tLPAREN_ARG OptNl tRPAREN { mk_begin Nil }
   | tLPAREN Compstmt tRPAREN { mk_begin $2 }
   | Primary tCOLON2 tCONSTANT { mk_const_fetch $1 $3 }
-  | tCOLON3 tCONSTANT { error "mk_const_global $1 $2" }
+  | tCOLON3 tCONSTANT { mk_const_global $2 }
   | tLBRACK ArefArgs tRBRACK { mk_array $2 }
   | tLBRACE AssocList tRCURLY { mk_associate $2 }
   | KReturn { error "mkeyword_cmd Return $1" }
@@ -570,14 +570,14 @@ FMargList: FMarg { [ $1 ] }
 
 FMargs ::  { [Term] }
 FMargs: FMargList { $1 }
-  | FMargList tCOMMA tSTAR FNormArg { error "$1. push(mk_restarg $3 $4)" }
-  | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { error "$1. push(mk_restarg $3 $4). ++ $6" }
-  | FMargList tCOMMA tSTAR { error "$1. push(mk_restarg($3))" }
-  | FMargList tCOMMA tSTAR tCOMMA FMargList { error "$1. push(mk_restarg($3)). ++ $5" }
-  | tSTAR FNormArg { error "[ (mk_restarg $1 $2) ]" }
-  | tSTAR FNormArg tCOMMA FMargList { error "[ (mk_restarg $1 $2), *$4 ]" }
-  | tSTAR { [ mk_restarg $1 ] }
-  | tSTAR tCOMMA FMargList { [ mk_restarg $1 $3 ] }
+  | FMargList tCOMMA tSTAR FNormArg { $1 ++ [mk_restarg (Just $4)] }
+  | FMargList tCOMMA tSTAR FNormArg tCOMMA FMargList { $1 ++ mk_restarg (Just $4) : $6 }
+  | FMargList tCOMMA tSTAR { $1 ++ [mk_restarg Nothing] }
+  | FMargList tCOMMA tSTAR tCOMMA FMargList { $1 ++ mk_restarg Nothing : $5 }
+  | tSTAR FNormArg { [mk_restarg $ Just $2] }
+  | tSTAR FNormArg tCOMMA FMargList { mk_restarg (Just $2) : $4 }
+  | tSTAR { [mk_restarg Nothing] }
+  | tSTAR tCOMMA FMargList { mk_restarg Nothing : $3 }
 
 BlockArgsTail :: { [Term] }
 BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
@@ -585,25 +585,26 @@ BlockArgsTail: FBlockKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
   | FKwrest OptFBlockArg { $1 ++ $2 }
   | FBlockArg { [ $1 ] }
 
+OptBlockArgsTail :: { [Term] }
 OptBlockArgsTail: tCOMMA BlockArgsTail { $2 }
   | {- nothing -} { [] }
 
 BlockParam :: { [Term] }
-BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $7 ++ $8" }
-  | FArg tCOMMA FBlockOptarg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
-  | FArg tCOMMA FBlockOptarg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FArg tCOMMA FRestArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
-  | FArg tCOMMA { error "$1" }
-  | FArg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FArg OptBlockArgsTail { error "if null $2 && length $1 == 1 then [mk_procarg0 $1[0]] else $1 ++ $2" }
-  | FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
-  | FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $5 ++ $6" }
-  | FBlockOptarg OptBlockArgsTail { error "$1 ++ $2" }
-  | FBlockOptarg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
-  | FRestArg OptBlockArgsTail { error "$1 ++ $2" }
-  | FRestArg tCOMMA FArg OptBlockArgsTail { error "$1 ++ $3 ++ $4" }
-  | BlockArgsTail { error "$1" }
+BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg tCOMMA FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $7 ++ $8 }
+  | FArg tCOMMA FBlockOptarg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+  | FArg tCOMMA FBlockOptarg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+  | FArg tCOMMA { $1 }
+  | FArg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FArg OptBlockArgsTail { if null $2 && length $1 == 1 then [mk_procarg0 (head $1)] else $1 ++ $2 }
+  | FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+  | FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
+  | FBlockOptarg OptBlockArgsTail { $1 ++ $2 }
+  | FBlockOptarg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+  | FRestArg OptBlockArgsTail { $1 ++ $2 }
+  | FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
+  | BlockArgsTail { $1 }
 
 OptBlockParam: {- nothing -} { error "mk_args Nil [] Nil" }
   | BlockParamDef { $1 }
@@ -810,11 +811,13 @@ Superclass: tLT Expr Term { error "[ $1, $3 ]" }
 FArglist: tLPAREN2 FArgs Rparen { (mk_args $1 $2 $3) }
   | FArgs Term { error "mk_args Nil $2 Nil" }
 
-ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { error "$1.concat($3).concat($4)" }
-  | FKwarg OptFBlockArg { error "$1.concat($2)" }
-  | FKwrest OptFBlockArg { error "$1.concat($2)" }
+ArgsTail :: { [Term] }
+ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
+  | FKwarg OptFBlockArg { $1 ++ $2 }
+  | FKwrest OptFBlockArg { $1 ++ $2 }
   | FBlockArg { [ $1 ] }
 
+OptArgsTail :: { [Term] }
 OptArgsTail: tCOMMA ArgsTail { $2 }
   | {- nothing -} { [] }
 
@@ -841,42 +844,55 @@ FBadArg: tCONSTANT { error ":argument_const, Nil, $1" }
   | tGVAR { error ":argument_gvar, Nil, $1" }
   | tCVAR { error ":argument_cvar, Nil, $1" }
 
+FNormArg :: { L.Token }
 FNormArg: FBadArg { $1 }
   | tIDENTIFIER { $1 }
 
+FArgAsgn :: { L.Token }
 FArgAsgn: FNormArg { $1 }
 
 FArgItem :: { Term }
 FArgItem: FArgAsgn { error "mk_arg $1" }
   | tLPAREN FMargs Rparen { mk_multi_lhs $2 }
 
+FArg :: { [Term] }
 FArg: FArgItem { [ $1 ] }
   | FArg tCOMMA FArgItem { $1 ++ [$3] }
 
+FLabel :: { L.Token }
 FLabel: tLABEL { undefined } -- { check_kwarg_name($1) @static_env.declare $1[0] $1 }
 
-FKw: FLabel Arg { error "mk_kwoptarg $1 $2" }
-  | FLabel { error "mk_kwarg $1" }
+FKw :: { Term }
+FKw: FLabel Arg { mk_kwoptarg $1 $2 }
+  | FLabel { mk_kwarg $1 }
 
-FBlockKw: FLabel Primary { error "mk_kwoptarg $1 $2" }
-  | FLabel { error "mk_kwarg $1" }
+FBlockKw :: { Term }
+FBlockKw: FLabel Primary { mk_kwoptarg $1 $2 }
+  | FLabel { mk_kwarg $1 }
 
+FBlockKwarg :: { [Term] }
 FBlockKwarg: FBlockKw { [ $1 ] }
   | FBlockKwarg tCOMMA FBlockKw { $1 ++ [$3] }
 
+FKwarg :: { [Term] }
 FKwarg: FKw { [ $1 ] }
   | FKwarg tCOMMA FKw { $1 ++ [$3] }
 
+KwrestMark :: { L.Token }
 KwrestMark: tPOW { $1 }
   | tDSTAR { $1 }
 
-FKwrest: KwrestMark tIDENTIFIER {  [ mk_kwrestarg $1 $2 ] }
-  | KwrestMark { [ mk_kwrestarg($1) ] }
+FKwrest :: { [Term] }
+FKwrest: KwrestMark tIDENTIFIER {  [ mk_kwrestarg $ Just $2 ] }
+  | KwrestMark { [ mk_kwrestarg Nothing ] }
 
+FOpt :: { Term }
 FOpt: FArgAsgn tEQL Arg { error "mk_optarg $1 $2 $3" }
 
+FBlockOpt :: { Term }
 FBlockOpt: FArgAsgn tEQL Primary { error "mk_optarg $1 $2 $3" }
 
+FBlockOptarg :: { [Term] }
 FBlockOptarg: FBlockOpt { [ $1 ] }
   | FBlockOptarg tCOMMA FBlockOpt { $1 ++ [$3] }
 
@@ -889,15 +905,17 @@ RestargMark: tSTAR2 { $1 }
   | tSTAR { $1 }
 
 FRestArg :: { [Term] }
-FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $1 $2 ] }
-  | RestargMark { [ mk_restarg $1 ] }
+FRestArg: RestargMark tIDENTIFIER { [ mk_restarg $ Just $2 ] }
+  | RestargMark { [ mk_restarg Nothing ] }
 
 BlkargMark :: { L.Token }
 BlkargMark: tAMPER2 { $1 }
   | tAMPER { $1 }
 
-FBlockArg: BlkargMark tIDENTIFIER { error "mk_blockarg $1 $2" }
+FBlockArg :: { Term }
+FBlockArg: BlkargMark tIDENTIFIER { mk_blockarg $2 }
 
+OptFBlockArg :: { [Term] }
 OptFBlockArg: tCOMMA FBlockArg { [ $2 ] }
   | {- nothing -} { [] }
 
@@ -905,6 +923,7 @@ Singleton :: { Term }
 Singleton: VarRef { $1 }
   | tLPAREN2 Expr Rparen { $2 }
 
+AssocList :: { [Term] }
 AssocList: {- nothing -} { [] }
   | Assocs Trailer { $1 }
 
@@ -913,8 +932,8 @@ Assocs: Assoc { [ $1 ] }
   | Assocs tCOMMA Assoc { $1 ++ [$3] }
 
 Assoc :: { Term }
-Assoc: Arg tASSOC Arg { error "mk_pair $1 $2 $3" }
-   | tLABEL Arg { error "mk_pair_keyword $1 $2" }
+Assoc: Arg tASSOC Arg { mk_pair $1 $3 }
+   | tLABEL Arg { mk_pair_keyword $1 $2 }
    | tSTRING_BEG StringContents tLABEL_END Arg { error "mk_pair_quoted $1 $2 $3 $4" }
    | tDSTAR Arg { mk_kwsplat $2 }
 

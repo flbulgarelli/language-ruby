@@ -12,7 +12,9 @@ data Term
        | Alias Term Term
        | And Term Term
        | Anddot
+       | Arg String
        | BackRef String
+       | BlockArg String
        | BlockPass Term
        | Break [Term]
        | Case [Term]
@@ -39,7 +41,10 @@ data Term
        | IRange Term Term
        | Ivar String
        | Ivasgn String (Maybe Term) -- instance variables
+       | KWArg String
        | KWBegin [Term]
+       | KWOptArg String Term
+       | KWRestArg (Maybe String)
        | KWSplat Term
        | Line
        | Lvar String
@@ -51,6 +56,7 @@ data Term
        | NthRef Int
        | Pair Term Term
        | Postexe Term
+       | Preexe Term
        | Or Term Term
        | RArray [Term]
        | RComplex (Complex Double)
@@ -67,6 +73,8 @@ data Term
        | Csend Term String [Term]
        | Resbody Term Term Term
        | Rescue Term [Term]
+       | RestArg (Maybe String)
+       | ShadowArg String
        | Splat (Maybe Term)
        | Str String
        | Super [Term]
@@ -113,7 +121,9 @@ mk_accessible term        _   = term
 mk_alias :: Term -> Term -> Term
 mk_alias = Alias
 
-mk_arg = error "mk_arg"
+mk_arg :: Token -> Term
+mk_arg = Arg . value
+
 mk_args = error "mk_args"
 
 mk_array :: [Term] -> Term
@@ -171,7 +181,9 @@ mk_block = error "mk_block"
 mk_block_pass :: Term -> Term
 mk_block_pass = BlockPass
 
-mk_blockarg = error "mk_blockarg"
+mk_blockarg :: Token -> Term
+mk_blockarg = BlockArg . value
+
 mk_call_lambda = error "mk_call_lambda"
 
 mk_call_method :: Term -> Token -> Token -> [Term] -> Term
@@ -201,7 +213,8 @@ mk_condition_mod ifTrue ifFalse cond = If (check_condition cond) ifTrue ifFalse
 mk_const_fetch :: Term -> Token -> Term
 mk_const_fetch first (TCONSTANT second) = Const first second
 
-mk_const_global = error "mk_const_global"
+mk_const_global :: Token -> Term
+mk_const_global = Const Cbase . value
 
 mk_const_op_assignable :: Term -> Term
 mk_const_op_assignable (Const parent i) = Casgn parent i Nothing
@@ -239,9 +252,14 @@ mk_integer (TINTEGER i) = RInt i
 mk_keyword_cmd :: ([Term] -> Term) -> [Term] -> Term
 mk_keyword_cmd f args = f args -- TODO check for yield with block
 
-mk_kwarg = error "mk_kwarg"
-mk_kwoptarg = error "mk_kwoptarg"
-mk_kwrestarg = error "mk_kwrestarg"
+mk_kwarg :: Token -> Term
+mk_kwarg = KWArg . value
+
+mk_kwoptarg :: Token -> Term -> Term
+mk_kwoptarg token term = KWOptArg (value token) term
+
+mk_kwrestarg :: Maybe Token -> Term
+mk_kwrestarg = KWRestArg . fmap value
 
 mk_kwsplat :: Term -> Term
 mk_kwsplat = KWSplat
@@ -277,10 +295,14 @@ mk_optarg = error "mk_optarg"
 mk_pair :: Term -> Term -> Term
 mk_pair = Pair
 
-mk_pair_keyword = error "mk_pair_keyword"
+mk_pair_keyword :: Token -> Term -> Term
+mk_pair_keyword token = Pair (Sym $ value token)
+
 mk_pair_quoted = error "mk_pair_quoted"
 
-mk_preexe = error "mk_preexe"
+mk_preexe :: Term -> Term
+mk_preexe = Preexe
+
 mk_procarg0 = error "mk_procarg0"
 
 mk_range_exclusive :: Term -> Term -> Term
@@ -296,8 +318,11 @@ mk_regexp_options = error "mk_regexp_options"
 mk_rescue_body :: Term -> Term -> Term -> Term
 mk_rescue_body = Resbody
 
-mk_restarg = error "mk_restarg"
-mk_shadowarg = error "mk_shadowarg"
+mk_restarg :: Maybe Token -> Term
+mk_restarg = RestArg . fmap value
+
+mk_shadowarg :: Token -> Term
+mk_shadowarg = ShadowArg . value
 
 mk_splat :: Term -> Term
 mk_splat Nil  = Splat Nothing
