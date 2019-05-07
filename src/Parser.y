@@ -198,9 +198,10 @@ TopStmts: {- nothing -} { [] }
 
 TopStmt :: { Term }
 TopStmt: Stmt { $1 }
-  | klBEGIN BeginBlock { error "mk_preexe $2" }
+  | klBEGIN BeginBlock { mk_preexe $2 }
 
-BeginBlock: tLCURLY TopCompstmt tRCURLY { $1 }
+BeginBlock :: { Term }
+BeginBlock: tLCURLY TopCompstmt tRCURLY { $2 }
 
 Bodystmt :: { Term }
 Bodystmt: Compstmt OptRescue OptElse OptEnsure { mk_begin_body $1 $2 $3 $4  }
@@ -274,9 +275,9 @@ CmdBraceBlock: tLBRACE_ARG BraceBody tRCURLY { error "CmdBraceBlock" }
 Command :: { Term }
 Command: Operation CommandArgs %prec tLOWEST { mk_call_method Nil L.KNIL $1 $2 }
   | Operation CommandArgs CmdBraceBlock { error "Command" }  -- { let (begin_t, args, body, end_t) = $3 in (mk_block (mk_call_method Nil Nil $1 Nil $2 Nil) begin_t args body end_t) }
-  | Primary CallOp Operation2 CommandArgs %prec tLOWEST { error "mk_call_method $1 $2 $3 $4" }
+  | Primary CallOp Operation2 CommandArgs %prec tLOWEST { mk_call_method $1 $2 $3 $4 }
   | Primary CallOp Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $2 $3 $4 $5" }
-  | Primary tCOLON2 Operation2 CommandArgs %prec tLOWEST { error "mk_call_method $1 $3 $4" }
+  | Primary tCOLON2 Operation2 CommandArgs %prec tLOWEST { mk_call_method $1 $2 $3 $4 }
   | Primary tCOLON2 Operation2 CommandArgs CmdBraceBlock { error "mk_block' $1 $3 $4 $5" }
   | kSUPER CommandArgs { mk_keyword_cmd Super $2 }
   | kYIELD CommandArgs { mk_keyword_cmd Yield $2 }
@@ -561,7 +562,7 @@ OptElse: None { $1 }
   | kELSE Compstmt { $2 }
 
 FMarg :: { Term }
-FMarg: FNormArg { error "mk_arg $1" }
+FMarg: FNormArg { mk_arg $1 }
   | tLPAREN FMargs Rparen { mk_multi_lhs $2 }
 
 FMargList :: { [Term] }
@@ -852,7 +853,7 @@ FArgAsgn :: { L.Token }
 FArgAsgn: FNormArg { $1 }
 
 FArgItem :: { Term }
-FArgItem: FArgAsgn { error "mk_arg $1" }
+FArgItem: FArgAsgn { mk_arg $1 }
   | tLPAREN FMargs Rparen { mk_multi_lhs $2 }
 
 FArg :: { [Term] }
