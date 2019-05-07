@@ -46,6 +46,7 @@ data Term
        | KWOptArg String Term
        | KWRestArg (Maybe String)
        | KWSplat Term
+       | Lambda
        | Line
        | Lvar String
        | Lvasgn String (Maybe Term) -- variables
@@ -58,6 +59,7 @@ data Term
        | Postexe Term
        | Preexe Term
        | Or Term Term
+       | Optarg String Term
        | RArray [Term]
        | RComplex (Complex Double)
        | Redo [Term]
@@ -184,7 +186,8 @@ mk_block_pass = BlockPass
 mk_blockarg :: Token -> Term
 mk_blockarg = BlockArg . value
 
-mk_call_lambda = error "mk_call_lambda"
+mk_call_lambda :: Term
+mk_call_lambda = Lambda
 
 mk_call_method :: Term -> Token -> Token -> [Term] -> Term
 mk_call_method receiver t_dot selector args = call_type_for_dot t_dot receiver (mk_selector selector) args
@@ -290,7 +293,8 @@ mk_op_assign (Gvasgn i Nothing) val = gvasgn i val
 mk_op_assign (Casgn i parent Nothing) val = casgn i parent val
 mk_op_assign t1 t2 = error ("mk_op_assign" ++ show t1 ++ " " ++ show t2)
 
-mk_optarg = error "mk_optarg"
+mk_optarg :: Token -> Term -> Term
+mk_optarg token val = Optarg (value token) val
 
 mk_pair :: Term -> Term -> Term
 mk_pair = Pair

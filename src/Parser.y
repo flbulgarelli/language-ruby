@@ -888,10 +888,10 @@ FKwrest: KwrestMark tIDENTIFIER {  [ mk_kwrestarg $ Just $2 ] }
   | KwrestMark { [ mk_kwrestarg Nothing ] }
 
 FOpt :: { Term }
-FOpt: FArgAsgn tEQL Arg { error "mk_optarg $1 $2 $3" }
+FOpt: FArgAsgn tEQL Arg { mk_optarg $1 $3 }
 
 FBlockOpt :: { Term }
-FBlockOpt: FArgAsgn tEQL Primary { error "mk_optarg $1 $2 $3" }
+FBlockOpt: FArgAsgn tEQL Primary { mk_optarg $1 $3 }
 
 FBlockOptarg :: { [Term] }
 FBlockOptarg: FBlockOpt { [ $1 ] }
