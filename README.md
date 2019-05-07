@@ -1,7 +1,7 @@
 language-ruby
 ============
 
-Haskell parser for the Ruby 2.7 Language. Project structure is loosly based https://github.com/erikd/language-javascript, lexer is based on https://github.com/bjpop/language-python and parser is based on https://github.com/whitequark/parser.
+Haskell parser for the Ruby 2.6 Language. Project structure is loosely based https://github.com/erikd/language-javascript, lexer is based on https://github.com/bjpop/language-python and parser is based on https://github.com/whitequark/parser.
 
 ## Building
 
@@ -37,6 +37,10 @@ AST Nodes naming is the same as [whitequark/parser](https://github.com/whitequar
 * Ruby datatypes are prefixed with an in order to avoid collisions. E.g.:
   * `RInt` instead of `int`
   * `RFloat` instead of `float`
+
+## Caveats
+
+1. Parser acts as if run with `Parser::Builders::Default.emit_procarg0 = false` and thus makes no distinction between `f {|a|}` and `f{|a,|}` since making such a distinction for only blocks with a single parameter seems odd.
 
 ## Pending tasks
 

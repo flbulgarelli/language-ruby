@@ -597,7 +597,7 @@ BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3
   | FArg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
   | FArg tCOMMA { $1 }
   | FArg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
-  | FArg OptBlockArgsTail { if null $2 && length $1 == 1 then [mk_procarg0 (head $1)] else $1 ++ $2 }
+  | FArg OptBlockArgsTail { $1 ++ $2 }
   | FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
   | FBlockOptarg tCOMMA FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $5 ++ $6 }
   | FBlockOptarg OptBlockArgsTail { $1 ++ $2 }

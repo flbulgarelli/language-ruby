@@ -303,8 +303,6 @@ mk_pair_quoted = error "mk_pair_quoted"
 mk_preexe :: Term -> Term
 mk_preexe = Preexe
 
-mk_procarg0 = error "mk_procarg0"
-
 mk_range_exclusive :: Term -> Term -> Term
 mk_range_exclusive = ERange
 
