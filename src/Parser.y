@@ -239,7 +239,7 @@ Stmt: kALIAS Fitem Fitem { mk_alias $2 $3 }
 CommandAsgn :: { Term }
 CommandAsgn: Lhs tEQL CommandRhs { mk_assign $1 $3 }
   | VarLhs tOP_ASGN CommandRhs { (mk_op_assign $1 $3) }
-  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { mk_op_assign (mk_index $1 $2 $3 $4) $6 }
+  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN CommandRhs { mk_op_assign (mk_index $1 $3) $6 }
   | Primary CallOp tIDENTIFIER tOP_ASGN CommandRhs { mk_op_assign (mk_call_method $1 $2 $3 []) $5 }
   | Primary CallOp tCONSTANT tOP_ASGN CommandRhs { mk_op_assign  (mk_call_method $1 $2 $3 []) $5 }
   | Primary tCOLON2 tCONSTANT tOP_ASGN CommandRhs { mk_op_assign (mk_const_op_assignable (mk_const_fetch $1 $3)) $5 }
@@ -320,7 +320,7 @@ MlhsPost: MlhsItem { [ $1 ] }
 MlhsNode :: { Term }
 MlhsNode: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
-  | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
+  | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $3 }
   | Primary CallOp tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
   | Primary tCOLON2 tIDENTIFIER { mk_attr_asgn $1 $2 $3 }
   | Primary CallOp tCONSTANT { mk_attr_asgn $1 $2 $3 }
@@ -331,7 +331,7 @@ MlhsNode: UserVariable { mk_assignable $1 }
 Lhs :: { Term }
 Lhs: UserVariable { mk_assignable $1 }
   | KeywordVariable { mk_assignable $1 }
-  | Primary tLBRACK2 OptCallArgs RBracket { error "mk_index_asgn $1 $2 $3 $4" }
+  | Primary tLBRACK2 OptCallArgs RBracket { mk_index_asgn $1 $3 }
   | Primary CallOp tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary tCOLON2 tIDENTIFIER { (mk_attr_asgn $1 $2 $3) }
   | Primary CallOp tCONSTANT { (mk_attr_asgn $1 $2 $3) }
@@ -385,7 +385,7 @@ Reswords: k__LINE__ {$1} | k__FILE__ {$1} | k__ENCODING__ {$1} | klBEGIN {$1} | 
 Arg :: { Term }
 Arg: Lhs tEQL ArgRhs { mk_assign $1 $3 }
   | VarLhs tOP_ASGN ArgRhs { (mk_op_assign $1 $3) }
-  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $2 $3 $4) $6) }
+  | Primary tLBRACK2 OptCallArgs RBracket tOP_ASGN ArgRhs { (mk_op_assign (mk_index $1 $3) $6) }
   | Primary CallOp tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
   | Primary CallOp tCONSTANT tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
   | Primary tCOLON2 tIDENTIFIER tOP_ASGN ArgRhs { (mk_op_assign (mk_call_method $1 $2 $3 []) $5) }
@@ -656,7 +656,7 @@ MethodCall: Operation ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in 
   | Primary tCOLON2 ParenArgs { error "let (lparen_t, Args, rparen_t) = $3 in mk_call_method $1, $2, Nil, lparen_t, Args, rparen_t" }
   | kSUPER ParenArgs { error "let (lparen_t, Args, rparen_t) = $2 in mk_keyword_cmd Super $1 lparen_t Args rparen_t" }
   | kSUPER { mk_keyword_cmd Zsuper [] }
-  | Primary tLBRACK2 OptCallArgs RBracket { error "(mk_index $1, $2 $3 $4" }
+  | Primary tLBRACK2 OptCallArgs RBracket { mk_index $1 $3 }
 
 BraceBlock: tLCURLY BraceBody tRCURLY { undefined }
   | kDO DoBody kEND  { undefined }

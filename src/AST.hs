@@ -37,6 +37,8 @@ data Term
        | Gvar String
        | Gvasgn String (Maybe Term) -- global variables
        | Hash [Term]
+       | Index Term [Term]
+       | IndexAsgn Term [Term]
        | If Term Term Term
        | IRange Term Term
        | Ivar String
@@ -245,8 +247,11 @@ mk_float (TFLOAT f) = RFloat f
 mk_for :: Term -> Term -> Term -> Term
 mk_for = For
 
-mk_index = error "mk_index"
-mk_index_asgn = error "mk_index_asgn"
+mk_index :: Term -> [Term] -> Term
+mk_index = Index
+
+mk_index_asgn :: Term -> [Term] -> Term
+mk_index_asgn = IndexAsgn
 
 mk_integer :: Token -> Term
 mk_integer (TINTEGER i) = RInt i
