@@ -5,6 +5,7 @@ module AST where
 import Data.Ratio (Rational)
 import Data.Complex
 import Lexer (Token (..))
+import Data.List (nub)
 
 data Term
        = Begin [Term]
@@ -13,6 +14,7 @@ data Term
        | And Term Term
        | Anddot
        | Arg String
+       | Args [Term]
        | BackRef String
        | BlockArg String
        | BlockPass Term
@@ -23,9 +25,9 @@ data Term
        | Const Term String
        | Cvar String
        | Cvasgn String (Maybe Term) -- class variable
-       | Def String Args Term
+       | Def String Term Term
        | Defined [Term]
-       | Defs Term String Args Term
+       | Defs Term String Term Term
        | Dot
        | Dstr [Term]
        | Dsym [Term]
@@ -61,7 +63,7 @@ data Term
        | Postexe Term
        | Preexe Term
        | Or Term Term
-       | Optarg String Term
+       | OptArg String Term
        | RArray [Term]
        | RComplex (Complex Double)
        | Redo [Term]
@@ -92,8 +94,6 @@ data Term
        | Yield [Term]
        | Zsuper [Term]
        deriving (Eq, Show)
-
-data Args = Args [Term] deriving (Eq, Show)
 
 
 lvasgn name = Lvasgn name . Just
@@ -128,7 +128,22 @@ mk_alias = Alias
 mk_arg :: Token -> Term
 mk_arg = Arg . value
 
-mk_args = error "mk_args"
+mk_args :: [Term] -> Term
+mk_args args
+  | has_duplicate_args args = error "duplicate argument"
+  | otherwise               = Args args
+
+has_duplicate_args :: [Term] -> Bool
+has_duplicate_args args = has_non_ignored_duplicates . concatMap arg_names $ args
+  where has_non_ignored_duplicates       = has_duplicates . filter (not . starts_with_underscore)
+        
+        starts_with_underscore ('_' : _) = True
+        starts_with_underscore _         = False
+        
+        has_duplicates a_list            = nub a_list == a_list
+
+        arg_names (Mlhs terms) = map arg_name terms
+        arg_names arg          = [arg_name arg]
 
 mk_array :: [Term] -> Term
 mk_array = RArray
@@ -299,7 +314,7 @@ mk_op_assign (Casgn i parent Nothing) val = casgn i parent val
 mk_op_assign t1 t2 = error ("mk_op_assign" ++ show t1 ++ " " ++ show t2)
 
 mk_optarg :: Token -> Term -> Term
-mk_optarg token val = Optarg (value token) val
+mk_optarg token val = OptArg (value token) val
 
 mk_pair :: Term -> Term -> Term
 mk_pair = Pair
@@ -389,3 +404,15 @@ value other           = error (show other)
 mk_selector :: Token -> String
 mk_selector KNIL = "call"
 mk_selector s   = value s
+
+arg_name :: Term -> String
+arg_name (Arg name)              = name
+arg_name (OptArg name _)         = name
+arg_name (RestArg (Just name))   = name
+arg_name (RestArg Nothing)       = "*"
+arg_name (BlockArg name)         = name
+arg_name (KWArg name)            = name
+arg_name (KWOptArg name _)       = name
+arg_name (KWRestArg (Just name)) = name
+arg_name (KWRestArg Nothing)     = "*"
+arg_name (ShadowArg name)        = name

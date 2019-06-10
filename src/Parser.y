@@ -607,29 +607,36 @@ BlockParam: FArg tCOMMA FBlockOptarg tCOMMA FRestArg OptBlockArgsTail { $1 ++ $3
   | FRestArg tCOMMA FArg OptBlockArgsTail { $1 ++ $3 ++ $4 }
   | BlockArgsTail { $1 }
 
-OptBlockParam: {- nothing -} { error "mk_args Nil [] Nil" }
+OptBlockParam :: { Term }
+OptBlockParam: {- nothing -} { mk_args [] }
   | BlockParamDef { $1 }
 
-BlockParamDef: tPIPE OptBvDecl tPIPE { error "mk_args $1 $2 $3" }
- | tOROP { (mk_args $1 [] $1) }
- | tPIPE BlockParam OptBvDecl tPIPE { error "mk_args $1 ($2 ++ $3) $4" }
+BlockParamDef :: { Term }
+BlockParamDef: tPIPE OptBvDecl tPIPE { mk_args $2 }
+ | tOROP { mk_args [] }
+ | tPIPE BlockParam OptBvDecl tPIPE { mk_args $ $2 ++ $3 }
 
+OptBvDecl :: { [Term] }
 OptBvDecl: OptNl { [] }
   | OptNl tSEMI BvDecls OptNl { $3 }
 
+BvDecls :: { [Term] }
 BvDecls: Bvar { [ $1 ] }
       | BvDecls tCOMMA Bvar { $1 ++ [$3] }
 
-Bvar: tIDENTIFIER { error "mk_shadowarg $1" }
+Bvar :: { Term }
+Bvar: tIDENTIFIER { mk_shadowarg $1 }
     | FBadArg { $1 }
 
 Lambda: FLarglist LambdaBody { error "[ $2, $4 ]" }
 
-FLarglist: tLPAREN2 FArgs OptBvDecl tRPAREN { error "mk_args $1 $2.concat($3) $4" }
-  | FArgs { error "mk_args Nil $1 Nil" }
+FLarglist :: { Term }
+FLarglist: tLPAREN2 FArgs OptBvDecl tRPAREN { mk_args $ $2 ++ $3 }
+  | FArgs { mk_args $1 }
 
-LambdaBody: tLAMBEG Compstmt tRCURLY { error "[ $1, $3, $4 ]" }
-  | kDO_LAMBDA Bodystmt kEND { error "[ $1, $3, $4 ]" }
+LambdaBody :: { Term }
+LambdaBody: tLAMBEG Compstmt tRCURLY { $2 }
+  | kDO_LAMBDA Bodystmt kEND { $2 }
 
 DoBlock: kDO_BLOCK  DoBody kEND { undefined } -- { @context.push(:block) } { [ $1, *$3, $4 ] @context.pop }
 BlockCall: Command DoBlock { error "let (begin_t, block_args, body, end_t) = $2 in (mk_block $1 begin_t block_args body end_t)" }
@@ -808,9 +815,9 @@ Backref: tNTH_REF { mk_nth_ref $1 }
 Superclass: tLT Expr Term { error "[ $1, $3 ]" }
   | {- nothing -} { Nil }
 
-
-FArglist: tLPAREN2 FArgs Rparen { (mk_args $1 $2 $3) }
-  | FArgs Term { error "mk_args Nil $2 Nil" }
+FArglist :: { Term }
+FArglist: tLPAREN2 FArgs Rparen { mk_args $2 }
+  | FArgs Term { mk_args $1 }
 
 ArgsTail :: { [Term] }
 ArgsTail: FKwarg tCOMMA FKwrest OptFBlockArg { $1 ++ $3 ++ $4 }
@@ -840,6 +847,7 @@ FArgs: FArg tCOMMA FOptarg tCOMMA FRestArg OptArgsTail { $1 ++ $3 ++ $5 ++ $6 }
   | {- nothing -} { [] }
 
 
+FBadArg :: { a }
 FBadArg: tCONSTANT { error ":argument_const, Nil, $1" }
   | tIVAR { error ":argument_ivar, Nil, $1" }
   | tGVAR { error ":argument_gvar, Nil, $1" }
