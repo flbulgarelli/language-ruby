@@ -74,16 +74,17 @@ tokens :-
   ("+" | "-")? @float_number { token TFLOAT readFloat }
   ("+" | "-")? $non_zero_digit $digit* { token TINTEGER readInt }
   ("+" | "-")? (@float_number | @int_part) (j | J) { token TIMAGINARY (readFloat . init) }
+  ("+" | "-")? (@float_number | @int_part) r { token TRATIONAL (readFloat . init) }
   0+ $oct_digit* { token TINTEGER (fst . head . readOct) }
   0 (o | O) $oct_digit+ { token TINTEGER read }
   0 (x | X) $hex_digit+ { token TINTEGER read }
 
---    "("   { openParen TLPAREN }
---    ")"   { closeParen TRPAREN }
---    "["   { openParen TLBRACK }
---    "]"   { closeParen TRBRACK }
---    "{"   { openParen TLCURLY }
---    "}"   { closeParen TRCURLY }
+    "("   { openParen TLPAREN }
+    ")"   { closeParen TRPAREN }
+    "["   { openParen TLBRACK }
+    "]"   { closeParen TRBRACK }
+    "{"   { openParen TLCURLY }
+    "}"   { closeParen TRCURLY }
 --  "->"  { symbolToken RightArrowToken }
     "."   { symbolToken TDOT }
     ".."   { symbolToken TDOT2 }
@@ -290,7 +291,7 @@ data Token =
   | TLAMBDA
   | TLAMBEG
   | TCHARACTER Char
-  | TRATIONAL
+  | TRATIONAL Double
   | TIMAGINARY Double
   | TLABEL_END
   | TANDDOT
@@ -361,6 +362,9 @@ token mkToken read str = return $ mkToken (read str)
 
 symbolToken :: Token -> Action
 symbolToken t _ = return t
+
+openParen = symbolToken
+closeParen = symbolToken
 
 mkString :: Action
 mkString = token TSTRING (\str -> drop 1 . take (length str - 1) $ str)

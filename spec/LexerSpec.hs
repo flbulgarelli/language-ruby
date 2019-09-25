@@ -20,7 +20,7 @@ spec = describe "Lexer:" $ do
 
   test "hex integers" "0xab"  [TINTEGER 0xab]
 
-  -- test "rationals"   tokens "123r" [TRATIONAL 123]
+  test "rationals" "123r" [TRATIONAL 123]
 
   -- test "complex"   tokens "123i" [TCOMPLEX 123]
 
@@ -70,8 +70,8 @@ spec = describe "Lexer:" $ do
 
   test "KDEFINED" "defined?" [KDEFINED]
   test "KDEFINED" "defined? a" [KDEFINED, TIDENTIFIER "a"]
-  test "KDEFINED" "defined?(a)" [KDEFINED, TIDENTIFIER "a"]
-  test "KDEFINED" "defined?(@a)" [KDEFINED, TIDENTIFIER "a"]
+  test "KDEFINED" "defined?(a)" [KDEFINED, TLPAREN, TIDENTIFIER "a", TRPAREN]
+  test "KDEFINED" "defined?(@a)" [KDEFINED, TLPAREN, TIDENTIFIER "a", TRPAREN]
 
   test "KUNDEF" "undef" [KUNDEF]
 
