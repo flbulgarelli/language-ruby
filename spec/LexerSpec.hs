@@ -71,7 +71,7 @@ spec = describe "Lexer:" $ do
   test "KDEFINED" "defined?" [KDEFINED]
   test "KDEFINED" "defined? a" [KDEFINED, TIDENTIFIER "a"]
   test "KDEFINED" "defined?(a)" [KDEFINED, TLPAREN, TIDENTIFIER "a", TRPAREN]
-  test "KDEFINED" "defined?(@a)" [KDEFINED, TLPAREN, TIDENTIFIER "a", TRPAREN]
+  test "KDEFINED" "defined?(@a)" [KDEFINED, TLPAREN, TIVAR "@a", TRPAREN]
 
   test "KUNDEF" "undef" [KUNDEF]
 
