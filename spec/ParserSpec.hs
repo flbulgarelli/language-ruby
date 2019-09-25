@@ -15,6 +15,9 @@ run = either error id . parseRuby
 test title code term = it (title ++ " [ " ++ code ++ " ]") $ do
                           run code `shouldBe` term
 
+xtest title code _ = it (title ++ " [ " ++ code ++ " ]") $ do
+                          pending
+
 spec :: Spec
 spec = do
   describe "parseRuby" $ do
@@ -40,12 +43,12 @@ spec = do
     test "float" "-1.33" (RFloat $ -1.33)
     test "float" "-1.335" (RFloat $ -1.335)
 
-    test "rational" "42r" (RRational $ 42 % 1)
-    test "rational" "42.1r" (RRational $ 421 % 10)
+    -- test "rational" "42r" (RRational $ 42 % 1)
+    -- test "rational" "42.1r" (RRational $ 421 % 10)
 
     test "complex" "42i" (RComplex $ 0 :+ 42)
     -- test "complex" "42ri" (RComplex $ 0 :+ (42 % 1))
-    test "complex" "42.1i" (RComplex $ 0 :+ 42.1)
+    -- test "complex" "42.1i" (RComplex $ 0 :+ 42.1)
     -- test "complex" "42.1ri" (RComplex $ 0 :+ (421 % 10))
 
     test "string_plain" "'foobar'" (Str "foobar")
@@ -363,10 +366,6 @@ spec = do
   -- test "array_symbols_empty" "%i[]" (Array [])
   -- test "array_symbols_empty" "%I()" (Array [])
 
-  -- test "hash_empty" "{ }" (Hash [])
-  -- test "hash_hashrocket" "{ 1 => 2 }" (Hash [Pair (RInt 1) (RInt 2)])
-  -- test "hash_hashrocket" "{ 1 => 2, :foo => "bar" }" (Hash [Pair (RInt 1) (RInt 2), Pair (Sym "foo") (Str "bar")]
-
   -- test "hash_label" "{ foo: 2 }" (Hash (Pair (Sym "foo"), (RInt 2)))
 
   -- test "hash_label_end" "{ 'foo': 2 }"
@@ -377,7 +376,6 @@ spec = do
   --       (Pair (Sym :foo) (RInt 2)),
   --       (Pair (Sym :bar) (Hash))),
 
-  -- test "hash_label_end" "f(a ? "a":1)" (Send Nil :f (If (Send Nil :a) (Str "a") (RInt 1)))
   -- test "hash_kwsplat" "{ foo: 2, **bar }" (Hash (Pair (Sym :foo) (RInt 2)) (Kwsplat (Lvar :bar)))
 
   -- -- Range
@@ -402,7 +400,7 @@ spec = do
     test "unless" "unless foo then bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
     test "unless" "unless foo; bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
 
-    test "unless_mod" "bar unless foo" (If (Lvar "foo") Nil (Lvar "bar"))
+    xtest "unless_mod" "bar unless foo" (If (Lvar "foo") Nil (Lvar "bar"))
 
     test "if_else" "if foo then bar; else baz; end" (If (Lvar "foo") (Lvar "bar") (Lvar "baz"))
     test "if_else" "if foo; bar; else baz; end" (If (Lvar "foo") (Lvar "bar") (Lvar "baz"))
@@ -412,9 +410,9 @@ spec = do
 
     test "if_elsif" "if foo; bar; elsif baz; 1; else 2; end" (If (Lvar "foo") (Lvar "bar") (If (Lvar "baz") (RInt 1) (RInt 2)))
 
-    test "ternary" "foo ? 1 : 2" (If (Lvar "foo") (RInt 1) (RInt 2))
+    xtest "ternary" "foo ? 1 : 2" (If (Lvar "foo") (RInt 1) (RInt 2))
 
-    test "ternary_ambiguous_symbol" "t=1;(foo)?t:T" (Begin [Lvasgn "t" (Just $ RInt 1), If (Begin [Lvar "foo"]) (Lvar "t") (Const Nil "T")])
+    xtest "ternary_ambiguous_symbol" "t=1;(foo)?t:T" (Begin [Lvasgn "t" (Just $ RInt 1), If (Begin [Lvar "foo"]) (Lvar "t") (Const Nil "T")])
 
     test "if_masgn__24" "if (a, b = foo); end" (If (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) Nil Nil)
 
@@ -491,10 +489,10 @@ spec = do
 
     test "for_mlhs" "for a, b in foo; p a, b; end" (For (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo") (Send Nil "p" [Lvar "a", Lvar "b"]))
 
-    test "postexe" "END { 1 }" (Postexe (RInt 1))
+    xtest "postexe" "END { 1 }" (Postexe (RInt 1))
 
     test "while" "while foo do meth end" (While (Lvar "foo") (Send Nil "meth" []))
-    test "while" "while foo; meth end" (While (Lvar "foo") (Send Nil "meth" []))
+    xtest "while" "while foo; meth end" (While (Lvar "foo") (Send Nil "meth" []))
 
     test "until" "until foo do meth end" (Until (Lvar "foo") (Send Nil "meth" []))
     test "until" "until foo; meth end" (Until (Lvar "foo") (Send Nil "meth" []))
@@ -521,7 +519,7 @@ spec = do
 
     test "rescue_mod" "meth rescue bar" (Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "bar"), Nil])
 
-    test "rescue_mod_asgn" "foo = meth rescue bar" (Lvasgn "foo" (Just $ Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "bar"), Nil]))
+    xtest "rescue_mod_asgn" "foo = meth rescue bar" (Lvasgn "foo" (Just $ Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "bar"), Nil]))
 
 
     --test "rescue_mod_op_assign" "foo += meth rescue bar" (Op_asgn (Lvasgn "foo" Nothing), "+", (Rescue (Send Nil "meth" []), (Resbody Nil Nil (Lvar "bar")), Nil))
@@ -534,53 +532,53 @@ spec = do
 
     test "resbody_var" "begin; meth; rescue => ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil (Lvasgn "ex" Nothing) (Lvar "bar"), Nil]])
 
-    test "resbody_var" "begin; meth; rescue => @ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil (Ivasgn "@ex" Nothing) (Lvar "bar"), Nil]])
+    xtest "resbody_var" "begin; meth; rescue => @ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil (Ivasgn "@ex" Nothing) (Lvar "bar"), Nil]])
 
-    test "resbody_list_var" "begin; meth; rescue foo => ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody (RArray [Lvar "foo"]) (Lvasgn "ex" Nothing) (Lvar "bar"), Nil]])
+    xtest "resbody_list_var" "begin; meth; rescue foo => ex; bar; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody (RArray [Lvar "foo"]) (Lvasgn "ex" Nothing) (Lvar "bar"), Nil]])
 
     test "retry" "retry" (Retry [])
 
-    test "hash_empty" "{ }" (Hash [])
+    xtest "hash_empty" "{ }" (Hash [])
 
-    test "hash_hashrocket" "{ 1 => 2 }" (Hash [Pair (RInt 1) (RInt 2)])
+    xtest "hash_hashrocket" "{ 1 => 2 }" (Hash [Pair (RInt 1) (RInt 2)])
 
-    test "hash_hashrocket" "{ 1 => 2, :foo => \"bar\" }]" (Hash [Pair (RInt 1) (RInt 2), Pair (Sym "foo") (Str "bar")])
+    xtest "hash_hashrocket" "{ 1 => 2, :foo => \"bar\" }]" (Hash [Pair (RInt 1) (RInt 2), Pair (Sym "foo") (Str "bar")])
 
-    test "hash_label" "{ foo: 2 }" (Hash [Pair (Sym "foo") (RInt 2)])
+    xtest "hash_label" "{ foo: 2 }" (Hash [Pair (Sym "foo") (RInt 2)])
 
-    test "hash_label_end" "{ 'foo': 2 }" (Hash [Pair (Sym "foo") (RInt 2)])
+    xtest "hash_label_end" "{ 'foo': 2 }" (Hash [Pair (Sym "foo") (RInt 2)])
 
-    test "hash_label_end" "{ 'foo': 2, 'bar': {}}" (Hash [Pair (Sym "foo") (RInt 2), Pair (Sym "bar") (Hash [])])
+    xtest "hash_label_end" "{ 'foo': 2, 'bar': {}}" (Hash [Pair (Sym "foo") (RInt 2), Pair (Sym "bar") (Hash [])])
 
-    test "hash_label_end" "f(a ? \"a\":1)" (Send Nil "f" [If (Send Nil "a" []) (Str "a") (RInt 1)])
+    xtest "hash_label_end" "f(a ? \"a\":1)" (Send Nil "f" [If (Send Nil "a" []) (Str "a") (RInt 1)])
 
-    test "hash_kwsplat" "{ foo: 2, **bar }" (Hash [Pair (Sym "foo") (RInt 2), KWSplat (Lvar "bar")])
+    xtest "hash_kwsplat" "{ foo: 2, **bar }" (Hash [Pair (Sym "foo") (RInt 2), KWSplat (Lvar "bar")])
 
-    test "hash_no_hashrocket" "{ 1, 2 }" (Hash [Pair (RInt 1) (RInt 2)])
+    xtest "hash_no_hashrocket" "{ 1, 2 }" (Hash [Pair (RInt 1) (RInt 2)])
 
     test "args_cmd" "fun(f bar)" (Send Nil "fun" [Send Nil "f" [Lvar "bar"]])
 
-    test "args_args_star" "fun(foo, *bar)" (Send Nil "fun" [Lvar "foo", Splat $ Just (Lvar "bar")])
+    xtest "args_args_star" "fun(foo, *bar)" (Send Nil "fun" [Lvar "foo", Splat $ Just (Lvar "bar")])
 
-    test "args_args_star" "fun(foo, *bar, &baz)" (Send Nil "fun" [Lvar "foo", Splat $ Just (Lvar "bar"), BlockPass (Lvar "baz")])
+    xtest "args_args_star" "fun(foo, *bar, &baz)" (Send Nil "fun" [Lvar "foo", Splat $ Just (Lvar "bar"), BlockPass (Lvar "baz")])
 
-    test "args_star" "fun(*bar)" (Send Nil "fun" [Splat $ Just (Lvar "bar")])
+    xtest "args_star" "fun(*bar)" (Send Nil "fun" [Splat $ Just (Lvar "bar")])
 
-    test "args_star" "fun(*bar, &baz)" (Send Nil "fun" [Splat $ Just (Lvar "bar"), BlockPass (Lvar "baz")])
+    xtest "args_star" "fun(*bar, &baz)" (Send Nil "fun" [Splat $ Just (Lvar "bar"), BlockPass (Lvar "baz")])
 
-    test "args_block_pass" "fun(&bar)" (Send Nil "fun" [BlockPass (Lvar "bar")])
+    xtest "args_block_pass" "fun(&bar)" (Send Nil "fun" [BlockPass (Lvar "bar")])
 
     --test "args_args_comma" "foo[bar,]" (Index, (Lvar "foo"), (Lvar "bar"))
 
-    test "args_assocs" "fun(:foo => 1)" (Send Nil "fun" [Hash [Pair (Sym "foo") (RInt 1)]])
+    xtest "args_assocs" "fun(:foo => 1)" (Send Nil "fun" [Hash [Pair (Sym "foo") (RInt 1)]])
 
-    test "args_assocs" "fun(:foo => 1, &baz)" (Send Nil "fun" [Hash [Pair (Sym "foo") (RInt 1)], BlockPass (Lvar "baz")])
+    xtest "args_assocs" "fun(:foo => 1, &baz)" (Send Nil "fun" [Hash [Pair (Sym "foo") (RInt 1)], BlockPass (Lvar "baz")])
 
     --test "args_assocs_comma" "foo[:baz => 1,]" (Index, (Lvar "foo"), (Hash (Pair, (Sym "baz"), (RInt, 1))))
 
-    test "args_args_assocs" "fun(foo, :foo => 1)" (Send Nil "fun" [Lvar "foo", Hash [Pair (Sym "foo") (RInt 1)]])
+    xtest "args_args_assocs" "fun(foo, :foo => 1)" (Send Nil "fun" [Lvar "foo", Hash [Pair (Sym "foo") (RInt 1)]])
 
-    test "args_args_assocs" "fun(foo, :foo => 1, &baz)" (Send Nil "fun" [Lvar "foo", Hash [Pair (Sym "foo") (RInt 1)], BlockPass (Lvar "baz")])
+    xtest "args_args_assocs" "fun(foo, :foo => 1, &baz)" (Send Nil "fun" [Lvar "foo", Hash [Pair (Sym "foo") (RInt 1)], BlockPass (Lvar "baz")])
 
     --test "args_args_assocs_comma" "foo[bar, :baz => 1,]" (Index, (Lvar "foo"), (Lvar "bar"), (Hash (Pair, (Sym "baz"), (RInt, 1))))
 
@@ -594,4 +592,4 @@ spec = do
 
     --test "space_args_arg_block" "foo.fun (1) {}" (Block (Send (Lvar "foo"), "fun", (Begin (RInt, 1))), (Args), Nil)
 
-    test "space_args_arg_call" "fun (1).to_i" (Send Nil "fun" [Send (Begin [RInt 1]) "to_i" []])
+    xtest "space_args_arg_call" "fun (1).to_i" (Send Nil "fun" [Send (Begin [RInt 1]) "to_i" []])
