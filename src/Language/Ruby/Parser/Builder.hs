@@ -104,6 +104,8 @@ mk_begin_keyword (Begin ts) = KWBegin ts
 mk_begin_keyword t          = KWBegin [t]
 
 mk_binary_op :: Term -> String -> Term -> Term
+mk_binary_op receiver "&&" arg = And receiver arg
+mk_binary_op receiver "||" arg = Or receiver arg
 mk_binary_op receiver op arg = Send receiver op [arg]
 
 mk_block = error "mk_block"
