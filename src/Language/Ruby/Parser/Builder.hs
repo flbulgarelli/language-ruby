@@ -1,100 +1,11 @@
--- {-# LANGUAGE ExistentialQuantification, RankNTypes #-}
-
-module AST where
+module Language.Ruby.Parser.Builder where
 
 import Data.Ratio (Rational)
 import Data.Complex
-import Lexer (Token (..))
 import Data.List (nub)
 
-data Term
-       = Begin [Term]
-       -- | RComplex (forall a. Num a => Complex (a))
-       | Alias Term Term
-       | And Term Term
-       | Anddot
-       | Arg String
-       | Args [Term]
-       | BackRef String
-       | BlockArg String
-       | BlockPass Term
-       | Break [Term]
-       | Case [Term]
-       | Casgn Term String (Maybe Term) -- constants
-       | Cbase
-       | Const Term String
-       | Cvar String
-       | Cvasgn String (Maybe Term) -- class variable
-       | Def String Term Term
-       | Defined [Term]
-       | Defs Term String Term Term
-       | Dot
-       | Dstr [Term]
-       | Dsym [Term]
-       | Encoding
-       | Ensure Term Term
-       | ERange Term Term
-       | File
-       | For Term Term Term
-       | Gvar String
-       | Gvasgn String (Maybe Term) -- global variables
-       | Hash [Term]
-       | Index Term [Term]
-       | IndexAsgn Term [Term]
-       | If Term Term Term
-       | IRange Term Term
-       | Ivar String
-       | Ivasgn String (Maybe Term) -- instance variables
-       | KWArg String
-       | KWBegin [Term]
-       | KWOptArg String Term
-       | KWRestArg (Maybe String)
-       | KWSplat Term
-       | Lambda
-       | Line
-       | Lvar String
-       | Lvasgn String (Maybe Term) -- variables
-       | Masgn Term Term
-       | Mlhs [Term]
-       | Next [Term]
-       | Nil
-       | NthRef Int
-       | Pair Term Term
-       | Postexe Term
-       | Preexe Term
-       | Or Term Term
-       | OptArg String Term
-       | RArray [Term]
-       | RComplex (Complex Double)
-       | Redo [Term]
-       | Retry [Term]
-       | Return [Term]
-       | RFalse
-       | RFloat Double
-       | RInt Int
-       | RRational Rational
-       | RTrue
-       | Self
-       | Send Term String [Term]
-       | Csend Term String [Term]
-       | Resbody Term Term Term
-       | Rescue Term [Term]
-       | RestArg (Maybe String)
-       | ShadowArg String
-       | Splat (Maybe Term)
-       | Str String
-       | Super [Term]
-       | Sym String
-       | Undef [Term]
-       | Until Term Term
-       | UntilPost Term Term
-       | When [Term]
-       | While Term Term
-       | WhilePost Term Term
-       | Yield [Term]
-       | Zsuper [Term]
-       deriving (Eq, Show)
-
+import Language.Ruby.AST (Term (..))
+import Language.Ruby.Parser.Lexer (Token (..))
 
 lvasgn name = Lvasgn name . Just
 ivasgn name = Ivasgn name . Just
@@ -136,10 +47,10 @@ mk_args args
 has_duplicate_args :: [Term] -> Bool
 has_duplicate_args args = has_non_ignored_duplicates . concatMap arg_names $ args
   where has_non_ignored_duplicates       = has_duplicates . filter (not . starts_with_underscore)
-        
+
         starts_with_underscore ('_' : _) = True
         starts_with_underscore _         = False
-        
+
         has_duplicates a_list            = nub a_list == a_list
 
         arg_names (Mlhs terms) = map arg_name terms
@@ -180,10 +91,10 @@ mk_begin_body' compoundStmt []            = compoundStmt
 mk_begin_body' compoundStmt rescue_bodies = Rescue compoundStmt $ rescue_bodies ++ [Nil]
 
 mk_begin_body :: Term -> [Term] -> Term -> Term -> Term
-mk_begin_body Nil [] els ensure                     = wrap_in_ensure [] els ensure 
+mk_begin_body Nil [] els ensure                     = wrap_in_ensure [] els ensure
 mk_begin_body (Begin terms) [] els ensure           = wrap_in_ensure terms els ensure
 mk_begin_body compoundStmt [] els ensure            = wrap_in_ensure [compoundStmt] els ensure
-mk_begin_body compoundStmt rescue_bodies els ensure = Ensure (Rescue compoundStmt $ rescue_bodies ++ [els]) ensure 
+mk_begin_body compoundStmt rescue_bodies els ensure = Ensure (Rescue compoundStmt $ rescue_bodies ++ [els]) ensure
 
 wrap_in_ensure terms els ensure = Ensure (Begin $ terms ++ [Begin [els]]) ensure
 
@@ -224,7 +135,7 @@ check_condition :: Term -> Term
 check_condition (Begin [term])    = Begin [check_condition term]
 check_condition (And lhs rhs)     = And (check_condition lhs) (check_condition rhs)
 check_condition (Or lhs rhs)      = Or (check_condition lhs) (check_condition rhs)
---check_condition (Regexp)        = 
+--check_condition (Regexp)        =
 check_condition condition         = condition
 
 mk_condition_mod :: Term -> Term -> Term -> Term
@@ -416,3 +327,4 @@ arg_name (KWOptArg name _)       = name
 arg_name (KWRestArg (Just name)) = name
 arg_name (KWRestArg Nothing)     = "*"
 arg_name (ShadowArg name)        = name
+

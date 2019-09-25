@@ -1,5 +1,5 @@
 {
-module Lexer (Token(..),P,evalP,lexer, tokens) where
+module Language.Ruby.Parser.Lexer (Token(..),P,evalP,lexer, tokens) where
 import Control.Monad.State
 import Control.Monad.Error
 import Data.Word

@@ -1,8 +1,8 @@
 module LexerSpec (spec) where
 
 import Test.Hspec
+import Language.Ruby.Parser.Lexer
 import Data.List (intercalate)
-import Lexer
 import Codec.Binary.UTF8.String (encode)
 
 test title code ts = it (title ++ " [ " ++ code ++ " ]") $ do

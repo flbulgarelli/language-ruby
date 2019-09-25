@@ -1,11 +1,13 @@
 module ParserSpec (spec) where
 
 import Test.Hspec
-import Lib
-import AST
 import Data.Either (either)
 import Data.Ratio ((%))
 import Data.Complex (Complex((:+)))
+
+import Language.Ruby.Parser
+import Language.Ruby.Parser.Builder
+import Language.Ruby.AST
 
 run :: String -> Term
 run = either error id . parseRuby
@@ -396,12 +398,12 @@ spec = do
     test "if_nl_then" "if foo\nthen bar end" (If (Lvar "foo") (Lvar "bar") Nil)
 
     test "if_mod" "bar if foo" (If (Lvar "foo") (Lvar "bar") Nil)
- 
+
     test "unless" "unless foo then bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
     test "unless" "unless foo; bar; end" (If (Lvar "foo") Nil (Lvar "bar"))
- 
+
     test "unless_mod" "bar unless foo" (If (Lvar "foo") Nil (Lvar "bar"))
- 
+
     test "if_else" "if foo then bar; else baz; end" (If (Lvar "foo") (Lvar "bar") (Lvar "baz"))
     test "if_else" "if foo; bar; else baz; end" (If (Lvar "foo") (Lvar "bar") (Lvar "baz"))
 
@@ -409,21 +411,21 @@ spec = do
     test "unless_else" "unless foo; bar; else baz; end" (If (Lvar "foo") (Lvar "baz") (Lvar "bar"))
 
     test "if_elsif" "if foo; bar; elsif baz; 1; else 2; end" (If (Lvar "foo") (Lvar "bar") (If (Lvar "baz") (RInt 1) (RInt 2)))
- 
+
     test "ternary" "foo ? 1 : 2" (If (Lvar "foo") (RInt 1) (RInt 2))
- 
+
     test "ternary_ambiguous_symbol" "t=1;(foo)?t:T" (Begin [Lvasgn "t" (Just $ RInt 1), If (Begin [Lvar "foo"]) (Lvar "t") (Const Nil "T")])
- 
+
     test "if_masgn__24" "if (a, b = foo); end" (If (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) Nil Nil)
- 
+
     test "not_masgn__24" "!(a, b = foo)" (Send (Begin [Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) "!" [])
- 
+
     test "cond_begin" "if (bar); foo; end" (If (Begin [Lvar "bar"]) (Lvar "foo") Nil)
- 
+
     test "cond_begin_masgn" "if (bar; a, b = foo); end" (If (Begin [Lvar "bar", Masgn (Mlhs [Lvasgn "a" Nothing, Lvasgn "b" Nothing]) (Lvar "foo")]) Nil Nil)
- 
+
     --test "cond_match_current_line" "if /wat/; end" (If (MatchCurrentLine (Regexp (Str "wat") (Regopt))) Nil Nil)
- 
+
     --test "cond_match_current_line" "!/wat/" (Send (MatchCurrentLine (Regexp (Str "wat") (Regopt))) "!")
 
     test "not" "not foo" (Send (Lvar "foo") "!" [])
@@ -493,7 +495,7 @@ spec = do
 
     test "while" "while foo do meth end" (While (Lvar "foo") (Send Nil "meth" []))
     test "while" "while foo; meth end" (While (Lvar "foo") (Send Nil "meth" []))
-        
+
     test "until" "until foo do meth end" (Until (Lvar "foo") (Send Nil "meth" []))
     test "until" "until foo; meth end" (Until (Lvar "foo") (Send Nil "meth" []))
 
@@ -502,7 +504,7 @@ spec = do
     test "until_mod" "meth until foo" (Until (Lvar "foo") (Send Nil "meth" []))
 
     test "while_post" "begin meth end while foo" (WhilePost (Lvar "foo") (KWBegin [Send Nil "meth" []]))
-        
+
     test "until_post" "begin meth end until foo" (UntilPost (Lvar "foo") (KWBegin [Send Nil "meth" []]))
 
     test "rescue" "begin; meth; rescue; foo; end" (KWBegin [Rescue (Send Nil "meth" []) [Resbody Nil Nil (Lvar "foo"), Nil]])

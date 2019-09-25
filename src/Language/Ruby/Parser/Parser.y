@@ -1,8 +1,11 @@
 {
 
-module Parser(parse) where
-import AST
-import qualified Lexer as L
+module Language.Ruby.Parser.Parser(parse) where
+
+import qualified Language.Ruby.Parser.Lexer as L
+import           Language.Ruby.Parser.Builder
+import           Language.Ruby.AST
+
 import Control.Monad.Error
 }
 
@@ -977,22 +980,22 @@ OptTerms: { L.KNIL }
 OptNl :: { L.Token }
 OptNl: { L.KNIL }
   | tNL { $1 }
- 
+
 Rparen :: { L.Token }
 Rparen: OptNl tRPAREN { $2 }
- 
+
 RBracket :: { L.Token }
 RBracket: OptNl tRBRACK { $2 }
- 
+
 Trailer :: { L.Token }
 Trailer: {- nothing -} { L.KNIL }
   | tNL { $1 }
   | tCOMMA { $1 }
- 
+
 Term :: { L.Token }
 Term: tSEMI { error "Term: tSEMI" }
   | tNL { $1 }
- 
+
 Terms :: { L.Token }
 Terms: Term { $1 }
   | Terms tSEMI { $1 }
